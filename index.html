@@ -791,7 +791,7 @@ function doAttack(att, def, move){
   if(fx && fx.kind==='drain'){
     const heal = Math.floor(d*0.5);
     if(heal>0 && att.hp>0 && att.hp<att.maxhp){ att.hp=Math.min(att.maxhp, att.hp+heal); print(`<span class="good">${who(att)} 吸取了 ${heal} 點 HP！</span>`); }
-  } else if(def.hp>0){
+  } else if(def.hp>0 || (fx && fx.kind==='selfDefUp')){
     const msg = applyMoveEffect(att, def, move);
     if(msg) print(msg);
   }
@@ -799,7 +799,10 @@ function doAttack(att, def, move){
 // 回傳 true 代表戰鬥已結束或已切換畫面
 function checkBattleEnd(){
   const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
-  if(w.hp<=0){ winBattle(); return true; }
+  if(w.hp<=0){
+    if(p.hp<=0) print(`<span class="bad">${nm(p)} 也在同一擊中倒下了！</span>`);
+    winBattle(); return true;
+  }
   if(p.hp<=0){ afterFaintCheck(p); return true; }
   return false;
 }
@@ -931,7 +934,7 @@ function evolveIfReady(p){
   p.dex = toIdx; p.name = e[0]; p.t1 = e[1]; p.t2 = e[2]; p.tier = e[3];
   const st = statsFor(e, p.level);
   const hpGain = st.hp - p.maxhp;
-  p.maxhp = st.hp; p.hp = Math.min(p.maxhp, p.hp + hpGain);
+  p.maxhp = st.hp; p.hp = Math.max(1, Math.min(p.maxhp, p.hp + hpGain));
   p.atk = st.atk; p.def = st.def; p.spd = st.spd;
   p.moves = buildMoves(e);
   state.caught.add(toIdx); state.seen.add(toIdx);
@@ -1016,15 +1019,103 @@ function screenParty(back){
   back = (typeof back === 'function') ? back : toField;
   clearLog();
   print('<span class="em">— 隊伍 —</span>');
+  print('<span class="sys">隊長（1號位）會優先上場戰鬥。點下方「設為隊長」可免費調整順序，不會浪費戰鬥中的一回合。</span>');
+  hr();
   if(state.party.length===0) print('（空）');
   state.party.forEach((m,i)=>{
     const expTxt = m.level>=MAX_LEVEL ? 'EXP MAX' : `EXP ${m.exp}/${m.expNext}`;
-    print(`${i+1}. ${nm(m)}  Lv.${m.level}  HP ${m.hp}/${m.maxhp}  屬性:${typeStr(m)}  速度 ${m.spd}  ${expTxt}${statusTag(m)}`);
+    const leadTag = i===0 ? ' <span class="em">★隊長</span>' : '';
+    print(`${i+1}. ${nm(m)}${leadTag}  Lv.${m.level}  HP ${m.hp}/${m.maxhp}  屬性:${typeStr(m)}  速度 ${m.spd}  ${expTxt}${statusTag(m)}`);
   });
   if(state.box.length){
     hr(); print(`倉庫中還有 ${state.box.length} 隻寶可夢。`);
   }
-  setOptions([{label:"返回", action:back}]);
+  const opts=[];
+  state.party.forEach((m,i)=>{
+    if(i>0) opts.push({label:`★ 設為隊長：${monName(m)}`, action:()=>setLeader(i, back)});
+  });
+  if(state.party.length>1) opts.push({label:"📦 放生一隻到倉庫", action:()=>screenReleaseSelect(back)});
+  opts.push({label:`📦 查看倉庫（${state.box.length}）`, action:()=>screenBox(back)});
+  opts.push({label:"返回", action:back});
+  setOptions(opts);
+}
+function setLeader(idx, back){
+  if(idx<=0 || idx>=state.party.length) return screenParty(back);
+  const [m] = state.party.splice(idx,1);
+  state.party.unshift(m);
+  saveGame();
+  clearLog();
+  print(`<span class="good">★ ${nm(m)} 成為新的隊長！下次戰鬥會由牠先上場，不需要浪費回合切換。</span>`);
+  screenParty(back);
+}
+function screenReleaseSelect(back){
+  clearLog();
+  print('<span class="em">選擇要送去倉庫的寶可夢（隊伍至少要留一隻）：</span>');
+  const opts = state.party.map((m,i)=>({
+    label:`${monName(m)} Lv.${m.level}${i===0?'（目前隊長）':''}`,
+    action:()=>releaseToBox(i, back)
+  }));
+  opts.push({label:"取消，返回", action:()=>screenParty(back)});
+  setOptions(opts);
+}
+function releaseToBox(idx, back){
+  if(state.party.length<=1){
+    clearLog(); print('<span class="bad">隊伍至少要留一隻寶可夢，無法再送走了！</span>');
+    return screenParty(back);
+  }
+  const [m] = state.party.splice(idx,1);
+  state.box.push(m);
+  saveGame();
+  clearLog();
+  print(`<span class="sys">${nm(m)} 被送去了倉庫，隨時可以再拉回隊伍。</span>`);
+  screenParty(back);
+}
+function screenBox(back){
+  clearLog();
+  print(`<span class="em">— 倉庫 —</span>　共 ${state.box.length} 隻`);
+  if(state.box.length===0) print('（空，抓到超過 6 隻時才會送來這裡）');
+  hr();
+  const opts=[];
+  state.box.forEach((m,i)=>{
+    print(`${i+1}. ${nm(m)}  Lv.${m.level}  HP ${m.hp}/${m.maxhp}  屬性:${typeStr(m)}${statusTag(m)}`);
+    if(state.party.length<6){
+      opts.push({label:`⬆ 拉回隊伍：${monName(m)}`, action:()=>withdrawFromBox(i, back)});
+    } else {
+      opts.push({label:`🔁 與隊伍交換：${monName(m)}`, action:()=>screenSwapSelect(i, back)});
+    }
+  });
+  opts.push({label:"返回隊伍畫面", action:()=>screenParty(back)});
+  setOptions(opts);
+}
+function withdrawFromBox(boxIdx, back){
+  if(state.party.length>=6){ clearLog(); print('<span class="bad">隊伍已滿了！</span>'); return screenBox(back); }
+  const [m] = state.box.splice(boxIdx,1);
+  state.party.push(m);
+  saveGame();
+  clearLog();
+  print(`<span class="good">${nm(m)} 加入了隊伍！</span>`);
+  screenBox(back);
+}
+function screenSwapSelect(boxIdx, back){
+  clearLog();
+  const boxMon = state.box[boxIdx];
+  print(`<span class="em">隊伍已滿。選擇要與 ${monName(boxMon)} 交換的隊伍成員：</span>`);
+  const opts = state.party.map((m,i)=>({
+    label:`${monName(m)} Lv.${m.level}${i===0?'（目前隊長）':''}`,
+    action:()=>doSwapWithBox(boxIdx, i, back)
+  }));
+  opts.push({label:"取消，返回倉庫", action:()=>screenBox(back)});
+  setOptions(opts);
+}
+function doSwapWithBox(boxIdx, partyIdx, back){
+  const boxMon = state.box[boxIdx];
+  const partyMon = state.party[partyIdx];
+  state.box[boxIdx] = partyMon;
+  state.party[partyIdx] = boxMon;
+  saveGame();
+  clearLog();
+  print(`<span class="good">${nm(partyMon)} 與 ${nm(boxMon)} 交換了！</span>`);
+  screenBox(back);
 }
 function screenBag(){
   clearLog();
