@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>口袋文字冒險</title>
+<title>寶可夢文字冒險</title>
 <style>
 :root{
   --bg:#0d1210; --panel:#111a16; --line:#2c4a3a; --text:#c9f7d8; --dim:#6f9a84;
@@ -66,12 +66,27 @@ header .sub{font-size:11px; color:var(--dim); margin-top:2px;}
 #skipHint{font-size:11px; color:var(--dim); text-align:center; padding:4px 0 0;}
 .shiny{color:#ff9ef5;}
 .boss{color:#ff9d4d;}
+.cover{ text-align:center; padding:22px 6px 10px; }
+.cover-pika{ margin:0 auto 10px; display:block; filter:drop-shadow(0 3px 8px rgba(0,0,0,.4)); }
+.pokeball{
+  width:68px; height:68px; margin:0 auto 16px; border-radius:50%;
+  background:linear-gradient(to bottom, #e0473f 0%, #e0473f 44%, #1a1a1a 44%, #1a1a1a 56%, #f2f2f2 56%, #f2f2f2 100%);
+  border:3px solid #1a1a1a; position:relative; box-shadow:0 2px 10px rgba(0,0,0,.4);
+}
+.pokeball span{
+  position:absolute; top:50%; left:50%; width:22px; height:22px; margin:-11px 0 0 -11px;
+  background:#f2f2f2; border:3px solid #1a1a1a; border-radius:50%; box-sizing:border-box;
+}
+.cover-title{ font-size:23px; letter-spacing:5px; color:var(--accent); margin-bottom:6px; }
+.cover-sub{ font-size:12px; color:var(--accent2); letter-spacing:2px; margin-bottom:12px; }
+.cover-tagline{ font-size:12px; color:var(--dim); line-height:1.7; max-width:320px; margin:0 auto; }
+.intro-h{ color:var(--good); }
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <div class="title">◆ 口袋文字冒險 · 關都地方</div>
+    <div class="title">◆ 寶可夢文字冒險 · 關都地方</div>
     <div class="sub" id="hdrsub">全國圖鑑第一世代 151 隻</div>
   </header>
   <div id="log"></div>
@@ -431,6 +446,38 @@ function screenResetConfirm(){
     {label:"是，清除並重新開始", action:resetGame},
     {label:"取消，返回", action:()=> state.party.length ? screenContinue() : screenTitle()}
   ]);
+}
+
+/* ---------- COVER / INTRO ---------- */
+function screenCover(){
+  clearLog();
+  const hasSave = state.party.length>0;
+  print(`<div class="cover">
+    <div class="pokeball" aria-hidden="true"><span></span></div>
+    <div class="cover-title">寶可夢文字冒險</div>
+    <div class="cover-sub">關都地方 · 全國圖鑑第一世代</div>
+    <div class="cover-tagline">探索草叢、捕捉寶可夢、鍛鍊隊伍、挑戰無限之塔——<br>一場完全用文字寫成的寶可夢旅程。</div>
+  </div>`);
+  renderBar();
+  setOptions([
+    {label: hasSave ? "▶ 開始遊戲（讀取存檔）" : "▶ 開始遊戲", action: hasSave ? screenContinue : screenTitle},
+    {label:"📖 遊戲簡介", action:screenIntro}
+  ]);
+}
+function screenIntro(){
+  clearLog();
+  print('<span class="em">— 遊戲簡介 —</span>');
+  print('這是一款純文字的寶可夢養成、戰鬥、收集遊戲，收錄第一世代全 151 隻寶可夢。');
+  hr();
+  print('<span class="intro-h">◆ 探索</span>　往草叢前進會隨機遭遇野生寶可夢，區域越深等級越高。');
+  print('<span class="intro-h">◆ 戰鬥</span>　選擇招式攻擊，或用道具治療、解除異常狀態；速度快的一方先出手。');
+  print('<span class="intro-h">◆ 捕捉</span>　用精靈球捕捉野生寶可夢，對方血量越低成功率越高。');
+  print('<span class="intro-h">◆ 培養</span>　戰鬥獲勝可得經驗值，等級到了會自動進化，最高 Lv.100。');
+  print('<span class="intro-h">◆ 隊伍</span>　最多帶 6 隻上場，抓超過的會送進倉庫；可隨時查看隊伍、設定隊長、與倉庫交換寶可夢，完全不用浪費戰鬥中的回合。');
+  print('<span class="intro-h">◆ 無限之塔</span>　依全國圖鑑順序一路挑戰，打倒小魔王（最終進化型）能拿硬幣，集滿硬幣可以挑戰急凍鳥、閃電鳥、火焰鳥、超夢、夢幻五大神獸。');
+  hr();
+  print('<span class="sys">目標：抓齊全國圖鑑 151 隻、收服五大神獸！進度會自動儲存在這台裝置的瀏覽器裡。</span>');
+  setOptions([{label:"← 返回封面", action:screenCover}]);
 }
 
 /* ---------- TITLE / START ---------- */
@@ -1156,7 +1203,8 @@ function screenDex(){
 }
 
 /* ---------- BOOT ---------- */
-if(loadGame()){ screenContinue(); } else { screenTitle(); }
+loadGame();
+screenCover();
 </script>
 </body>
 </html>
