@@ -67,7 +67,6 @@ header .sub{font-size:11px; color:var(--dim); margin-top:2px;}
 .shiny{color:#ff9ef5;}
 .boss{color:#ff9d4d;}
 .cover{ text-align:center; padding:22px 6px 10px; }
-.cover-pika{ margin:0 auto 10px; display:block; filter:drop-shadow(0 3px 8px rgba(0,0,0,.4)); }
 .pokeball{
   width:68px; height:68px; margin:0 auto 16px; border-radius:50%;
   background:linear-gradient(to bottom, #e0473f 0%, #e0473f 44%, #1a1a1a 44%, #1a1a1a 56%, #f2f2f2 56%, #f2f2f2 100%);
@@ -86,8 +85,8 @@ header .sub{font-size:11px; color:var(--dim); margin-top:2px;}
 <body>
 <div id="app">
   <header>
-    <div class="title">◆ 寶可夢文字冒險 · 關都地方</div>
-    <div class="sub" id="hdrsub">全國圖鑑第一世代 151 隻</div>
+    <div class="title">◆ 寶可夢文字冒險 · 關都・城都地方</div>
+    <div class="sub" id="hdrsub">全國圖鑑第一・二世代 251 隻</div>
   </header>
   <div id="log"></div>
   <div id="bar"></div>
@@ -147,11 +146,44 @@ const DEX = [
 ["化石翼龍","岩石","飛行",3],["卡比獸","一般",null,4],["急凍鳥","冰","飛行",5],
 ["閃電鳥","電","飛行",5],["火焰鳥","火","飛行",5],["迷你龍","龍",null,1],
 ["哈克龍","龍",null,2],["快龍","龍","飛行",4],["超夢","超能力",null,5],
-["夢幻","超能力",null,5]
-
+["夢幻","超能力",null,5],
+["菊草葉","草",null,1],["月桂葉","草",null,2],["大竺葵","草",null,3],
+["火球鼠","火",null,1],["火岩鼠","火",null,2],["火爆獸","火",null,3],
+["小鋸鱷","水",null,1],["藍鱷","水",null,2],["大力鱷","水",null,3],
+["尾立","一般",null,1],["大尾立","一般",null,2],["咕咕","一般","飛行",1],
+["貓頭夜鷹","一般","飛行",2],["芭瓢蟲","蟲","飛行",1],["安瓢蟲","蟲","飛行",2],
+["圓絲蛛","蟲","毒",1],["阿利多斯","蟲","毒",2],["叉字蝠","毒","飛行",3],
+["燈籠魚","水","電",1],["電燈怪","水","電",2],["皮丘","電",null,1],
+["皮寶寶","妖精",null,1],["寶寶丁","一般","妖精",1],["波克比","妖精",null,1],
+["波克基古","妖精","飛行",2],["天然雀","超能力","飛行",1],["天然鳥","超能力","飛行",2],
+["咩利羊","電",null,1],["茸茸羊","電",null,2],["電龍","電",null,3],
+["美麗花","草",null,3],["瑪力露","水","妖精",1],["瑪力露麗","水","妖精",2],
+["樹才怪","岩石",null,2],["蚊香蛙皇","水",null,3],["毽子草","草","飛行",1],
+["毽子花","草","飛行",2],["毽子棉","草","飛行",3],["長尾怪手","一般",null,2],
+["向日種子","草",null,1],["向日花怪","草",null,2],["蜻蜻蜓","蟲","飛行",2],
+["烏波","水","地面",1],["沼王","水","地面",2],["太陽伊布","超能力",null,3],
+["月亮伊布","惡",null,3],["黑暗鴉","惡","飛行",2],["呆呆王","水","超能力",3],
+["夢妖","幽靈",null,2],["未知圖騰","超能力",null,1],["果然翁","超能力",null,2],
+["麒麟奇","一般","超能力",2],["榛果球","蟲",null,1],["佛烈托斯","蟲","鋼",2],
+["土龍弟弟","一般",null,2],["天蠍","地面","飛行",2],["大鋼蛇","鋼","地面",4],
+["布魯","妖精",null,1],["布魯皇","妖精",null,2],["千針魚","水","毒",2],
+["巨鉗螳螂","蟲","鋼",3],["壺壺","蟲","岩石",2],["赫拉克羅斯","蟲","格鬥",3],
+["狃拉","惡","冰",2],["熊寶寶","一般",null,1],["圈圈熊","一般",null,3],
+["熔岩蟲","火",null,1],["熔岩蝸牛","火","岩石",2],["小山豬","冰","地面",1],
+["長毛豬","冰","地面",2],["太陽珊瑚","水","岩石",2],["鐵炮魚","水",null,1],
+["章魚桶","水",null,2],["信使鳥","冰","飛行",2],["巨翅飛魚","水","飛行",2],
+["盔甲鳥","鋼","飛行",3],["戴魯比","惡","火",1],["黑魯加","惡","火",3],
+["刺龍王","水","龍",4],["小小象","地面",null,1],["頓甲","地面",null,3],
+["多邊獸Ⅱ","一般",null,3],["驚角鹿","一般",null,2],["圖圖犬","一般",null,2],
+["無畏小子","格鬥",null,1],["戰舞郎","格鬥",null,2],["迷唇娃","冰","超能力",1],
+["電擊怪","電",null,1],["鴨嘴寶寶","火",null,1],["大奶罐","一般",null,3],
+["幸福蛋","一般",null,3],["雷公","電",null,5],["炎帝","火",null,5],
+["水君","水",null,5],["幼基拉斯","岩石","地面",1],["沙基拉斯","岩石","地面",2],
+["班基拉斯","岩石","惡",4],["洛奇亞","超能力","飛行",5],["鳳王","火","飛行",5],
+["時拉比","超能力","草",5]
 ];
 const TYPES = ["一般","火","水","電","草","冰","格鬥","毒","地面","飛行","超能力","蟲","岩石","幽靈","龍","惡","鋼","妖精"];
-const EVO = {0:[1,16],1:[2,32],3:[4,16],4:[5,36],6:[7,16],7:[8,36],9:[10,7],10:[11,10],12:[13,7],13:[14,10],15:[16,18],16:[17,36],18:[19,20],20:[21,20],22:[23,22],24:[25,20],26:[27,22],28:[29,16],29:[30,36],31:[32,16],32:[33,36],34:[35,34],36:[37,28],38:[39,30],40:[41,22],42:[43,21],43:[44,32],45:[46,24],47:[48,31],49:[50,26],51:[52,28],53:[54,33],55:[56,28],57:[58,32],59:[60,25],60:[61,34],62:[63,16],63:[64,36],65:[66,28],66:[67,42],68:[69,21],69:[70,32],71:[72,30],73:[74,25],74:[75,38],76:[77,40],78:[79,37],80:[81,30],83:[84,31],85:[86,34],87:[88,38],89:[90,30],91:[92,25],92:[93,38],95:[96,26],97:[98,28],99:[100,30],101:[102,32],103:[104,28],108:[109,35],110:[111,42],115:[116,32],117:[118,33],119:[120,28],128:[129,20],132:[[133,134,135],28],137:[138,40],139:[140,40],146:[147,30],147:[148,55]};
+const EVO = {0:[1,16],1:[2,32],3:[4,16],4:[5,36],6:[7,16],7:[8,36],9:[10,7],10:[11,10],12:[13,7],13:[14,10],15:[16,18],16:[17,36],18:[19,20],20:[21,20],22:[23,22],24:[25,20],26:[27,22],28:[29,16],29:[30,36],31:[32,16],32:[33,36],34:[35,34],36:[37,28],38:[39,30],40:[41,22],42:[43,21],43:[[44,181],32],45:[46,24],47:[48,31],49:[50,26],51:[52,28],53:[54,33],55:[56,28],57:[58,32],59:[60,25],60:[[61,185],34],62:[63,16],63:[64,36],65:[66,28],66:[67,42],68:[69,21],69:[70,32],71:[72,30],73:[74,25],74:[75,38],76:[77,40],78:[[79,198],37],80:[81,30],83:[84,31],85:[86,34],87:[88,38],89:[90,30],91:[92,25],92:[93,38],95:[96,26],97:[98,28],99:[100,30],101:[102,32],103:[104,28],108:[109,35],110:[111,42],115:[116,32],117:[118,33],119:[120,28],128:[129,20],132:[[133,134,135,195,196],28],137:[138,40],139:[140,40],146:[147,30],147:[148,55],41:[168,40],94:[207,40],112:[241,40],116:[229,45],122:[211,40],136:[232,40],151:[152,16],152:[153,32],154:[155,14],155:[156,36],157:[158,18],158:[159,30],160:[161,15],162:[163,20],164:[165,18],166:[167,22],169:[170,27],171:[24,15],172:[34,15],173:[38,15],174:[175,25],176:[177,25],178:[179,15],179:[180,30],182:[183,18],186:[187,18],187:[188,27],190:[191,22],193:[194,20],203:[204,31],208:[209,23],215:[216,30],217:[218,38],219:[220,33],222:[223,25],227:[228,24],230:[231,25],235:[[105,106,236],20],237:[123,30],238:[124,30],239:[125,30],245:[246,30],246:[247,55]};
 // simplified effectiveness: attacker type -> strong against these types (x1.6), weak against these (x0.6)
 const CHART = {
  "火":{s:["草","蟲","冰","鋼"],w:["水","火","岩石","龍"]},
@@ -168,7 +200,10 @@ const CHART = {
  "岩石":{s:["火","冰","飛行","蟲"],w:["格鬥","地面","鋼"]},
  "幽靈":{s:["幽靈","超能力"],w:["惡"]},
  "龍":{s:["龍"],w:["鋼"]},
- "一般":{s:[],w:["岩石","鋼"]}
+ "一般":{s:[],w:["岩石","鋼"]},
+ "惡":{s:["幽靈","超能力"],w:["格鬥","惡","妖精"]},
+ "鋼":{s:["冰","岩石","妖精"],w:["火","水","電","鋼"]},
+ "妖精":{s:["格鬥","龍","惡"],w:["火","毒","鋼"]}
 };
 function eff(atkType, defTypes){
   let m = 1;
@@ -270,13 +305,14 @@ function typeStr(m){ return m.t2 ? m.t1+"／"+m.t2 : m.t1; }
 function isFinalForm(dexIdx){ return !EVO[dexIdx]; }
 
 /* ---------- TOWER MODE ---------- */
-const LEGENDARIES = [143,144,145,149,150]; // 急凍鳥 閃電鳥 火焰鳥 超夢 夢幻
-const NONLEG = []; for(let i=0;i<151;i++){ if(!LEGENDARIES.includes(i)) NONLEG.push(i); }
+const LEGENDARIES = [143,144,145,149,150, 242,243,244,248,249,250]; // 急凍鳥 閃電鳥 火焰鳥 超夢 夢幻 雷公 炎帝 水君 洛奇亞 鳳王 時拉比
+const NONLEG = []; for(let i=0;i<DEX.length;i++){ if(!LEGENDARIES.includes(i)) NONLEG.push(i); }
 const BOSSES = NONLEG.filter(isFinalForm); // 最終進化型（含無進化的單一型態），全破後的無盡循環名單
 const COIN_COST = 50;
-const LEGENDARY_COST = [50,50,60,90,150];
-const MEW_IDX = 4;
-const MEW_MIN_LEVEL = 70;
+const LEGENDARY_COST = [50,50,60,90,150, 80,80,80,120,120,200];
+// 幻之寶可夢（夢幻、時拉比）：除了硬幣，還要清空全部樓層、隊長達到指定等級
+const MYTHIC_MIN_LEVEL = {4:70, 10:85}; // 神獸順序編號 -> 隊長最低等級
+function isMythicPtr(ptr){ return MYTHIC_MIN_LEVEL[ptr] !== undefined; }
 function isBossFloor(ptr){ return ptr >= NONLEG.length || isFinalForm(NONLEG[ptr]); }
 // 本段（進化鏈）第一層：往回找到上一個小魔王之後那一層
 function segmentStart(ptr){
@@ -294,14 +330,14 @@ function segmentBossName(){
 function legendaryGate(ptr){
   const cost = LEGENDARY_COST[ptr] ?? COIN_COST;
   const coinsOk = state.tower.coins >= cost;
-  if(ptr !== MEW_IDX) return { ok: coinsOk, cost, coinsOk, floorsOk:true, levelOk:true };
+  if(!isMythicPtr(ptr)) return { ok: coinsOk, cost, coinsOk, floorsOk:true, levelOk:true };
   const floorsOk = state.tower.floorPtr >= NONLEG.length;
   const lead = state.party[0];
-  const levelOk = !!lead && lead.level >= MEW_MIN_LEVEL;
+  const levelOk = !!lead && lead.level >= MYTHIC_MIN_LEVEL[ptr];
   return { ok: coinsOk && floorsOk && levelOk, cost, coinsOk, floorsOk, levelOk };
 }
 function towerFloorLevel(ptr){ return Math.min(MAX_LEVEL, 6 + Math.floor(ptr*1.15)); }
-function legendaryLevel(ptr){ return Math.min(MAX_LEVEL, 48 + ptr*12); }
+function legendaryLevel(ptr){ return Math.min(MAX_LEVEL, ptr < 5 ? 48 + ptr*12 : 62 + (ptr-5)*7); }
 function endlessMul(){ return 1 + state.tower.loop * ENDLESS_STAT_STEP; }
 
 /* ---------- ITEMS / SHOP ---------- */
@@ -361,8 +397,8 @@ function renderBar(){
   const lead = state.party[0];
   const money = `<span>💰 ${state.money}</span><span>🪙 ${state.tower.coins}</span>`;
   barEl.innerHTML = lead
-    ? `<span>隊長: ${esc(monName(lead))} Lv.${lead.level} HP ${lead.hp}/${lead.maxhp}</span><span>圖鑑 ${state.caught.size}/151</span><span>精靈球 x${state.bag.pokeball}</span>${money}`
-    : `<span>圖鑑 ${state.caught.size}/151</span>`;
+    ? `<span>隊長: ${esc(monName(lead))} Lv.${lead.level} HP ${lead.hp}/${lead.maxhp}</span><span>圖鑑 ${state.caught.size}/${DEX.length}</span><span>精靈球 x${state.bag.pokeball}</span>${money}`
+    : `<span>圖鑑 ${state.caught.size}/${DEX.length}</span>`;
 }
 function setOptions(list){
   holdOptionsUntilRevealed();
@@ -431,7 +467,7 @@ function screenContinue(){
   clearLog();
   print('<span class="em">讀取到本機存檔！</span>');
   const lead = state.party[0];
-  print(`隊長：${nm(lead)} Lv.${lead.level}　圖鑑 ${state.caught.size}/151　💰 ${state.money}　🪙 ${state.tower.coins}`);
+  print(`隊長：${nm(lead)} Lv.${lead.level}　圖鑑 ${state.caught.size}/${DEX.length}　💰 ${state.money}　🪙 ${state.tower.coins}`);
   if(state.tower.inTower) print('<span class="sys">（上次離開時你還在無限之塔裡）</span>');
   renderBar();
   setOptions([
@@ -455,7 +491,7 @@ function screenCover(){
   print(`<div class="cover">
     <div class="pokeball" aria-hidden="true"><span></span></div>
     <div class="cover-title">寶可夢文字冒險</div>
-    <div class="cover-sub">關都地方 · 全國圖鑑第一世代</div>
+    <div class="cover-sub">關都・城都地方 · 全國圖鑑第一、二世代</div>
     <div class="cover-tagline">探索草叢、捕捉寶可夢、鍛鍊隊伍、挑戰無限之塔——<br>一場完全用文字寫成的寶可夢旅程。</div>
   </div>`);
   renderBar();
@@ -467,33 +503,51 @@ function screenCover(){
 function screenIntro(){
   clearLog();
   print('<span class="em">— 遊戲簡介 —</span>');
-  print('這是一款純文字的寶可夢養成、戰鬥、收集遊戲，收錄第一世代全 151 隻寶可夢。');
+  print('這是一款純文字的寶可夢養成、戰鬥、收集遊戲，收錄第一、二世代全 251 隻寶可夢（關都＋城都）。');
   hr();
   print('<span class="intro-h">◆ 探索</span>　往草叢前進會隨機遭遇野生寶可夢，區域越深等級越高。');
   print('<span class="intro-h">◆ 戰鬥</span>　選擇招式攻擊，或用道具治療、解除異常狀態；速度快的一方先出手。');
   print('<span class="intro-h">◆ 捕捉</span>　用精靈球捕捉野生寶可夢，對方血量越低成功率越高。');
   print('<span class="intro-h">◆ 培養</span>　戰鬥獲勝可得經驗值，等級到了會自動進化，最高 Lv.100。');
   print('<span class="intro-h">◆ 隊伍</span>　最多帶 6 隻上場，抓超過的會送進倉庫；可隨時查看隊伍、設定隊長、與倉庫交換寶可夢，完全不用浪費戰鬥中的回合。');
-  print('<span class="intro-h">◆ 無限之塔</span>　依全國圖鑑順序一路挑戰，打倒小魔王（最終進化型）能拿硬幣，集滿硬幣可以挑戰急凍鳥、閃電鳥、火焰鳥、超夢、夢幻五大神獸。');
+  print('<span class="intro-h">◆ 無限之塔</span>　依全國圖鑑順序一路挑戰，打倒小魔王（最終進化型）能拿硬幣，集滿硬幣可以挑戰急凍鳥、閃電鳥、火焰鳥、超夢、夢幻，以及雷公、炎帝、水君、洛奇亞、鳳王、時拉比共十一隻傳說寶可夢。');
   hr();
-  print('<span class="sys">目標：抓齊全國圖鑑 151 隻、收服五大神獸！進度會自動儲存在這台裝置的瀏覽器裡。</span>');
+  print('<span class="sys">目標：抓齊全國圖鑑 251 隻、收服所有傳說寶可夢！進度會自動儲存在這台裝置的瀏覽器裡。</span>');
   setOptions([{label:"← 返回封面", action:screenCover}]);
 }
 
 /* ---------- TITLE / START ---------- */
 function screenTitle(){
   clearLog();
-  print('<span class="em">歡迎來到關都地方。</span>');
+  print('<span class="em">歡迎來到寶可夢的世界。</span>');
   print('這是一場純文字寶可夢冒險：探索小徑、遭遇野生寶可夢、捕捉、戰鬥、練等，收集你的圖鑑。');
   hr();
-  print('請選擇你的第一隻夥伴寶可夢：');
+  print('請先選擇你出身的地方（世代）：');
+  print('<span class="sys">選擇只影響初始夥伴，冒險開始後兩個世代的寶可夢都會遇到。</span>');
   renderBar();
   setOptions([
+    {label:"第一世代　關都地方（妙蛙種子／小火龍／傑尼龜／皮卡丘）", action:()=>screenStarterPick(1)},
+    {label:"第二世代　城都地方（菊草葉／火球鼠／小鋸鱷）", action:()=>screenStarterPick(2)},
+    {label:"← 返回封面", action:screenCover}
+  ]);
+}
+function screenStarterPick(gen){
+  clearLog();
+  print(gen===1 ? '<span class="em">— 關都地方 —</span>' : '<span class="em">— 城都地方 —</span>');
+  print('請選擇你的第一隻夥伴寶可夢：');
+  renderBar();
+  const list = gen===1 ? [
     {label:"妙蛙種子（草／毒）－均衡型，擅長消耗戰", action:()=>pickStarter(0)},
     {label:"小火龍（火）－高攻擊，後期強力", action:()=>pickStarter(3)},
     {label:"傑尼龜（水）－高防禦，穩健耐久", action:()=>pickStarter(6)},
     {label:"皮卡丘（電）－速度快，先手優勢", action:()=>pickStarter(24)}
-  ]);
+  ] : [
+    {label:"菊草葉（草）－穩健的草系，耐打", action:()=>pickStarter(151)},
+    {label:"火球鼠（火）－火力型，後期強力", action:()=>pickStarter(154)},
+    {label:"小鋸鱷（水）－物理強攻，穩健耐久", action:()=>pickStarter(157)}
+  ];
+  list.push({label:"← 重新選擇世代", action:screenTitle});
+  setOptions(list);
 }
 function pickStarter(idx){
   const mon = makeMon(idx, 5, {shiny:false});
@@ -639,8 +693,8 @@ function currentTowerFoe(){
   }
   return {dexIdx: BOSSES[t.endlessPtr % BOSSES.length], lvl:MAX_LEVEL, boss:true, endless:true};
 }
-function screenTower(){
-  clearLog();
+function screenTower(keepLog){
+  if(keepLog===true) hr(); else clearLog();
   const t = state.tower;
   t.inTower = true;
   saveGame();
@@ -668,22 +722,22 @@ function screenTower(){
     const ldex = LEGENDARIES[t.legendaryPtr];
     const le = DEX[ldex];
     const g = legendaryGate(t.legendaryPtr);
-    const isMew = t.legendaryPtr === MEW_IDX;
+    const isMew = isMythicPtr(t.legendaryPtr);
     if(isMew){
       print(`<span class="em">下一位是「幻之寶可夢」：#${String(ldex+1).padStart(3,'0')} ${esc(le[0])}</span>`);
-      print(`夢幻極為稀有，需要同時滿足：`);
+      print(`${esc(le[0])}極為稀有，需要同時滿足：`);
       print(`　${g.coinsOk?'✅':'❌'} 硬幣 ≥ ${g.cost} 枚（目前 ${t.coins}）`);
       print(`　${g.floorsOk?'✅':'❌'} 清空塔內全部 ${NONLEG.length} 一般樓層（目前 ${Math.min(t.floorPtr,NONLEG.length)}）`);
-      print(`　${g.levelOk?'✅':'❌'} 隊長等級 ≥ Lv.${MEW_MIN_LEVEL}（目前 ${state.party[0]?('Lv.'+state.party[0].level):'無隊長'}）`);
+      print(`　${g.levelOk?'✅':'❌'} 隊長等級 ≥ Lv.${MYTHIC_MIN_LEVEL[t.legendaryPtr]}（目前 ${state.party[0]?('Lv.'+state.party[0].level):'無隊長'}）`);
     } else {
       print(`下一位神獸：#${String(ldex+1).padStart(3,'0')} ${esc(le[0])}　需要 ${g.cost} 枚硬幣`);
     }
     opts.push({
-      label: g.ok ? `🪙 花費 ${g.cost} 枚硬幣挑戰 ${le[0]}！` : (isMew ? '（夢幻：尚未達成全部條件）' : `（神獸：硬幣不足，還差 ${g.cost - t.coins} 枚）`),
+      label: g.ok ? `🪙 花費 ${g.cost} 枚硬幣挑戰 ${le[0]}！` : (isMew ? `（${le[0]}：尚未達成全部條件）` : `（神獸：硬幣不足，還差 ${g.cost - t.coins} 枚）`),
       action: g.ok ? startLegendaryChallenge : ()=>screenTower()
     });
   } else {
-    print('<span class="good">五大神獸皆已降服！</span>');
+    print('<span class="good">所有神獸皆已降服！</span>');
   }
   opts.push({label:"查看隊伍", action:()=>screenParty(screenTower)});
   if(atSegmentStart()){
@@ -725,7 +779,7 @@ function startLegendaryChallenge(){
   }
   const t = state.tower;
   const g = legendaryGate(t.legendaryPtr);
-  if(!g.ok){ clearLog(); print('<span class="bad">條件尚未達成。</span>'); return screenTower(); }
+  if(!g.ok){ clearLog(); print('<span class="bad">條件尚未達成。</span>'); return screenTower(true); }
   t.coins -= g.cost;
   const dexIdx = LEGENDARIES[t.legendaryPtr];
   const wild = makeMon(dexIdx, legendaryLevel(t.legendaryPtr));
@@ -892,6 +946,7 @@ function tryCatch(){
   const chance = Math.min(0.92, (1-hpRatio)*0.75 + 0.15);
   print(`你對 ${nm(w)} 丟出了精靈球……`);
   if(Math.random() < chance){
+    w.status = null; w.atkMul = 1; w.defMul = 1;
     state.caught.add(w.dex);
     if(w.shiny) state.shinyCaught.add(w.dex);
     print(`<span class="good">抓到了！${nm(w)} 已加入圖鑑！</span>`);
@@ -972,9 +1027,9 @@ function doSwitch(idx){
 }
 function evolveIfReady(p){
   const rule = EVO[p.dex];
-  if(!rule) return;
+  if(!rule) return false;
   let [toIdx, lvl] = rule;
-  if(p.level < lvl) return;
+  if(p.level < lvl) return false;
   if(Array.isArray(toIdx)) toIdx = toIdx[Math.floor(Math.random()*toIdx.length)]; // 伊布：隨機進化成三種之一
   const oldName = monName(p);
   const e = DEX[toIdx];
@@ -987,10 +1042,13 @@ function evolveIfReady(p){
   state.caught.add(toIdx); state.seen.add(toIdx);
   if(p.shiny) state.shinyCaught.add(toIdx);
   print(`<span class="em">✦ ${esc(oldName)} 進化成了 ${nm(p)}！</span>`);
+  return true;
 }
+function evolveFully(p){ while(evolveIfReady(p)){} }
 function grantExp(p, oppLevel, mult, verb){
   if(p.level >= MAX_LEVEL){
     p.exp = 0;
+    evolveFully(p); // 滿級才抓到、或舊存檔中尚未進化的寶可夢，也能進化
     print(`<span class="sys">${nm(p)} 已經是 Lv.${MAX_LEVEL}，經驗值無法再增加。</span>`);
     return;
   }
@@ -1003,13 +1061,16 @@ function grantExp(p, oppLevel, mult, verb){
     const gainHp = st.hp-p.maxhp;
     p.maxhp=st.hp; p.hp=Math.min(p.hp+gainHp, p.maxhp); p.atk=st.atk; p.def=st.def; p.spd=st.spd;
     print(`<span class="em">${nm(p)} 升到了 Lv.${p.level}！</span>`);
-    evolveIfReady(p);
+    evolveFully(p);
   }
   if(p.level >= MAX_LEVEL){ p.exp = 0; print(`<span class="em">${nm(p)} 達到等級上限 Lv.${MAX_LEVEL}！</span>`); }
 }
 function giveMoney(amount){
   state.money += amount;
   print(`<span class="good">獲得了 💰 ${amount}！（目前 ${state.money}）</span>`);
+}
+function warnIfWiped(){
+  if(noAlive()) print('<span class="bad">你的隊伍已經沒有能戰鬥的寶可夢了！請先回補給站治療。</span>');
 }
 function winBattle(){
   const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
@@ -1035,9 +1096,10 @@ function winBattle(){
       print('<span class="good">小魔王倒下時留下了一道光，你的隊伍全部回滿了！現在可以返回地面。</span>');
     }
     if(!b.endless && t.floorPtr === NONLEG.length){
-      print('<span class="boss">塔內 146 層全數突破！接下來會依圖鑑順序不斷出現小魔王。</span>');
+      print(`<span class="boss">塔內 ${NONLEG.length} 層全數突破！接下來會依圖鑑順序不斷出現小魔王。</span>`);
     }
-    return screenTower();
+    warnIfWiped();
+    return screenTower(true);
   }
   if(mode==='legendary'){
     giveMoney(w.level * 20);
@@ -1047,9 +1109,11 @@ function winBattle(){
     if(state.party.length<6){ state.party.push(w); print(`<span class="good">✦ ${nm(w)} 被你的實力降服，加入了隊伍！</span>`); }
     else { state.box.push(w); print(`<span class="good">✦ ${nm(w)} 被降服，送往了倉庫！</span>`); }
     state.tower.legendaryPtr++;
-    return screenTower();
+    warnIfWiped();
+    return screenTower(true);
   }
   giveMoney(w.level * 10);
+  warnIfWiped();
   screenField();
 }
 function loseBattle(){
@@ -1062,10 +1126,11 @@ function loseBattle(){
 }
 
 /* ---------- PARTY / BAG / DEX ---------- */
-function screenParty(back){
+function screenParty(back, msg){
   back = (typeof back === 'function') ? back : toField;
   clearLog();
   print('<span class="em">— 隊伍 —</span>');
+  if(typeof msg === 'string') print(msg);
   print('<span class="sys">隊長（1號位）會優先上場戰鬥。點下方「設為隊長」可免費調整順序，不會浪費戰鬥中的一回合。</span>');
   hr();
   if(state.party.length===0) print('（空）');
@@ -1091,9 +1156,7 @@ function setLeader(idx, back){
   const [m] = state.party.splice(idx,1);
   state.party.unshift(m);
   saveGame();
-  clearLog();
-  print(`<span class="good">★ ${nm(m)} 成為新的隊長！下次戰鬥會由牠先上場，不需要浪費回合切換。</span>`);
-  screenParty(back);
+  screenParty(back, `<span class="good">★ ${nm(m)} 成為新的隊長！下次戰鬥會由牠先上場，不需要浪費回合切換。</span>`);
 }
 function screenReleaseSelect(back){
   clearLog();
@@ -1107,19 +1170,17 @@ function screenReleaseSelect(back){
 }
 function releaseToBox(idx, back){
   if(state.party.length<=1){
-    clearLog(); print('<span class="bad">隊伍至少要留一隻寶可夢，無法再送走了！</span>');
-    return screenParty(back);
+    return screenParty(back, '<span class="bad">隊伍至少要留一隻寶可夢，無法再送走了！</span>');
   }
   const [m] = state.party.splice(idx,1);
   state.box.push(m);
   saveGame();
-  clearLog();
-  print(`<span class="sys">${nm(m)} 被送去了倉庫，隨時可以再拉回隊伍。</span>`);
-  screenParty(back);
+  screenParty(back, `<span class="sys">${nm(m)} 被送去了倉庫，隨時可以再拉回隊伍。</span>`);
 }
-function screenBox(back){
+function screenBox(back, msg){
   clearLog();
   print(`<span class="em">— 倉庫 —</span>　共 ${state.box.length} 隻`);
+  if(typeof msg === 'string') print(msg);
   if(state.box.length===0) print('（空，抓到超過 6 隻時才會送來這裡）');
   hr();
   const opts=[];
@@ -1135,13 +1196,11 @@ function screenBox(back){
   setOptions(opts);
 }
 function withdrawFromBox(boxIdx, back){
-  if(state.party.length>=6){ clearLog(); print('<span class="bad">隊伍已滿了！</span>'); return screenBox(back); }
+  if(state.party.length>=6){ return screenBox(back, '<span class="bad">隊伍已滿了！</span>'); }
   const [m] = state.box.splice(boxIdx,1);
   state.party.push(m);
   saveGame();
-  clearLog();
-  print(`<span class="good">${nm(m)} 加入了隊伍！</span>`);
-  screenBox(back);
+  screenBox(back, `<span class="good">${nm(m)} 加入了隊伍！</span>`);
 }
 function screenSwapSelect(boxIdx, back){
   clearLog();
@@ -1160,9 +1219,7 @@ function doSwapWithBox(boxIdx, partyIdx, back){
   state.box[boxIdx] = partyMon;
   state.party[partyIdx] = boxMon;
   saveGame();
-  clearLog();
-  print(`<span class="good">${nm(partyMon)} 與 ${nm(boxMon)} 交換了！</span>`);
-  screenBox(back);
+  screenBox(back, `<span class="good">${nm(partyMon)} 與 ${nm(boxMon)} 交換了！</span>`);
 }
 function screenBag(){
   clearLog();
@@ -1183,11 +1240,11 @@ function screenBag(){
 let dexPage=0;
 function screenDex(){
   clearLog();
-  print(`<span class="em">— 全國圖鑑（第一世代）—</span>　已捕捉 ${state.caught.size} / 151　✨ 色違 ${state.shinyCaught.size}`);
+  print(`<span class="em">— 全國圖鑑（第一・二世代）—</span>　已捕捉 ${state.caught.size} / ${DEX.length}　✨ 色違 ${state.shinyCaught.size}`);
   hr();
   const perPage=15;
   const start=dexPage*perPage;
-  for(let i=start;i<Math.min(start+perPage,151);i++){
+  for(let i=start;i<Math.min(start+perPage,DEX.length);i++){
     const e=DEX[i];
     const no=String(i+1).padStart(3,'0');
     const shinyMark = state.shinyCaught.has(i) ? ' <span class="shiny">✨</span>' : '';
@@ -1196,7 +1253,7 @@ function screenDex(){
     else print(`#${no} <span class="sys">？？？</span>`);
   }
   const opts=[];
-  if(start+perPage<151) opts.push({label:"下一頁", action:()=>{dexPage++; screenDex();}});
+  if(start+perPage<DEX.length) opts.push({label:"下一頁", action:()=>{dexPage++; screenDex();}});
   if(dexPage>0) opts.push({label:"上一頁", action:()=>{dexPage--; screenDex();}});
   opts.push({label:"返回", action:()=>{dexPage=0; toField();}});
   setOptions(opts);
