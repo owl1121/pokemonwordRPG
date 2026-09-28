@@ -165,6 +165,18 @@ header{border-radius:24px 24px 0 0;}
 .day.blank{border:none;}
 .bigclaim{width:100%;padding:11px;border:none;border-radius:16px;background:var(--good);color:#0d1210;font-family:inherit;font-size:14px;font-weight:bold;margin-bottom:12px;}
 .bigclaim.off{background:#1a2a22;color:var(--dim);}
+/* ---- 立體按鈕：底部厚度，按下去會沉 ---- */
+.opt, #menuBtn, .claim, .bigclaim, .mhead .tab{
+  position:relative; transition:transform .06s, box-shadow .06s;
+  box-shadow:0 4px 0 #07100b, 0 5px 8px rgba(0,0,0,.35);
+}
+.opt{ background:linear-gradient(#17261e,#111b16); margin-bottom:2px; }
+.opt:active, #menuBtn:active, .claim:active, .bigclaim:active, .mhead .tab:active{
+  transform:translateY(3px); box-shadow:0 1px 0 #07100b, 0 1px 3px rgba(0,0,0,.35);
+}
+.opt:active{ background:linear-gradient(#111b16,#17261e); }
+.opt.off, .opt.off:active, .bigclaim.off{ transform:none; box-shadow:0 2px 0 #07100b; }
+#opts{ gap:9px 7px; }
 </style>
 </head>
 <body>
@@ -185,147 +197,20 @@ header{border-radius:24px 24px 0 0;}
   <div id="toast"></div>
 </div>
 
+<script src="data.js"></script>
 <script>
-/* ---------- DEX DATA: [name, type1, type2|null, tier] tier 1-5 controls stat scale ---------- */
-const DEX = [
-["妙蛙種子","草","毒",1],["妙蛙草","草","毒",2],["妙蛙花","草","毒",3],
-["小火龍","火",null,1],["火恐龍","火",null,2],["噴火龍","火","飛行",3],
-["傑尼龜","水",null,1],["卡咪龜","水",null,2],["水箭龜","水",null,3],
-["綠毛蟲","蟲",null,1],["鐵甲蛹","蟲",null,1],["巴大蝶","蟲","飛行",3],
-["獨角蟲","蟲","毒",1],["鐵殼蛹","蟲","毒",1],["大針蜂","蟲","毒",3],
-["波波","一般","飛行",1],["比比鳥","一般","飛行",2],["大比鳥","一般","飛行",3],
-["小拉達","一般",null,1],["拉達","一般",null,2],["烈雀","一般","飛行",1],
-["大嘴雀","一般","飛行",2],["阿柏蛇","毒",null,1],["阿柏怪","毒",null,2],
-["皮卡丘","電",null,2],["雷丘","電",null,3],["穿山鼠","地面",null,1],
-["穿山王","地面",null,2],["尼多蘭","毒",null,1],["尼多娜","毒",null,2],
-["尼多后","毒","地面",3],["尼多朗","毒",null,1],["尼多力諾","毒",null,2],
-["尼多王","毒","地面",3],["皮皮","妖精",null,1],["皮可西","妖精",null,2],
-["六尾","火",null,1],["九尾","火",null,3],["胖丁","一般","妖精",1],
-["胖可丁","一般","妖精",2],["超音蝠","毒","飛行",1],["大嘴蝠","毒","飛行",2],
-["走路草","草","毒",1],["臭臭花","草","毒",2],["霸王花","草","毒",3],
-["派拉斯","蟲","草",1],["派拉斯特","蟲","草",2],["毛球","蟲","毒",1],
-["摩魯蛾","蟲","毒",2],["地鼠","地面",null,1],["三地鼠","地面",null,2],
-["喵喵","一般",null,1],["貓老大","一般",null,2],["可達鴨","水",null,1],
-["哥達鴨","水",null,2],["猴怪","格鬥",null,1],["火爆猴","格鬥",null,2],
-["卡蒂狗","火",null,1],["風速狗","火",null,3],["蚊香蝌蚪","水",null,1],
-["蚊香蛙","水",null,2],["快泳蛙","水","格鬥",3],["凱西","超能力",null,1],
-["勇吉拉","超能力",null,2],["胡地","超能力",null,3],["腕力","格鬥",null,1],
-["豪力","格鬥",null,2],["怪力","格鬥",null,3],["喇叭芽","草","毒",1],
-["口呆花","草","毒",2],["大食花","草","毒",3],["瑪瑙水母","水","毒",1],
-["毒刺水母","水","毒",2],["小拳石","岩石","地面",1],["隆隆石","岩石","地面",2],
-["隆隆岩","岩石","地面",3],["小火馬","火",null,1],["烈焰馬","火",null,2],
-["呆呆獸","水","超能力",1],["呆殼獸","水","超能力",2],["小磁怪","電","鋼",1],
-["三合一磁怪","電","鋼",2],["大蔥鴨","一般","飛行",2],["嘟嘟","一般","飛行",1],
-["嘟嘟利","一般","飛行",2],["小海獅","水",null,1],["白海獅","水","冰",2],
-["臭泥","毒",null,1],["臭臭泥","毒",null,2],["大舌貝","水",null,1],
-["刺甲貝","水","冰",2],["鬼斯","幽靈","毒",1],["鬼斯通","幽靈","毒",2],
-["耿鬼","幽靈","毒",3],["大岩蛇","岩石","地面",3],["催眠貘","超能力",null,1],
-["引夢貘人","超能力",null,2],["大鉗蟹","水",null,1],["巨鉗蟹","水",null,2],
-["霹靂電球","電",null,1],["頑皮雷彈","電",null,2],["蛋蛋","草","超能力",1],
-["椰蛋樹","草","超能力",2],["卡拉卡拉","地面",null,1],["嘎啦嘎啦","地面",null,2],
-["飛腿郎","格鬥",null,2],["快拳郎","格鬥",null,2],["大舌頭","一般",null,2],
-["瓦斯彈","毒",null,1],["雙彈瓦斯","毒",null,2],["獨角犀牛","地面","岩石",1],
-["鑽角犀獸","地面","岩石",2],["吉利蛋","一般",null,2],["蔓藤怪","草",null,2],
-["袋獸","一般",null,2],["墨海馬","水",null,1],["海刺龍","水",null,2],
-["角金魚","水",null,1],["金魚王","水",null,2],["海星星","水",null,1],
-["寶石海星","水","超能力",2],["魔牆人偶","超能力","妖精",2],["飛天螳螂","蟲","飛行",2],
-["迷唇姐","冰","超能力",2],["電擊獸","電",null,2],["鴨嘴火獸","火",null,2],
-["凱羅斯","蟲",null,2],["肯泰羅","一般",null,3],["鯉魚王","水",null,1],
-["暴鯉龍","水","飛行",3],["拉普拉斯","水","冰",4],["百變怪","一般",null,2],
-["伊布","一般",null,1],["水伊布","水",null,3],["雷伊布","電",null,3],
-["火伊布","火",null,3],["多邊獸","一般",null,3],["菊石獸","岩石","水",1],
-["多刺菊石獸","岩石","水",2],["化石盔","岩石","水",1],["鐮刀盔","岩石","水",2],
-["化石翼龍","岩石","飛行",3],["卡比獸","一般",null,4],["急凍鳥","冰","飛行",5],
-["閃電鳥","電","飛行",5],["火焰鳥","火","飛行",5],["迷你龍","龍",null,1],
-["哈克龍","龍",null,2],["快龍","龍","飛行",4],["超夢","超能力",null,5],
-["夢幻","超能力",null,5],
-["菊草葉","草",null,1],["月桂葉","草",null,2],["大竺葵","草",null,3],
-["火球鼠","火",null,1],["火岩鼠","火",null,2],["火爆獸","火",null,3],
-["小鋸鱷","水",null,1],["藍鱷","水",null,2],["大力鱷","水",null,3],
-["尾立","一般",null,1],["大尾立","一般",null,2],["咕咕","一般","飛行",1],
-["貓頭夜鷹","一般","飛行",2],["芭瓢蟲","蟲","飛行",1],["安瓢蟲","蟲","飛行",2],
-["圓絲蛛","蟲","毒",1],["阿利多斯","蟲","毒",2],["叉字蝠","毒","飛行",3],
-["燈籠魚","水","電",1],["電燈怪","水","電",2],["皮丘","電",null,1],
-["皮寶寶","妖精",null,1],["寶寶丁","一般","妖精",1],["波克比","妖精",null,1],
-["波克基古","妖精","飛行",2],["天然雀","超能力","飛行",1],["天然鳥","超能力","飛行",2],
-["咩利羊","電",null,1],["茸茸羊","電",null,2],["電龍","電",null,3],
-["美麗花","草",null,3],["瑪力露","水","妖精",1],["瑪力露麗","水","妖精",2],
-["樹才怪","岩石",null,2],["蚊香蛙皇","水",null,3],["毽子草","草","飛行",1],
-["毽子花","草","飛行",2],["毽子棉","草","飛行",3],["長尾怪手","一般",null,2],
-["向日種子","草",null,1],["向日花怪","草",null,2],["蜻蜻蜓","蟲","飛行",2],
-["烏波","水","地面",1],["沼王","水","地面",2],["太陽伊布","超能力",null,3],
-["月亮伊布","惡",null,3],["黑暗鴉","惡","飛行",2],["呆呆王","水","超能力",3],
-["夢妖","幽靈",null,2],["未知圖騰","超能力",null,1],["果然翁","超能力",null,2],
-["麒麟奇","一般","超能力",2],["榛果球","蟲",null,1],["佛烈托斯","蟲","鋼",2],
-["土龍弟弟","一般",null,2],["天蠍","地面","飛行",2],["大鋼蛇","鋼","地面",4],
-["布魯","妖精",null,1],["布魯皇","妖精",null,2],["千針魚","水","毒",2],
-["巨鉗螳螂","蟲","鋼",3],["壺壺","蟲","岩石",2],["赫拉克羅斯","蟲","格鬥",3],
-["狃拉","惡","冰",2],["熊寶寶","一般",null,1],["圈圈熊","一般",null,3],
-["熔岩蟲","火",null,1],["熔岩蝸牛","火","岩石",2],["小山豬","冰","地面",1],
-["長毛豬","冰","地面",2],["太陽珊瑚","水","岩石",2],["鐵炮魚","水",null,1],
-["章魚桶","水",null,2],["信使鳥","冰","飛行",2],["巨翅飛魚","水","飛行",2],
-["盔甲鳥","鋼","飛行",3],["戴魯比","惡","火",1],["黑魯加","惡","火",3],
-["刺龍王","水","龍",4],["小小象","地面",null,1],["頓甲","地面",null,3],
-["多邊獸Ⅱ","一般",null,3],["驚角鹿","一般",null,2],["圖圖犬","一般",null,2],
-["無畏小子","格鬥",null,1],["戰舞郎","格鬥",null,2],["迷唇娃","冰","超能力",1],
-["電擊怪","電",null,1],["鴨嘴寶寶","火",null,1],["大奶罐","一般",null,3],
-["幸福蛋","一般",null,3],["雷公","電",null,5],["炎帝","火",null,5],
-["水君","水",null,5],["幼基拉斯","岩石","地面",1],["沙基拉斯","岩石","地面",2],
-["班基拉斯","岩石","惡",4],["洛奇亞","超能力","飛行",5],["鳳王","火","飛行",5],
-["時拉比","超能力","草",5]
-];
-const TYPES = ["一般","火","水","電","草","冰","格鬥","毒","地面","飛行","超能力","蟲","岩石","幽靈","龍","惡","鋼","妖精"];
-const EVO = {0:[1,16],1:[2,32],3:[4,16],4:[5,36],6:[7,16],7:[8,36],9:[10,7],10:[11,10],12:[13,7],13:[14,10],15:[16,18],16:[17,36],18:[19,20],20:[21,20],22:[23,22],24:[25,20],26:[27,22],28:[29,16],29:[30,36],31:[32,16],32:[33,36],34:[35,34],36:[37,28],38:[39,30],40:[41,22],42:[43,21],43:[[44,181],32],45:[46,24],47:[48,31],49:[50,26],51:[52,28],53:[54,33],55:[56,28],57:[58,32],59:[60,25],60:[[61,185],34],62:[63,16],63:[64,36],65:[66,28],66:[67,42],68:[69,21],69:[70,32],71:[72,30],73:[74,25],74:[75,38],76:[77,40],78:[[79,198],37],80:[81,30],83:[84,31],85:[86,34],87:[88,38],89:[90,30],91:[92,25],92:[93,38],95:[96,26],97:[98,28],99:[100,30],101:[102,32],103:[104,28],108:[109,35],110:[111,42],115:[116,32],117:[118,33],119:[120,28],128:[129,20],132:[[133,134,135,195,196],28],137:[138,40],139:[140,40],146:[147,30],147:[148,55],41:[168,40],94:[207,40],112:[241,40],116:[229,45],122:[211,40],136:[232,40],151:[152,16],152:[153,32],154:[155,14],155:[156,36],157:[158,18],158:[159,30],160:[161,15],162:[163,20],164:[165,18],166:[167,22],169:[170,27],171:[24,15],172:[34,15],173:[38,15],174:[175,25],176:[177,25],178:[179,15],179:[180,30],182:[183,18],186:[187,18],187:[188,27],190:[191,22],193:[194,20],203:[204,31],208:[209,23],215:[216,30],217:[218,38],219:[220,33],222:[223,25],227:[228,24],230:[231,25],235:[[105,106,236],20],237:[123,30],238:[124,30],239:[125,30],245:[246,30],246:[247,55]};
-// simplified effectiveness: attacker type -> strong against these types (x1.6), weak against these (x0.6)
-const CHART = {
- "火":{s:["草","蟲","冰","鋼"],w:["水","火","岩石","龍"]},
- "水":{s:["火","地面","岩石"],w:["水","草","龍"]},
- "草":{s:["水","地面","岩石"],w:["火","草","毒","飛行","蟲","龍","鋼"]},
- "電":{s:["水","飛行"],w:["草","電","龍","地面"]},
- "冰":{s:["草","地面","飛行","龍"],w:["火","水","冰","鋼"]},
- "格鬥":{s:["一般","冰","岩石","惡","鋼"],w:["飛行","毒","蟲","超能力","妖精"]},
- "毒":{s:["草","妖精"],w:["毒","地面","岩石","幽靈"]},
- "地面":{s:["火","電","毒","岩石","鋼"],w:["草","蟲","飛行"]},
- "飛行":{s:["草","格鬥","蟲"],w:["電","岩石","鋼"]},
- "超能力":{s:["格鬥","毒"],w:["超能力","鋼"]},
- "蟲":{s:["草","超能力","惡"],w:["火","格鬥","毒","飛行","幽靈","鋼","妖精"]},
- "岩石":{s:["火","冰","飛行","蟲"],w:["格鬥","地面","鋼"]},
- "幽靈":{s:["幽靈","超能力"],w:["惡"]},
- "龍":{s:["龍"],w:["鋼"]},
- "一般":{s:[],w:["岩石","鋼"]},
- "惡":{s:["幽靈","超能力"],w:["格鬥","惡","妖精"]},
- "鋼":{s:["冰","岩石","妖精"],w:["火","水","電","鋼"]},
- "妖精":{s:["格鬥","龍","惡"],w:["火","毒","鋼"]}
-};
 function eff(atkType, defTypes){
   let m = 1;
   const c = CHART[atkType];
   if(!c) return m;
   for(const t of defTypes){
     if(!t) continue;
-    if(c.s.includes(t)) m *= 1.6;
-    if(c.w.includes(t)) m *= 0.65;
+    if(c.n && c.n.includes(t)) return 0;
+    if(c.s.includes(t)) m *= 2;
+    if(c.w.includes(t)) m *= 0.5;
   }
   return m;
 }
-const MOVES = {
- "一般":{q:"撞擊",s:"終極衝擊"}, "火":{q:"火花",s:"大字爆炎"}, "水":{q:"水槍",s:"水炮"},
- "電":{q:"電擊",s:"十萬伏特"}, "草":{q:"藤鞭",s:"葉刃"}, "冰":{q:"冰凍拳",s:"冰凍光束"},
- "格鬥":{q:"近身拳",s:"動員衝擊"}, "毒":{q:"毒液",s:"毒液噴射"}, "地面":{q:"泥巴射擊",s:"地震"},
- "飛行":{q:"翼擊",s:"燕返"}, "超能力":{q:"念力",s:"精神強念"}, "蟲":{q:"蟲咬",s:"蟲鳴"},
- "岩石":{q:"落石",s:"岩崩"}, "幽靈":{q:"影子偷襲",s:"影子球"}, "龍":{q:"龍息",s:"逆鱗"},
- "惡":{q:"咬碎",s:"惡意波動"}, "鋼":{q:"金屬爪",s:"鋼刃"}, "妖精":{q:"魔法閃光",s:"月亮之力"}
-};
-// secondary effect carried by a type's own moves (not the generic Tackle / 全力一擊, both 一般-type)
-const STATUS_FX = {
- "火":{kind:"burn", chance:0.3}, "電":{kind:"paralyze", chance:0.25},
- "草":{kind:"drain", chance:1.0}, "冰":{kind:"defDown", chance:0.3},
- "格鬥":{kind:"defDown", chance:0.3}, "毒":{kind:"poison", chance:0.3},
- "超能力":{kind:"atkDown", chance:0.3}, "蟲":{kind:"poison", chance:0.2},
- "岩石":{kind:"defDown", chance:0.2}, "幽靈":{kind:"atkDown", chance:0.3},
- "惡":{kind:"atkDown", chance:0.2}, "鋼":{kind:"selfDefUp", chance:1.0},
- "妖精":{kind:"atkDown", chance:0.3}
-};
 
 /* ---------- CONSTANTS ---------- */
 const MAX_LEVEL = 100;
@@ -396,7 +281,7 @@ const STRUGGLE = {name:'掙扎', type:'一般', power:50, recoil:0.25, struggle:
 function restorePP(m){ (m.moves||[]).forEach(mv=>{ if(mv.maxpp) mv.pp = mv.maxpp; }); }
 function typesOf(m){ return [m.t1, m.t2]; }
 function typeStr(m){ return m.t2 ? m.t1+"／"+m.t2 : m.t1; }
-function isFinalForm(dexIdx){ return !EVO[dexIdx]; }
+function isFinalForm(dexIdx){ return !EVO[dexIdx] && !STONE_EVO[dexIdx] && !TIME_EVO[dexIdx]; }
 
 /* ---------- TOWER MODE ---------- */
 const LEGENDARIES = [143,144,145,149,150, 242,243,244,248,249,250]; // 急凍鳥 閃電鳥 火焰鳥 超夢 夢幻 雷公 炎帝 水君 洛奇亞 鳳王 時拉比
@@ -444,23 +329,8 @@ function legendaryLevel(ptr){ return Math.min(MAX_LEVEL, ptr < 5 ? 48 + ptr*12 :
 function endlessMul(){ return ROUND2_MUL + state.tower.loop * ENDLESS_STAT_STEP; }
 function endlessHpMul(){ return ROUND2_HP_MUL + state.tower.loop * 0.2; }
 
-/* ---------- ITEMS / SHOP ---------- */
-const ITEMS = {
-  pokeball:    {label:'精靈球', desc:'基本的球', price:100, ball:0},
-  greatball:   {label:'超級球', desc:'捕獲率 +15%', price:300, ball:0.15},
-  ultraball:   {label:'高級球', desc:'捕獲率 +30%', price:600, ball:0.30},
-  masterball:  {label:'大師球', desc:'必定捕獲（不販售）', price:0, ball:1, master:true},
-  potion:      {label:'藥水',   desc:'回復 20 HP',   price:100,  heal:20},
-  superpotion: {label:'好傷藥', desc:'回復 100 HP',  price:400,  heal:100},
-  maxpotion:   {label:'全滿藥', desc:'HP 全部回復',   price:1500, heal:Infinity},
-  ether:       {label:'PP補給', desc:'回復全招式 PP', price:300, pp:true},
-  antidote:    {label:'解毒藥', desc:'治療中毒',     price:100,  cure:'poison'},
-  burnheal:    {label:'灼傷藥', desc:'治療灼傷',     price:100,  cure:'burn'},
-  paralyzeheal:{label:'麻痺藥', desc:'治療麻痺',     price:100,  cure:'paralyze'}
-};
-const BALL_KEYS = ['pokeball','greatball','ultraball','masterball'];
 function totalBalls(){ return BALL_KEYS.reduce((a,k)=>a+(state.bag[k]||0),0); }
-function defaultBag(){ return {pokeball:5, greatball:0, ultraball:0, masterball:0, potion:3, superpotion:0, maxpotion:0, ether:0, antidote:2, burnheal:2, paralyzeheal:2}; }
+function defaultBag(){ return {pokeball:5, greatball:0, ultraball:0, masterball:0, potion:3, superpotion:0, maxpotion:0, ether:0, antidote:2, burnheal:2, paralyzeheal:2, firestone:0, waterstone:0, thunderstone:0, leafstone:0, moonstone:0, sunstone:0}; }
 function defaultTower(){ return {rev:3, floorPtr:0, coins:0, legendaryPtr:0, endlessPtr:0, loop:0, inTower:false}; }
 
 /* ---------- GAME STATE ---------- */
@@ -478,55 +348,67 @@ const logEl = document.getElementById('log');
 const barEl = document.getElementById('bar');
 const optsEl = document.getElementById('opts');
 const appEl = document.getElementById('app'), stageEl = document.getElementById('stage'), turnEl = document.getElementById('turnbar');
-const TYPE_COLOR = {一般:'#7d7d6e',火:'#d9531e',水:'#2f6fd1',電:'#c9a300',草:'#3f9a3a',冰:'#3aa6b9',格鬥:'#b03a2e',毒:'#8a3fa8',地面:'#a8843a',飛行:'#6b7fd6',超能力:'#d6457a',蟲:'#7b9a1f',岩石:'#8f7a3a',幽靈:'#5b4a8c',龍:'#5a3fd1',惡:'#4a3f3f',鋼:'#6f8494',妖精:'#d66fa6'};
 function pctHp(m){ return Math.max(0, Math.round(100*m.hp/m.maxhp)); }
 function stChip(m){ const t={burn:'🔥灼傷',poison:'☠️中毒',paralyze:'⚡麻痺'}[m.status]; return t ? ' · '+t : ''; }
-function renderStage(){
+// 對戰卡片：at = 幾毫秒後才更新（讓血條跟著文字一起變），換了寶可夢則立即更新
+let stageTimers = [], stageLatest = null, stageKey = null;
+function flushStage(){ stageTimers.forEach(clearTimeout); stageTimers = []; if(stageLatest){ stageLatest(); stageLatest = null; } }
+function renderStage(at){
   const b=state.battle, p=state.party[b.playerIdx], w=b.wild;
   const nmx = m => (m.shiny?'✨':'')+esc(m.name);
   const xp = p.level>=MAX_LEVEL ? 100 : Math.min(100, Math.round(100*p.exp/p.expNext));
-  stageEl.innerHTML =
+  const html =
     `<div class="card foe"><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${String(w.dex+1).padStart(4,'0')} · ${esc(typeStr(w))}${stChip(w)}${b.foes&&b.foes.length?` · 還有 ${b.foes.length} 隻`:''}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
     `<div class="card me"><div class="r1"><span>${nmx(p)}</span><span>Lv.${p.level}</span></div><div class="r2">${esc(typeStr(p))} · 速度 ${p.spd}${stChip(p)}</div><div class="bar${pctHp(p)<30?' low':''}"><i style="width:${pctHp(p)}%"></i></div><div class="hpt">HP: ${p.hp}/${p.maxhp}</div><div class="xp"><i style="width:${xp}%"></i></div></div>`;
-  turnEl.innerHTML = `<div>回合<br><b>${b.turn||1}</b></div><div>狀態<br><b>${b.phase||'選擇行動'}</b></div>`;
+  const turnHtml = `<div>回合<br><b>${b.turn||1}</b></div><div>狀態<br><b>${b.phase||'選擇行動'}</b></div>`;
+  const apply = ()=>{ stageEl.innerHTML = html; turnEl.innerHTML = turnHtml; if(stageLatest===apply) stageLatest=null; };
+  const fresh = stageKey && (stageKey[0]!==w || stageKey[1]!==p);
+  stageKey = [w,p];
+  if(!at || at<=0 || fresh || !stageEl.innerHTML){ apply(); return; }
+  stageLatest = apply;
+  stageTimers.push(setTimeout(apply, at));
 }
 function syncBattleUI(phase){
   const b=state.battle;
-  if(b && state.party[b.playerIdx]){ if(phase) b.phase=phase; appEl.classList.add('battle'); renderStage(); }
+  if(b && state.party[b.playerIdx]){ if(phase) b.phase=phase; appEl.classList.add('battle'); renderStage(curDelay()); }
   else appEl.classList.remove('battle');
 }
 
 const LINE_DELAY = 260;
-let lineCount = 0;
+const ATTACK_GAP = 1000; // 雙方出招之間多停一下
+let lineCount = 0, extraDelay = 0;
+function curDelay(){ return lineCount*LINE_DELAY + extraDelay; }
+function gap(ms){ extraDelay += ms; }
 let pendingTimer = null;
 function print(html){
   const div = document.createElement('div');
   div.className = 'line';
-  div.style.animationDelay = (lineCount*LINE_DELAY)+'ms';
+  div.style.animationDelay = curDelay()+'ms';
   div.innerHTML = html;
   logEl.appendChild(div);
   lineCount++;
   logEl.scrollTop = logEl.scrollHeight;
 }
-function clearLog(){ logEl.innerHTML=""; lineCount=0; }
+function clearLog(){ flushStage(); logEl.innerHTML=""; lineCount=0; extraDelay=0; }
 function hr(){ print('<div class="hr"></div>'); }
 function holdOptionsUntilRevealed(){
   optsEl.classList.add('pending');
   if(pendingTimer) clearTimeout(pendingTimer);
-  const wait = Math.max(0, lineCount*LINE_DELAY);
+  const wait = Math.max(0, curDelay());
   pendingTimer = setTimeout(()=>optsEl.classList.remove('pending'), wait);
 }
 logEl.addEventListener('click', ()=>{
   document.querySelectorAll('#log .line').forEach(el=>el.style.animationDelay='0ms');
   if(pendingTimer) clearTimeout(pendingTimer);
   optsEl.classList.remove('pending');
+  flushStage();
 });
 
 function renderBar(){
   const lead = state.party[0];
   const money = `<span>💰 ${state.money}</span><span>🪙 ${state.tower.coins}</span>`;
   barEl.innerHTML = lead
-    ? `<span>隊長: ${esc(monName(lead))} Lv.${lead.level} HP ${lead.hp}/${lead.maxhp}</span><span>圖鑑 ${state.caught.size}/${DEX.length}</span><span>球 x${totalBalls()}</span>${money}`
+    ? `<span>📍 ${zoneName(state.zone)}</span><span>隊長: ${esc(monName(lead))} Lv.${lead.level} HP ${lead.hp}/${lead.maxhp}</span><span>圖鑑 ${state.caught.size}/${DEX.length}</span><span>球 x${totalBalls()}</span>${money}`
     : `<span>圖鑑 ${state.caught.size}/${DEX.length}</span>`;
 }
 function setOptions(list, phase){
@@ -647,10 +529,11 @@ function screenIntro(){
   print('<span class="em">— 遊戲簡介 —</span>');
   print('這是一款純文字的寶可夢養成、戰鬥、收集遊戲，收錄第一、二世代全 251 隻寶可夢（關都＋城都）。');
   hr();
-  print('<span class="intro-h">◆ 探索</span>　往草叢前進會隨機遭遇野生寶可夢，區域越深等級越高。');
+  print('<span class="intro-h">◆ 探索</span>　從 1 號道路出發，一路經過常磐森林、月見山……走到城都的白銀山，越後面等級越高，也越常遇到進化型。');
   print('<span class="intro-h">◆ 戰鬥</span>　選擇招式攻擊，或用道具治療、解除異常狀態；速度快的一方先出手。');
   print('<span class="intro-h">◆ 捕捉</span>　用精靈球捕捉野生寶可夢，對方血量越低成功率越高。');
   print('<span class="intro-h">◆ 培養</span>　戰鬥獲勝可得經驗值，等級到了會自動進化，最高 Lv.100。');
+  print('<span class="intro-h">◆ 進化石</span>　皮卡丘、六尾、伊布等要用火／水／雷／葉／月／日之石進化，商店有賣、路邊偶爾撿得到，打贏道館也會送一顆。');
   print('<span class="intro-h">◆ 隊伍</span>　最多帶 6 隻上場，抓超過的會送進倉庫；可隨時查看隊伍、設定隊長、與倉庫交換寶可夢，完全不用浪費戰鬥中的回合。');
   print('<span class="intro-h">◆ 無限之塔</span>　依全國圖鑑順序一路挑戰，打倒小魔王（最終進化型）能拿硬幣，集滿硬幣可以挑戰急凍鳥、閃電鳥、火焰鳥、超夢、夢幻，以及雷公、炎帝、水君、洛奇亞、鳳王、時拉比共十一隻傳說寶可夢。幻之寶可夢（夢幻、時拉比）需先清空該世代的普通樓層與「第二輪」強化小魔王。');
   print('<span class="intro-h">◆ 訓練家與道館</span>　草叢中每 8～12 場戰鬥會遇到訓練家（贏了有獎金）；圖鑑每登錄 10 隻可開啟下一間道館，先打關都 8 間，再打城都 8 間。');
@@ -722,16 +605,17 @@ function screenField(){
     {label:"🏪 商店", half:true, action:()=>{ shopQty=1; screenShop(); }},
     {label:"📖 圖鑑", half:true, action:screenDex},
     {label:`💊 補給站${state.meta.cd>0?`（再 ${state.meta.cd} 場）`:''}`, half:true, action:()=>healAll(screenField)},
-    {label:`⏩ 下一區域（現第 ${state.zone} 區）`, half:true, action:advanceZone}
+    {label: state.zone < MAP_NAMES.length ? `⏩ 前往 ${zoneName(state.zone+1)}` : '⏩ 已到最後一站', half:true, action:advanceZone}
   ]);
 }
 
 function toField(){ clearLog(); screenField(); }
 function toBattle(){ clearLog(); screenBattle(); }
 function advanceZone(){
-  state.zone++;
   clearLog();
-  print(`<span class="em">你深入了新的區域（第 ${state.zone} 區）。</span>`);
+  if(state.zone >= MAP_NAMES.length){ print(`<span class="sys">${zoneName(state.zone)}已經是旅程的最後一站了。</span>`); return screenField(); }
+  state.zone++;
+  print(`<span class="em">📍 你來到了 ${zoneName(state.zone)}。</span>`);
   print('這裡的野生寶可夢感覺更強了。');
   screenField();
 }
@@ -771,9 +655,36 @@ function encounter(){
   print(`<span class="em">野生的 ${nm(wild)}（Lv.${wild.level}）出現了！</span>`);
   screenBattle();
 }
+function zoneName(z){ return MAP_NAMES[Math.min(z, MAP_NAMES.length)-1]; }
+// 進化階段：1=基本、2=一階進化、3=二階進化；沒有進化的寶可夢依強度歸類
+const EVO_FROM = {};
+(function(){
+  const link = (a,b)=>{ EVO_FROM[b] = a; };
+  for(const k in EVO){ const t = EVO[k][0]; (Array.isArray(t)?t:[t]).forEach(b=>link(+k,b)); }
+  for(const k in STONE_EVO) Object.values(STONE_EVO[k]).forEach(b=>link(+k,b));
+  for(const k in TIME_EVO){ link(+k,TIME_EVO[k].day); link(+k,TIME_EVO[k].night); }
+})();
+function evoStage(i){
+  let s = 1, c = i; while(EVO_FROM[c]!==undefined){ s++; c = EVO_FROM[c]; }
+  if(s===1 && isFinalForm(i)) return Math.min(3, DEX[i][3]); // 單一型態：依強度 tier 分類
+  return s;
+}
+const WILD_BY_STAGE = [[],[],[],[]];
+DEX.forEach((e,i)=>{ if(!LEGENDARIES.includes(i)) WILD_BY_STAGE[evoStage(i)].push(i); }); // 神獸只能在塔裡遇到
+// 各地點出現 [基本, 一階, 二階] 的機率
+function stageWeights(zone){
+  if(zone<=4)  return [1, 0, 0];
+  if(zone<=8)  return [0.75, 0.25, 0];
+  if(zone<=12) return [0.55, 0.45, 0];
+  if(zone<=16) return [0.4, 0.45, 0.15];
+  if(zone<=20) return [0.25, 0.45, 0.3];
+  return [0.15, 0.4, 0.45];
+}
 function pickWildIndex(zone){
-  const maxTier = Math.min(5, 1 + Math.floor(zone/2));
-  const pool = DEX.map((e,i)=>i).filter(i=>DEX[i][3] <= maxTier && !LEGENDARIES.includes(i)); // 神獸只能在塔裡遇到
+  const w = stageWeights(zone);
+  let r = Math.random(), s = 1;
+  if(r < w[0]) s = 1; else if(r < w[0]+w[1]) s = 2; else s = 3;
+  const pool = WILD_BY_STAGE[s];
   return pool[Math.floor(Math.random()*pool.length)];
 }
 function firstAlive(){
@@ -1011,31 +922,45 @@ function hpBars(){ /* 改由 renderStage() 畫對戰卡片 */ }
 function randomWildMove(w){ return w.moves[Math.floor(Math.random()*w.moves.length)]; }
 function clearBattleModifiers(){ state.party.forEach(m=>{ m.status=null; m.atkMul=1; m.defMul=1; }); }
 function effText(mult){
-  if(mult >= 1.5) return ' <span class="good">效果絕佳！</span>';
-  if(mult <= 0.7) return ' <span class="bad">效果不好...</span>';
+  if(mult === 0) return ' <span class="bad">沒有效果……</span>';
+  if(mult >= 2) return ' <span class="good">效果絕佳！</span>';
+  if(mult < 1) return ' <span class="bad">效果不好...</span>';
   return '';
 }
 function dmg(atkMon, defMon, move){
   const stab = typesOf(atkMon).includes(move.type) ? 1.3 : 1.0;
-  const e = eff(move.type, typesOf(defMon));
+  const e = moveEff(move, defMon);
+  if(e === 0) return 0;
   const variance = 0.85 + Math.random()*0.3;
   const atkStat = atkMon.atk * (atkMon.atkMul||1);
   const defStat = Math.max(1, defMon.def * (defMon.defMul||1));
   const raw = ((2*atkMon.level/5+2)*move.power*(atkStat/defStat)/50 + 2);
   return Math.max(1, Math.floor(raw*stab*e*variance));
 }
+function moveEff(move, defMon){ return move.struggle ? 1 : eff(move.type, typesOf(defMon)); }
 function effSpd(m){ return m.spd * (m.status==='paralyze' ? 0.5 : 1); }
 // 單次出招：處理麻痺、傷害、反作用力、吸血、附加效果
 function doAttack(att, def, move){
+  const t0 = curDelay();
+  attackCore(att, def, move);
+  if(state.battle) renderStage(t0 || 1);
+  gap(ATTACK_GAP);
+}
+function attackCore(att, def, move){
   if(att.status==='paralyze' && Math.random()<0.25){
     print(`<span class="bad">${who(att)} 因麻痺而無法動彈！</span>`);
     return;
   }
   if(att !== state.battle.wild && move.maxpp !== undefined) move.pp = Math.max(0, move.pp - 1);
   const isEnemy = att === state.battle.wild;
+  const e = moveEff(move, def);
+  if(e === 0){
+    print(`${who(att)} 使用了 ${esc(move.name)}！但是對 ${who(def)} 沒有效果……`);
+    return;
+  }
   const d = dmg(att, def, move);
   def.hp = Math.max(0, def.hp - d);
-  print(`${who(att)} 使用了 ${esc(move.name)}！造成 <span class="${isEnemy?'bad':'em'}">${d}</span> 點傷害。${effText(eff(move.type, typesOf(def)))}`);
+  print(`${who(att)} 使用了 ${esc(move.name)}！造成 <span class="${isEnemy?'bad':'em'}">${d}</span> 點傷害。${effText(e)}`);
   if(move.recoil){
     const rec = Math.max(1, Math.floor(d*move.recoil));
     att.hp = Math.max(0, att.hp-rec);
@@ -1124,7 +1049,7 @@ function screenItemSelect(){
   const opts = [];
   Object.keys(ITEMS).forEach(kind=>{
     const it = ITEMS[kind];
-    if(it.ball!==undefined || !(state.bag[kind] > 0)) return;
+    if(it.ball!==undefined || it.stone || !(state.bag[kind] > 0)) return;
     const relevant = it.pp ? p.moves.some(m=>m.pp<m.maxpp) : it.heal ? p.hp < p.maxhp : p.status === it.cure;
     if(relevant) opts.push({label:`${it.label}：${it.desc}（剩 ${state.bag[kind]}）`, action:()=>useItem(kind)});
   });
@@ -1185,11 +1110,20 @@ function doSwitch(idx){
   endOfTurn();
 }
 function evolveIfReady(p){
+  const te = TIME_EVO[p.dex];
+  if(te){
+    if(p.level < te.lvl) return false;
+    const h = nowFn().getHours();
+    return evolveTo(p, (h>=6 && h<18) ? te.day : te.night);
+  }
   const rule = EVO[p.dex];
   if(!rule) return false;
   let [toIdx, lvl] = rule;
   if(p.level < lvl) return false;
-  if(Array.isArray(toIdx)) toIdx = toIdx[Math.floor(Math.random()*toIdx.length)]; // 伊布：隨機進化成三種之一
+  if(Array.isArray(toIdx)) toIdx = toIdx[Math.floor(Math.random()*toIdx.length)]; // 多分支：隨機
+  return evolveTo(p, toIdx);
+}
+function evolveTo(p, toIdx){
   const oldName = monName(p);
   const e = DEX[toIdx];
   p.dex = toIdx; p.name = e[0]; p.t1 = e[1]; p.t2 = e[2]; p.tier = e[3];
@@ -1205,16 +1139,16 @@ function evolveIfReady(p){
   return true;
 }
 function evolveFully(p){ while(evolveIfReady(p)){} }
-function grantExp(p, oppLevel, mult, verb){
+function grantExp(p, oppLevel, mult, verb, quiet){
   if(p.level >= MAX_LEVEL){
     p.exp = 0;
     evolveFully(p); // 滿級才抓到、或舊存檔中尚未進化的寶可夢，也能進化
-    print(`<span class="sys">${nm(p)} 已經是 Lv.${MAX_LEVEL}，經驗值無法再增加。</span>`);
+    if(!quiet) print(`<span class="sys">${nm(p)} 已經是 Lv.${MAX_LEVEL}，經驗值無法再增加。</span>`);
     return;
   }
   const gained = Math.max(1, Math.floor((10 + oppLevel*4) * mult));
   p.exp += gained;
-  print(`<span class="good">${nm(p)} ${verb} ${gained} 經驗值。</span>`);
+  if(!quiet) print(`<span class="good">${nm(p)} ${verb} ${gained} 經驗值。</span>`);
   while(p.level < MAX_LEVEL && p.exp >= p.expNext){
     p.exp -= p.expNext; p.level++; p.expNext = 18 + p.level*9;
     const st = statsFor(DEX[p.dex], p.level);
@@ -1224,6 +1158,15 @@ function grantExp(p, oppLevel, mult, verb){
     evolveFully(p);
   }
   if(p.level >= MAX_LEVEL){ p.exp = 0; print(`<span class="em">${nm(p)} 達到等級上限 Lv.${MAX_LEVEL}！</span>`); }
+}
+// 沒出場但還能戰鬥的隊員分到部分經驗（倒下的不算）
+const SHARE_EXP = 0.3;
+function shareExp(active, oppLevel, mult){
+  const others = state.party.filter(m=>m!==active && m.hp>0 && m.level<MAX_LEVEL);
+  if(!others.length) return;
+  const gained = Math.max(1, Math.floor((10 + oppLevel*4) * mult * SHARE_EXP));
+  print(`<span class="good">隊伍中其他 ${others.length} 隻寶可夢各分到 ${gained} 經驗值。</span>`);
+  others.forEach(m=>grantExp(m, oppLevel, mult*SHARE_EXP, '分到', true));
 }
 function giveMoney(amount){
   state.money += amount;
@@ -1239,6 +1182,7 @@ function winBattle(){
   print(`<span class="good">擊敗了${mode==='wild'?'野生的 ':' '}${nm(w)}！</span>`);
   const expMul = (mode==='tower') ? TOWER_EXP_MUL : 1;
   if(p.hp>0) grantExp(p, w.level, expMul, '獲得');
+  shareExp(p, w.level, expMul);
   if(b.foes && b.foes.length){
     const nx = b.foes.shift(); b.wild = nx;
     print(`<span class="em">${esc(b.title)} 派出了 ${nm(nx)}（Lv.${nx.level}）！</span>`);
@@ -1254,6 +1198,7 @@ function winBattle(){
   }
   if(mode==='gym'){
     giveMoney(b.reward); state.meta.badges++; bump('gyms');
+    { const sk = STONE_KEYS[Math.floor(Math.random()*STONE_KEYS.length)]; state.bag[sk] = (state.bag[sk]||0) + 1; print(`<span class="good">館主另外送了你一顆 ${ITEMS[sk].label}！</span>`); }
     print(`<span class="boss">🏅 獲得了【${esc(GYMS[b.gymIdx][1])}】的徽章！（${state.meta.badges}/${GYMS.length}）</span>`);
     warnIfWiped(); return screenGym(true);
   }
@@ -1411,10 +1356,37 @@ function screenBag(){
   });
   hr();
   print('<span class="sys">道具不夠的話到商店購買，打倒寶可夢就能賺錢。</span>');
-  setOptions([
-    {label:"去商店", action:()=>{ shopQty=1; screenShop(); }},
-    {label:"返回", action:toField}
-  ]);
+  const opts = STONE_KEYS.filter(k=>state.bag[k]>0).map(k=>({label:`💎 使用${ITEMS[k].label}（${state.bag[k]}）`, half:true, action:()=>screenStoneUse(k)}));
+  opts.push({label:"去商店", half:true, action:()=>{ shopQty=1; screenShop(); }});
+  opts.push({label:"返回", half:true, action:toField});
+  setOptions(opts);
+}
+function screenStoneUse(k, msg){
+  clearLog();
+  const it = ITEMS[k];
+  print(`<span class="em">— 使用${esc(it.label)} —</span>`);
+  if(msg) print(msg);
+  const opts = [];
+  [...state.party.map((m,i)=>({m,i,box:false})), ...state.box.map((m,i)=>({m,i,box:true}))].forEach(({m,i,box})=>{
+    const to = STONE_EVO[m.dex] && STONE_EVO[m.dex][k];
+    if(to===undefined) return;
+    opts.push({label:`${box?'📦 ':''}${monName(m)} Lv.${m.level} → ${DEX[to][0]}`, action:()=>useStone(k, box, i)});
+  });
+  if(!opts.length) print('<span class="sys">隊伍和倉庫裡沒有能用這顆石頭進化的寶可夢。</span>');
+  else print('要讓哪一隻進化？（📦 = 在倉庫）');
+  opts.push({label:'← 返回背包', action:screenBag});
+  setOptions(opts);
+}
+function useStone(k, box, i){
+  const m = (box ? state.box : state.party)[i];
+  const to = m && STONE_EVO[m.dex] && STONE_EVO[m.dex][k];
+  if(to===undefined || !(state.bag[k]>0)) return screenBag();
+  state.bag[k]--;
+  clearLog();
+  print(`你對 ${nm(m)} 使用了${ITEMS[k].label}……`);
+  evolveTo(m, to);
+  saveGame();
+  setOptions([{label:'← 返回背包', action:screenBag}, {label:'返回', action:toField}]);
 }
 let dexPage=0;
 function screenDex(){
@@ -1439,19 +1411,6 @@ function screenDex(){
 }
 
 /* ---------- TRAINERS / GYMS / ROAD ITEMS ---------- */
-const TRAINERS = ['短褲小子','蟲網少年','登山男','迷你裙少女','釣手','野餐女孩','空手道王','露營少年','研究員','水手'];
-// [道館名, 館主, 屬性, 圖鑑編號池]　前 8 間為第一世代，後 8 間為第二世代
-const GYMS = [
-  ['深灰道館','小剛','岩石',[74,75,76,95]], ['華藍道館','小霞','水',[54,55,118,119,120,121]],
-  ['枯葉道館','馬志士','電',[25,26,81,82,100,101,125]], ['彩虹道館','莉佳','草',[43,44,45,69,70,71,102,103,114]],
-  ['淺紅道館','阿桔','毒',[41,42,48,49,88,89,109,110]], ['金黃道館','娜姿','超能力',[63,64,65,79,80,96,97,122]],
-  ['紅蓮道館','夏伯','火',[37,38,58,59,77,78,126]], ['常磐道館','坂木','地面',[27,28,50,51,104,105,111,112]],
-  ['桔梗道館','阿速','飛行',[16,17,18,21,22,163,164]], ['煙墨道館','阿筆','蟲',[10,11,12,13,14,15,123,127,165,167]],
-  ['綠鬱道館','小茜','一般',[19,39,40,52,53,108,113,128,241]], ['圓朵道館','松葉','幽靈',[92,93,94,200]],
-  ['湛藍道館','阿四','格鬥',[56,57,66,67,68,106,107,237]], ['淺蔥道館','阿蜜','鋼',[81,82,205,208,212,227]],
-  ['烏丸道館','柳伯','冰',[87,91,124,215,220,221,225,238]], ['凌雲道館','小蓮','龍',[147,148,149,230]]
-];
-function defaultMeta(){ return {cd:0, since:0, next:8+Math.floor(Math.random()*5), badges:0}; }
 function battleDone(){ if(state.meta.cd > 0) state.meta.cd--; }
 function startMultiBattle(mode, foes, title, extra){
   foes.forEach(f=>state.seen.add(f.dex));
@@ -1500,7 +1459,6 @@ function screenGym(keepLog){
   opts.push({label:'← 返回', action:toField});
   setOptions(opts);
 }
-const FIND_TABLE = [['potion',30],['pokeball',25],['antidote',8],['burnheal',8],['paralyzeheal',8],['greatball',10],['superpotion',6],['ether',5]];
 function findItem(){
   let r = Math.random()*FIND_TABLE.reduce((a,x)=>a+x[1],0), key = FIND_TABLE[0][0];
   for(const [k,w] of FIND_TABLE){ if((r-=w) < 0){ key = k; break; } }
@@ -1513,13 +1471,6 @@ function findItem(){
 
 /* ---------- MONTHLY CHECK-IN ---------- */
 let nowFn = () => new Date();
-const CHECKIN_BASE = [{money:500}, {money:300}, {items:{pokeball:5}}, {items:{potion:3}}]; // 依累計簽到天數 n%4 輪替
-const CHECKIN_MILESTONE = {
-  7:  {money:500,  items:{greatball:5}},
-  14: {money:0,    items:{ether:5, superpotion:3}},
-  21: {money:1500, items:{ultraball:5}},
-  28: {money:3000, items:{masterball:1, maxpotion:3}}
-};
 function checkinReward(n){ return CHECKIN_MILESTONE[n] || CHECKIN_BASE[n % 4]; }
 function checkinNow(){
   const d = nowFn(), ym = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
@@ -1558,15 +1509,6 @@ function giveReward(r){
   Object.keys(r.items||{}).forEach(k=>{ state.bag[k] = (state.bag[k]||0) + r.items[k]; });
 }
 function rewardText(r){ return [r.money?`💰 ${r.money}`:'', ...Object.keys(r.items||{}).map(k=>`${ITEMS[k].label} ×${r.items[k]}`)].filter(Boolean).join('、'); }
-const QUESTS = [
-  {id:'q_win',   name:'擊敗 10 隻寶可夢',   key:'wins',    target:10, reward:{money:500}},
-  {id:'q_catch', name:'捕捉 3 隻寶可夢',     key:'catches', target:3,  reward:{items:{pokeball:5}}},
-  {id:'q_floor', name:'在無限之塔通過 5 層', key:'floors',  target:5,  reward:{money:1200}},
-  {id:'q_boss',  name:'擊破 2 隻小魔王',     key:'bosses',  target:2,  reward:{items:{greatball:3}}},
-  {id:'q_evo',   name:'讓寶可夢進化 1 次',   key:'evolves', target:1,  reward:{items:{ether:2}}},
-  {id:'q_tr',    name:'擊敗 2 位訓練家',     key:'trainers',target:2,  reward:{money:800}},
-  {id:'q_gym',   name:'通過 1 間道館',       key:'gyms',    target:1,  reward:{items:{ultraball:2}}}
-];
 function questProg(q){ return Math.max(0, (state.stats[q.key]||0) - (state.quest.base[q.id]||0)); }
 function claimQuest(id){
   const q = QUESTS.find(x=>x.id===id); if(!q || questProg(q) < q.target) return;
@@ -1599,15 +1541,6 @@ const ACH = [
   {id:'a_gym16',  name:'道館大師',   desc:'集滿全部 16 枚徽章',      pts:20, cur:()=>state.meta.badges, target:16},
   {id:'a_ci7',    name:'每日報到',   desc:'累計簽到 7 天',           pts:2,  cur:()=>state.stats.checkins||0, target:7},
   {id:'a_ci30',   name:'簽到達人',   desc:'累計簽到 30 天',          pts:5,  cur:()=>state.stats.checkins||0, target:30}
-];
-const MILESTONES = [
-  {pts:10,  reward:{items:{greatball:5}}},
-  {pts:25,  reward:{items:{superpotion:5}}},
-  {pts:45,  reward:{items:{ultraball:5}}},
-  {pts:70,  reward:{items:{ether:5}}},
-  {pts:100, reward:{items:{maxpotion:3}}},
-  {pts:120, reward:{items:{masterball:1}}},
-  {pts:150, reward:{items:{maxpotion:5, ultraball:5}}}
 ];
 function achPoints(){ return ACH.filter(a=>state.ach.done.includes(a.id)).reduce((n,a)=>n+a.pts,0); }
 function checkAch(){
