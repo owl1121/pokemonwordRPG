@@ -80,17 +80,109 @@ header .sub{font-size:11px; color:var(--dim); margin-top:2px;}
 .cover-sub{ font-size:12px; color:var(--accent2); letter-spacing:2px; margin-bottom:12px; }
 .cover-tagline{ font-size:12px; color:var(--dim); line-height:1.7; max-width:320px; margin:0 auto; }
 .intro-h{ color:var(--good); }
+
+#opts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px 12px calc(12px + env(safe-area-inset-bottom,0px));}
+.opt{grid-column:1/-1;padding:9px 10px;font-size:13px;line-height:1.35;border-radius:8px;}
+.opt.half{grid-column:span 2;}
+.opt.q{grid-column:span 1;text-align:center;padding:10px 2px;}
+.mvpp{flex-basis:100%;font-size:13px;font-weight:bold;color:var(--accent2);}
+.mvpp.low{color:var(--accent);}
+.mvpp.zero{color:var(--danger);}
+#app.battle #skipHint{display:none;}
+#menuBtn{white-space:nowrap;}
+header .title{white-space:nowrap;}
+#skipHint{grid-column:1/-1;}
+.opt .sub{display:block;font-size:11px;color:var(--dim);}
+.opt.mv{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:2px 6px;}
+.mvn{font-weight:bold;font-size:14px;}
+.mvt{font-size:11px;padding:1px 8px;border-radius:9px;color:#fff;}
+.mvp{flex-basis:100%;font-size:11px;color:var(--dim);}
+#stage{display:none;flex-direction:column;gap:14px;margin:12px 12px 0;padding:12px;border:1px solid var(--line);border-radius:14px;background:#0f1613;}
+#app.battle #stage{display:flex;}
+#app.battle #bar{display:none;}
+#app.battle #log{flex:none;margin:10px 12px 0;min-height:84px;max-height:30vh;overflow-y:auto;border:1px solid var(--line);border-radius:12px;background:#0b0f0d;padding:10px 14px;}
+.card{width:66%;padding:8px 12px;border-radius:8px;border:3px solid;}
+.card.foe{align-self:flex-end;background:#ffe9ec;border-color:#ef5350;color:#b71c1c;}
+.card.me{align-self:flex-start;background:#dff6f8;border-color:#26c6da;color:#00838f;}
+.card .r1{display:flex;justify-content:space-between;font-weight:bold;font-size:15px;}
+.card .r2{font-size:11px;opacity:.75;margin:2px 0 5px;}
+.card .bar{height:8px;border-radius:4px;background:rgba(0,0,0,.14);overflow:hidden;}
+.card .bar i{display:block;height:100%;background:#4caf50;}
+.card .bar.low i{background:#e53935;}
+.card .hpt{text-align:right;font-size:12px;margin-top:3px;}
+.card .xp{height:4px;border-radius:2px;background:rgba(0,0,0,.1);margin-top:3px;overflow:hidden;}
+.card .xp i{display:block;height:100%;background:#4fc3f7;}
+#turnbar{display:none;justify-content:center;gap:34px;padding:12px;color:var(--dim);font-size:12px;text-align:center;}
+#turnbar b{color:var(--text);font-size:16px;}
+#app.battle #turnbar{display:flex;}
+
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+#menuBtn{position:relative;background:transparent;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-family:inherit;font-size:13px;cursor:pointer;}
+#menuDot{display:none;position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:var(--danger);}
+#menuDot.on{display:block;}
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:30;align-items:center;justify-content:center;padding:14px;}
+#modal.open{display:flex;}
+.mbox{width:100%;max-width:460px;max-height:86vh;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+.mhead{display:flex;gap:6px;padding:10px;border-bottom:1px solid var(--line);}
+.mhead .tab{flex:1;background:transparent;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit;font-size:13px;}
+.mhead .tab.on{background:#1f3a2c;border-color:var(--accent2);}
+.mhead .x{background:transparent;color:var(--dim);border:none;font-size:18px;padding:0 8px;}
+#mbody{padding:12px;overflow-y:auto;font-size:13px;line-height:1.5;}
+.qi{border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin-bottom:8px;}
+.qi.done{border-color:var(--good);}
+.qi small{color:var(--dim);display:block;}
+.qbar{height:5px;background:#1a2a22;border-radius:3px;margin:6px 0;overflow:hidden;}
+.qbar i{display:block;height:100%;background:var(--accent2);}
+.qrow{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.claim{background:var(--good);color:#0d1210;border:none;border-radius:6px;padding:5px 12px;font-family:inherit;font-size:12px;font-weight:bold;}
+.mh{color:var(--accent);margin:4px 0 8px;}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#1f3a2c;border:1px solid var(--good);color:var(--text);padding:8px 14px;border-radius:20px;font-size:13px;z-index:40;opacity:0;pointer-events:none;transition:opacity .25s;}
+#toast.on{opacity:1;}
+.opt.off{opacity:.38;}
+
+/* ---- 圓角統一 ---- */
+#app{border:1px solid var(--line);border-radius:24px;}
+header{border-radius:24px 24px 0 0;}
+#bar{margin:0 12px 8px;border:1px solid var(--line);border-radius:16px;background:var(--panel);}
+#opts{margin:0 12px 12px;border:1px solid var(--line);border-radius:20px;}
+.opt{border-radius:14px;}
+#menuBtn{border-radius:14px;}
+#stage{border-radius:20px;}
+#app.battle #log{border-radius:16px;}
+.card{border-radius:16px;}
+.card .bar{border-radius:6px;}
+.card .xp{border-radius:4px;}
+.mbox{border-radius:24px;}
+.mhead .tab{border-radius:14px;}
+.qi{border-radius:16px;}
+.qbar{border-radius:6px;}
+.claim{border-radius:12px;}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:10px;}
+.cal .wd{text-align:center;color:var(--dim);font-size:11px;}
+.day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:12px;font-size:12px;color:var(--dim);}
+.day.on{background:#1f3a2c;border-color:var(--good);color:var(--good);}
+.day.today{border-color:var(--accent);color:var(--accent);border-width:2px;}
+.day.blank{border:none;}
+.bigclaim{width:100%;padding:11px;border:none;border-radius:16px;background:var(--good);color:#0d1210;font-family:inherit;font-size:14px;font-weight:bold;margin-bottom:12px;}
+.bigclaim.off{background:#1a2a22;color:var(--dim);}
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <div class="title">◆ 寶可夢文字冒險 · 關都・城都地方</div>
-    <div class="sub" id="hdrsub">全國圖鑑第一・二世代 251 隻</div>
+    <div><div class="title">◆ 寶可夢文字冒險</div>
+    <div class="sub" id="hdrsub">關都・城都 · 全國圖鑑 251 隻</div></div>
+    <button id="menuBtn" onclick="openMenu()">☰ 選單<i id="menuDot"></i></button>
   </header>
+  <div id="stage"></div>
   <div id="log"></div>
   <div id="bar"></div>
   <div id="opts"></div>
+  <div id="turnbar"></div>
+  <div id="modal" onclick="if(event.target===this)closeMenu()"><div class="mbox">
+    <div class="mhead"><button class="tab" id="tabQuest" onclick="openMenu('quest')">📜 任務</button><button class="tab" id="tabAch" onclick="openMenu('ach')">🏆 成就</button><button class="tab" id="tabCheckin" onclick="openMenu('checkin')">📅 簽到</button><button class="x" onclick="closeMenu()">✕</button></div>
+    <div id="mbody"></div></div></div>
+  <div id="toast"></div>
 </div>
 
 <script>
@@ -269,13 +361,13 @@ function tickStatus(mon){
 function buildMoves(entry){
   const t1=entry[1], t2=entry[2];
   const m1 = MOVES[t1] || MOVES["一般"];
-  const fourth = t2 ? {name:(MOVES[t2]||MOVES["一般"]).q, type:t2, power:45}
-                     : {name:"捨身衝撞", type:"一般", power:65, recoil:0.25};
+  const fourth = t2 ? {name:(MOVES[t2]||MOVES["一般"]).q, type:t2, power:45, pp:25, maxpp:25}
+                     : {name:"捨身衝撞", type:"一般", power:65, recoil:0.25, pp:15, maxpp:15};
   return [
-    {name:"撞擊", type:"一般", power:40},
-    {name:m1.q, type:t1, power:45},
+    {name:"撞擊", type:"一般", power:40, pp:35, maxpp:35},
+    {name:m1.q, type:t1, power:45, pp:25, maxpp:25},
     fourth,
-    {name:m1.s, type:t1, power:75}
+    {name:m1.s, type:t1, power:75, pp:10, maxpp:10}
   ];
 }
 function statsFor(entry, level){
@@ -300,6 +392,8 @@ function makeMon(dexIndex, level, opts){
     status:null, atkMul:1, defMul:1, shiny
   };
 }
+const STRUGGLE = {name:'掙扎', type:'一般', power:50, recoil:0.25, struggle:true};
+function restorePP(m){ (m.moves||[]).forEach(mv=>{ if(mv.maxpp) mv.pp = mv.maxpp; }); }
 function typesOf(m){ return [m.t1, m.t2]; }
 function typeStr(m){ return m.t2 ? m.t1+"／"+m.t2 : m.t1; }
 function isFinalForm(dexIdx){ return !EVO[dexIdx]; }
@@ -310,9 +404,18 @@ const NONLEG = []; for(let i=0;i<DEX.length;i++){ if(!LEGENDARIES.includes(i)) N
 const BOSSES = NONLEG.filter(isFinalForm); // 最終進化型（含無進化的單一型態），全破後的無盡循環名單
 const COIN_COST = 50;
 const LEGENDARY_COST = [50,50,60,90,150, 80,80,80,120,120,200];
-// 幻之寶可夢（夢幻、時拉比）：除了硬幣，還要清空全部樓層、隊長達到指定等級
-const MYTHIC_MIN_LEVEL = {4:70, 10:85}; // 神獸順序編號 -> 隊長最低等級
-function isMythicPtr(ptr){ return MYTHIC_MIN_LEVEL[ptr] !== undefined; }
+// 幻之寶可夢（夢幻=第一世代、時拉比=第二世代）：需清空該世代的普通樓層＋第二輪小魔王（無等級限制）
+const MYTHIC_GEN = {4:1, 10:2}; // 神獸順序編號 -> 世代
+const GEN_SPLIT = 151;          // 圖鑑編號 0~150 為第一世代
+function isMythicPtr(ptr){ return MYTHIC_GEN[ptr] !== undefined; }
+const ROUND2_MUL = 1.3, ROUND2_HP_MUL = 1.8; // 第二輪小魔王：能力 ×1.3、HP ×1.8，之後每多一輪再加強
+function genProgress(gen){
+  const t = state.tower, inGen = i => gen===1 ? i<GEN_SPLIT : i>=GEN_SPLIT;
+  const floors = NONLEG.filter(inGen), bosses = BOSSES.filter(inGen);
+  const floorsDone = Math.max(0, Math.min(floors.length, t.floorPtr - NONLEG.indexOf(floors[0])));
+  const bossDone = t.loop>=1 ? bosses.length : Math.max(0, Math.min(bosses.length, t.endlessPtr - BOSSES.indexOf(bosses[0])));
+  return {floorsDone, floorsTotal:floors.length, bossDone, bossTotal:bosses.length};
+}
 function isBossFloor(ptr){ return ptr >= NONLEG.length || isFinalForm(NONLEG[ptr]); }
 // 本段（進化鏈）第一層：往回找到上一個小魔王之後那一層
 function segmentStart(ptr){
@@ -330,28 +433,35 @@ function segmentBossName(){
 function legendaryGate(ptr){
   const cost = LEGENDARY_COST[ptr] ?? COIN_COST;
   const coinsOk = state.tower.coins >= cost;
-  if(!isMythicPtr(ptr)) return { ok: coinsOk, cost, coinsOk, floorsOk:true, levelOk:true };
-  const floorsOk = state.tower.floorPtr >= NONLEG.length;
-  const lead = state.party[0];
-  const levelOk = !!lead && lead.level >= MYTHIC_MIN_LEVEL[ptr];
-  return { ok: coinsOk && floorsOk && levelOk, cost, coinsOk, floorsOk, levelOk };
+  if(!isMythicPtr(ptr)) return { ok: coinsOk, cost, coinsOk, floorsOk:true, bossOk:true };
+  const gen = MYTHIC_GEN[ptr], gp = genProgress(gen);
+  const floorsOk = gp.floorsDone >= gp.floorsTotal, bossOk = gp.bossDone >= gp.bossTotal;
+  return { ok: coinsOk && floorsOk && bossOk, cost, coinsOk, floorsOk, bossOk, gp, gen };
 }
+
 function towerFloorLevel(ptr){ return Math.min(MAX_LEVEL, 6 + Math.floor(ptr*1.15)); }
 function legendaryLevel(ptr){ return Math.min(MAX_LEVEL, ptr < 5 ? 48 + ptr*12 : 62 + (ptr-5)*7); }
-function endlessMul(){ return 1 + state.tower.loop * ENDLESS_STAT_STEP; }
+function endlessMul(){ return ROUND2_MUL + state.tower.loop * ENDLESS_STAT_STEP; }
+function endlessHpMul(){ return ROUND2_HP_MUL + state.tower.loop * 0.2; }
 
 /* ---------- ITEMS / SHOP ---------- */
 const ITEMS = {
-  pokeball:    {label:'精靈球', desc:'捕捉野生寶可夢', price:100},
+  pokeball:    {label:'精靈球', desc:'基本的球', price:100, ball:0},
+  greatball:   {label:'超級球', desc:'捕獲率 +15%', price:300, ball:0.15},
+  ultraball:   {label:'高級球', desc:'捕獲率 +30%', price:600, ball:0.30},
+  masterball:  {label:'大師球', desc:'必定捕獲（不販售）', price:0, ball:1, master:true},
   potion:      {label:'藥水',   desc:'回復 20 HP',   price:100,  heal:20},
   superpotion: {label:'好傷藥', desc:'回復 100 HP',  price:400,  heal:100},
   maxpotion:   {label:'全滿藥', desc:'HP 全部回復',   price:1500, heal:Infinity},
+  ether:       {label:'PP補給', desc:'回復全招式 PP', price:300, pp:true},
   antidote:    {label:'解毒藥', desc:'治療中毒',     price:100,  cure:'poison'},
   burnheal:    {label:'灼傷藥', desc:'治療灼傷',     price:100,  cure:'burn'},
   paralyzeheal:{label:'麻痺藥', desc:'治療麻痺',     price:100,  cure:'paralyze'}
 };
-function defaultBag(){ return {pokeball:5, potion:3, superpotion:0, maxpotion:0, antidote:2, burnheal:2, paralyzeheal:2}; }
-function defaultTower(){ return {floorPtr:0, coins:0, legendaryPtr:0, endlessPtr:0, loop:0, inTower:false}; }
+const BALL_KEYS = ['pokeball','greatball','ultraball','masterball'];
+function totalBalls(){ return BALL_KEYS.reduce((a,k)=>a+(state.bag[k]||0),0); }
+function defaultBag(){ return {pokeball:5, greatball:0, ultraball:0, masterball:0, potion:3, superpotion:0, maxpotion:0, ether:0, antidote:2, burnheal:2, paralyzeheal:2}; }
+function defaultTower(){ return {rev:3, floorPtr:0, coins:0, legendaryPtr:0, endlessPtr:0, loop:0, inTower:false}; }
 
 /* ---------- GAME STATE ---------- */
 let state = {
@@ -360,12 +470,31 @@ let state = {
   seen:new Set(), caught:new Set(), shinyCaught:new Set(),
   bag:defaultBag(), money:START_MONEY,
   zone:1, battle:null,
-  tower:defaultTower()
+  tower:defaultTower(),
+  stats:{}, quest:{base:{}}, ach:{done:[],claimed:[]}, meta:defaultMeta(), checkin:{ym:'',days:[]}
 };
 
 const logEl = document.getElementById('log');
 const barEl = document.getElementById('bar');
 const optsEl = document.getElementById('opts');
+const appEl = document.getElementById('app'), stageEl = document.getElementById('stage'), turnEl = document.getElementById('turnbar');
+const TYPE_COLOR = {一般:'#7d7d6e',火:'#d9531e',水:'#2f6fd1',電:'#c9a300',草:'#3f9a3a',冰:'#3aa6b9',格鬥:'#b03a2e',毒:'#8a3fa8',地面:'#a8843a',飛行:'#6b7fd6',超能力:'#d6457a',蟲:'#7b9a1f',岩石:'#8f7a3a',幽靈:'#5b4a8c',龍:'#5a3fd1',惡:'#4a3f3f',鋼:'#6f8494',妖精:'#d66fa6'};
+function pctHp(m){ return Math.max(0, Math.round(100*m.hp/m.maxhp)); }
+function stChip(m){ const t={burn:'🔥灼傷',poison:'☠️中毒',paralyze:'⚡麻痺'}[m.status]; return t ? ' · '+t : ''; }
+function renderStage(){
+  const b=state.battle, p=state.party[b.playerIdx], w=b.wild;
+  const nmx = m => (m.shiny?'✨':'')+esc(m.name);
+  const xp = p.level>=MAX_LEVEL ? 100 : Math.min(100, Math.round(100*p.exp/p.expNext));
+  stageEl.innerHTML =
+    `<div class="card foe"><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${String(w.dex+1).padStart(4,'0')} · ${esc(typeStr(w))}${stChip(w)}${b.foes&&b.foes.length?` · 還有 ${b.foes.length} 隻`:''}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
+    `<div class="card me"><div class="r1"><span>${nmx(p)}</span><span>Lv.${p.level}</span></div><div class="r2">${esc(typeStr(p))} · 速度 ${p.spd}${stChip(p)}</div><div class="bar${pctHp(p)<30?' low':''}"><i style="width:${pctHp(p)}%"></i></div><div class="hpt">HP: ${p.hp}/${p.maxhp}</div><div class="xp"><i style="width:${xp}%"></i></div></div>`;
+  turnEl.innerHTML = `<div>回合<br><b>${b.turn||1}</b></div><div>狀態<br><b>${b.phase||'選擇行動'}</b></div>`;
+}
+function syncBattleUI(phase){
+  const b=state.battle;
+  if(b && state.party[b.playerIdx]){ if(phase) b.phase=phase; appEl.classList.add('battle'); renderStage(); }
+  else appEl.classList.remove('battle');
+}
 
 const LINE_DELAY = 260;
 let lineCount = 0;
@@ -397,16 +526,18 @@ function renderBar(){
   const lead = state.party[0];
   const money = `<span>💰 ${state.money}</span><span>🪙 ${state.tower.coins}</span>`;
   barEl.innerHTML = lead
-    ? `<span>隊長: ${esc(monName(lead))} Lv.${lead.level} HP ${lead.hp}/${lead.maxhp}</span><span>圖鑑 ${state.caught.size}/${DEX.length}</span><span>精靈球 x${state.bag.pokeball}</span>${money}`
+    ? `<span>隊長: ${esc(monName(lead))} Lv.${lead.level} HP ${lead.hp}/${lead.maxhp}</span><span>圖鑑 ${state.caught.size}/${DEX.length}</span><span>球 x${totalBalls()}</span>${money}`
     : `<span>圖鑑 ${state.caught.size}/${DEX.length}</span>`;
 }
-function setOptions(list){
+function setOptions(list, phase){
+  syncBattleUI(phase);
+  refreshMenuDot();
   holdOptionsUntilRevealed();
   optsEl.innerHTML = "";
-  list.forEach((o,i)=>{
+  list.forEach(o=>{
     const b = document.createElement('button');
-    b.className = 'opt';
-    b.innerHTML = `<span class="k">${i+1}.</span>${esc(o.label)}`;
+    b.className = 'opt' + (o.half?' half':'') + (o.cls?' '+o.cls:'');
+    b.innerHTML = o.html || esc(o.label);
     b.onclick = o.action;
     optsEl.appendChild(b);
   });
@@ -424,7 +555,8 @@ function saveGame(){
     const data = {
       v:2, party:state.party, box:state.box,
       seen:Array.from(state.seen), caught:Array.from(state.caught), shinyCaught:Array.from(state.shinyCaught),
-      bag:state.bag, money:state.money, zone:state.zone, tower:state.tower
+      bag:state.bag, money:state.money, zone:state.zone, tower:state.tower,
+      stats:state.stats, quest:state.quest, ach:state.ach, meta:state.meta, checkin:state.checkin
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     return true;
@@ -434,6 +566,7 @@ function fixMon(m){
   if(!m) return m;
   const fixed = Object.assign({status:null, atkMul:1, defMul:1, shiny:false}, m);
   if(!Array.isArray(fixed.moves) || fixed.moves.length!==4){ fixed.moves = buildMoves(DEX[fixed.dex]); }
+  fixed.moves.forEach((mv,i)=>{ if(mv.maxpp===undefined){ mv.maxpp = i===0?35 : i===3?10 : mv.recoil?15 : 25; mv.pp = mv.maxpp; } });
   if(fixed.level > MAX_LEVEL) fixed.level = MAX_LEVEL;
   if(fixed.level >= MAX_LEVEL) fixed.exp = 0;
   return fixed;
@@ -452,7 +585,14 @@ function loadGame(){
     state.bag = Object.assign(defaultBag(), d.bag||{});
     state.money = (typeof d.money === 'number') ? d.money : START_MONEY;
     state.zone = d.zone || 1;
+    const oldTower = !(d.tower && d.tower.rev);
     state.tower = Object.assign(defaultTower(), d.tower||{});
+    state.meta = Object.assign(defaultMeta(), d.meta||{});
+    state.checkin = Object.assign({ym:'',days:[]}, d.checkin||{});
+    state.stats = Object.assign({}, d.stats||{});
+    state.quest = Object.assign({base:{}}, d.quest||{});
+    state.ach = Object.assign({done:[],claimed:[]}, d.ach||{});
+    if(oldTower){ state.tower.rev = 3; state.tower.endlessPtr = 0; state.tower.loop = 0; } // 舊版無盡進度與新規則不相容，重置
     return state.party.length>0;
   }catch(e){ return false; }
 }
@@ -461,6 +601,7 @@ function resetGame(){
   state.party=[]; state.box=[]; state.seen=new Set(); state.caught=new Set(); state.shinyCaught=new Set();
   state.bag=defaultBag(); state.money=START_MONEY; state.zone=1; state.battle=null;
   state.tower=defaultTower();
+  state.stats={}; state.quest={base:{}}; state.ach={done:[],claimed:[]}; state.meta=defaultMeta(); state.checkin={ym:'',days:[]};
   screenTitle();
 }
 function screenContinue(){
@@ -497,7 +638,8 @@ function screenCover(){
   renderBar();
   setOptions([
     {label: hasSave ? "▶ 開始遊戲（讀取存檔）" : "▶ 開始遊戲", action: hasSave ? screenContinue : screenTitle},
-    {label:"📖 遊戲簡介", action:screenIntro}
+    {label:"📖 遊戲簡介", half:true, action:screenIntro},
+    ...(hasSave ? [{label:"🗑 清除存檔", half:true, action:screenResetConfirm}] : [])
   ]);
 }
 function screenIntro(){
@@ -510,7 +652,9 @@ function screenIntro(){
   print('<span class="intro-h">◆ 捕捉</span>　用精靈球捕捉野生寶可夢，對方血量越低成功率越高。');
   print('<span class="intro-h">◆ 培養</span>　戰鬥獲勝可得經驗值，等級到了會自動進化，最高 Lv.100。');
   print('<span class="intro-h">◆ 隊伍</span>　最多帶 6 隻上場，抓超過的會送進倉庫；可隨時查看隊伍、設定隊長、與倉庫交換寶可夢，完全不用浪費戰鬥中的回合。');
-  print('<span class="intro-h">◆ 無限之塔</span>　依全國圖鑑順序一路挑戰，打倒小魔王（最終進化型）能拿硬幣，集滿硬幣可以挑戰急凍鳥、閃電鳥、火焰鳥、超夢、夢幻，以及雷公、炎帝、水君、洛奇亞、鳳王、時拉比共十一隻傳說寶可夢。');
+  print('<span class="intro-h">◆ 無限之塔</span>　依全國圖鑑順序一路挑戰，打倒小魔王（最終進化型）能拿硬幣，集滿硬幣可以挑戰急凍鳥、閃電鳥、火焰鳥、超夢、夢幻，以及雷公、炎帝、水君、洛奇亞、鳳王、時拉比共十一隻傳說寶可夢。幻之寶可夢（夢幻、時拉比）需先清空該世代的普通樓層與「第二輪」強化小魔王。');
+  print('<span class="intro-h">◆ 訓練家與道館</span>　草叢中每 8～12 場戰鬥會遇到訓練家（贏了有獎金）；圖鑑每登錄 10 隻可開啟下一間道館，先打關都 8 間，再打城都 8 間。');
+  print('<span class="intro-h">◆ 補給站</span>　用過之後要再打完 2 場戰鬥才能再用（隊伍全倒時例外）；探索時偶爾會撿到道具。招式有 PP，用完只能「掙扎」。右上角「☰ 選單」可領任務與成就獎勵。');
   hr();
   print('<span class="sys">目標：抓齊全國圖鑑 251 隻、收服所有傳說寶可夢！進度會自動儲存在這台裝置的瀏覽器裡。</span>');
   setOptions([{label:"← 返回封面", action:screenCover}]);
@@ -570,18 +714,18 @@ function screenField(){
   saveGame();
   renderBar();
   setOptions([
-    {label:"往草叢前進（可能遭遇野生寶可夢）", action:()=>encounter()},
-    {label:"◆ 進入無限之塔（依圖鑑順序挑戰）", action:enterTower},
-    {label:"🏪 商店", action:()=>{ shopQty=1; screenShop(); }},
-    {label:"查看隊伍", action:screenParty},
-    {label:"背包道具", action:screenBag},
-    {label:"查看圖鑑", action:screenDex},
-    {label:"在補給站治療隊伍（免費）", action:()=>healAll(screenField)},
-    {label:`深入下一區域（目前第 ${state.zone} 區，野生寶可夢等級提升）`, action:advanceZone},
-    {label:"💾 手動存檔", action:()=>{ saveGame(); clearLog(); print('<span class="good">已儲存進度！</span>'); screenField(); }},
-    {label:"🗑 清除存檔重新開始", action:screenResetConfirm}
+    {label:"🌿 往草叢前進（遭遇野生寶可夢）", action:()=>encounter()},
+    {label:"🗼 無限之塔", half:true, action:enterTower},
+    {label:`🏛 道館（${state.meta.badges}/${GYMS.length}）`, half:true, action:screenGym},
+    {label:"👥 隊伍", half:true, action:screenParty},
+    {label:"🎒 背包", half:true, action:screenBag},
+    {label:"🏪 商店", half:true, action:()=>{ shopQty=1; screenShop(); }},
+    {label:"📖 圖鑑", half:true, action:screenDex},
+    {label:`💊 補給站${state.meta.cd>0?`（再 ${state.meta.cd} 場）`:''}`, half:true, action:()=>healAll(screenField)},
+    {label:`⏩ 下一區域（現第 ${state.zone} 區）`, half:true, action:advanceZone}
   ]);
 }
+
 function toField(){ clearLog(); screenField(); }
 function toBattle(){ clearLog(); screenBattle(); }
 function advanceZone(){
@@ -591,11 +735,16 @@ function advanceZone(){
   print('這裡的野生寶可夢感覺更強了。');
   screenField();
 }
-function fullHeal(){ state.party.forEach(m=>{ m.hp=m.maxhp; m.status=null; m.atkMul=1; m.defMul=1; }); }
+function fullHeal(){ state.party.forEach(m=>{ m.hp=m.maxhp; m.status=null; m.atkMul=1; m.defMul=1; restorePP(m); }); }
 function healAll(returnTo){
-  fullHeal();
+  const mt = state.meta;
+  if(mt.cd > 0 && !noAlive()){
+    clearLog(); print(`<span class="bad">補給站還在整備中……要再打完 ${mt.cd} 場戰鬥才能使用。</span>`);
+    return (returnTo||screenField)();
+  }
+  fullHeal(); mt.cd = 2;
   clearLog();
-  print('<span class="good">補給站的護士治好了你隊伍中所有寶可夢！</span>');
+  print('<span class="good">補給站的護士治好了你隊伍中所有寶可夢！（再打完 2 場戰鬥才能再次使用）</span>');
   (returnTo||screenField)();
 }
 function noAlive(){ return state.party.length===0 || !state.party.some(m=>m.hp>0); }
@@ -608,6 +757,9 @@ function encounter(){
     print('<span class="bad">你的隊伍已經沒有能戰鬥的寶可夢了，先去補給站治療吧。</span>');
     screenField(); return;
   }
+  if(Math.random() < 0.12) return findItem();
+  const mt = state.meta; mt.since++;
+  if(mt.since >= mt.next){ mt.since = 0; mt.next = 8 + Math.floor(Math.random()*5); return startTrainer(); }
   const lvl = Math.max(2, Math.min(MAX_LEVEL, state.zone*4 + Math.floor(Math.random()*5) - 2));
   const dexIndex = pickWildIndex(state.zone);
   const wild = makeMon(dexIndex, lvl);
@@ -641,9 +793,9 @@ function screenForcedSwitch(){
   const opts = state.party
     .map((m,i)=> m.hp>0 ? {label:`${monName(m)} Lv.${m.level} HP ${m.hp}/${m.maxhp}`, action:()=>{
       state.battle.playerIdx=i; clearLog(); print(`派出 ${nm(m)}！`); screenBattle();
-    }} : null)
+    }, half:true} : null)
     .filter(Boolean);
-  setOptions(opts);
+  setOptions(opts,'選擇下一隻');
 }
 
 /* ---------- SHOP ---------- */
@@ -655,13 +807,13 @@ function screenShop(msg){
   print(`你的錢包：💰 ${state.money}　｜　一次購買 ${shopQty} 個`);
   if(msg) print(msg);
   hr();
-  const opts = Object.keys(ITEMS).map(k=>{
+  const opts = Object.keys(ITEMS).filter(k=>ITEMS[k].price>0).map(k=>{
     const it = ITEMS[k];
     const total = it.price*shopQty;
-    return {label:`${it.label}（${it.desc}）$${it.price}${shopQty>1?` ×${shopQty} = $${total}`:''}　持有 ${state.bag[k]||0}`, action:()=>buyItem(k)};
+    return {label:`${it.label} $${it.price}`, half:true, html:`${esc(it.label)} $${total}<span class="sub">${esc(it.desc)}｜持有 ${state.bag[k]||0}</span>`, action:()=>buyItem(k)};
   });
-  opts.push({label:`切換購買數量（目前 ×${shopQty}）`, action:()=>{ shopQty = shopQty===1?5:(shopQty===5?10:1); screenShop(); }});
-  opts.push({label:"離開商店", action:toField});
+  opts.push({label:`數量 ×${shopQty}`, half:true, action:()=>{ shopQty = shopQty===1?5:(shopQty===5?10:1); screenShop(); }});
+  opts.push({label:"離開", half:true, action:toField});
   setOptions(opts);
 }
 function buyItem(k){
@@ -708,7 +860,7 @@ function screenTower(keepLog){
   const e = DEX[f.dexIdx];
   const no = '#'+String(f.dexIdx+1).padStart(3,'0');
   if(f.endless){
-    print(`<span class="good">一般樓層已全部清空！現在是無盡小魔王（第 ${t.loop+1} 輪，能力 ×${endlessMul().toFixed(1)}）</span>`);
+    print(`<span class="good">一般樓層已全部清空！現在是第 ${t.loop+2} 輪小魔王（強化：HP ×${endlessHpMul().toFixed(1)}、能力 ×${endlessMul().toFixed(1)}）</span>`);
     print(`<span class="boss">【小魔王】${no} ${esc(e[0])}（${typeStr({t1:e[1],t2:e[2]})}）Lv.${f.lvl}</span>`);
     opts.push({label:`挑戰小魔王 ${e[0]}`, action:startTowerFloor});
   } else {
@@ -727,8 +879,8 @@ function screenTower(keepLog){
       print(`<span class="em">下一位是「幻之寶可夢」：#${String(ldex+1).padStart(3,'0')} ${esc(le[0])}</span>`);
       print(`${esc(le[0])}極為稀有，需要同時滿足：`);
       print(`　${g.coinsOk?'✅':'❌'} 硬幣 ≥ ${g.cost} 枚（目前 ${t.coins}）`);
-      print(`　${g.floorsOk?'✅':'❌'} 清空塔內全部 ${NONLEG.length} 一般樓層（目前 ${Math.min(t.floorPtr,NONLEG.length)}）`);
-      print(`　${g.levelOk?'✅':'❌'} 隊長等級 ≥ Lv.${MYTHIC_MIN_LEVEL[t.legendaryPtr]}（目前 ${state.party[0]?('Lv.'+state.party[0].level):'無隊長'}）`);
+      print(`　${g.floorsOk?'✅':'❌'} 第${g.gen}世代普通樓層全數通過（${g.gp.floorsDone}/${g.gp.floorsTotal}）`);
+      print(`　${g.bossOk?'✅':'❌'} 第${g.gen}世代第二輪小魔王全數擊破（${g.gp.bossDone}/${g.gp.bossTotal}）`);
     } else {
       print(`下一位神獸：#${String(ldex+1).padStart(3,'0')} ${esc(le[0])}　需要 ${g.cost} 枚硬幣`);
     }
@@ -739,9 +891,9 @@ function screenTower(keepLog){
   } else {
     print('<span class="good">所有神獸皆已降服！</span>');
   }
-  opts.push({label:"查看隊伍", action:()=>screenParty(screenTower)});
+  opts.push({label:"👥 隊伍", half:true, action:()=>screenParty(screenTower)});
   if(atSegmentStart()){
-    opts.push({label:"返回地面", action:toField});
+    opts.push({label:"🏠 返回地面", half:true, action:toField});
   } else {
     hr();
     print(`<span class="sys">要打倒本段小魔王 ${esc(segmentBossName())} 才能返回地面。</span>`);
@@ -759,7 +911,7 @@ function startTowerFloor(){
   const wild = makeMon(f.dexIdx, f.lvl);
   if(f.endless){
     const mul = endlessMul();
-    wild.maxhp = Math.floor(wild.maxhp*mul); wild.hp = wild.maxhp;
+    wild.maxhp = Math.floor(wild.maxhp*endlessHpMul()); wild.hp = wild.maxhp;
     wild.atk = Math.floor(wild.atk*mul); wild.def = Math.floor(wild.def*mul); wild.spd = Math.floor(wild.spd*mul);
   }
   state.seen.add(f.dexIdx);
@@ -817,45 +969,45 @@ function who(m){
   return nm(m);
 }
 function screenBattle(){
-  const b = state.battle;
-  const p = state.party[b.playerIdx];
+  const b = state.battle, p = state.party[b.playerIdx];
   renderBar();
-  hpBars(p, b.wild);
-  const opts = [{label:'⚔ 攻擊', action:screenMoveSelect}];
-  opts.push({label:'🎒 道具', action:screenItemSelect});
+  const FX={burn:'灼傷',poison:'中毒',paralyze:'麻痺',drain:'吸血',atkDown:'降攻',defDown:'降防',selfDefUp:'升防'};
+  const mk = (mv,i)=>{
+    const off = !mv.struggle && !(mv.pp>0), fx = STATUS_FX[mv.type];
+    const ppTxt = mv.struggle ? 'PP ∞' : `PP ${mv.pp}/${mv.maxpp}`;
+    const ppCls = mv.struggle ? '' : (mv.pp<=0 ? ' zero' : mv.pp <= Math.ceil(mv.maxpp/4) ? ' low' : '');
+    const sub = `威力 ${mv.power}` + (fx?` · ✦${FX[fx.kind]}`:'') + (mv.recoil?' · ⚠反作用力':'');
+    return { label:`${mv.name}（${mv.type}／威力${mv.power}／${ppTxt}）`, half:!mv.struggle, cls:'mv'+(off?' off':''),
+      html:`<span class="mvn">${esc(mv.name)}</span><span class="mvt" style="background:${TYPE_COLOR[mv.type]||'#2b3a8c'}">${mv.type}</span><span class="mvpp${ppCls}">${ppTxt}</span><span class="mvp">${sub}</span>`,
+      action: off ? ()=>screenBattle() : ()=>playerMove(i) };
+  };
+  let opts;
+  if(p.moves.some(m=>m.pp>0)) opts = p.moves.map(mk);
+  else { print('<span class="bad">所有招式的 PP 都用完了！只能使用「掙扎」（會受到反作用力）。</span>'); opts = [mk(STRUGGLE,-1)]; }
+  opts.push({label:'🎒 道具', cls:'q', action:screenItemSelect});
+  if(state.party.filter(m=>m.hp>0).length>1) opts.push({label:'🔄 換上場', cls:'q', action:screenSwitch});
   if(b.mode==='wild'){
-    opts.push({label:`🎯 捕捉（丟出精靈球，剩 ${state.bag.pokeball}）`, action:tryCatch});
-    opts.push({label:"🏃 逃跑", action:tryFlee});
+    opts.push({label:'🎯 捕捉', cls:'q', action:screenBallSelect});
+    opts.push({label:'🏃 逃跑', cls:'q', action:tryFlee});
   }
-  if(state.party.filter(m=>m.hp>0).length>1) opts.push({label:'🔄 換上場的寶可夢', action:screenSwitch});
   if(b.mode==='legendary') print('<span class="sys">（神獸戰無法逃跑，也無法用精靈球——擊敗牠就能收服）</span>');
+  else if(b.mode==='trainer' || b.mode==='gym') print('<span class="sys">（訓練家對戰不能逃跑，也不能捕捉）</span>');
   else if(b.mode==='tower') print('<span class="sys">（塔內不能捕捉也不能逃跑，輸了會被送出塔外）</span>');
-  setOptions(opts);
+  setOptions(opts,'選擇招式');
 }
-function screenMoveSelect(){
+
+function screenBallSelect(){
   const b = state.battle;
-  const p = state.party[b.playerIdx];
-  clearLog();
-  renderBar();
-  hpBars(p, b.wild);
-  print('選擇招式：');
-  const moveOpts = p.moves.map((mv,i)=>{
-    const fx = STATUS_FX[mv.type];
-    let fxTag = fx ? `　✦${ {burn:'灼傷',poison:'中毒',paralyze:'麻痺',drain:'吸血',atkDown:'降攻',defDown:'降防',selfDefUp:'升防'}[fx.kind] }` : '';
-    if(mv.recoil) fxTag += '　⚠反作用力';
-    return { label:`${mv.name}（${mv.type}／威力${mv.power}${fxTag}）`, action:()=>playerMove(i) };
-  });
-  moveOpts.push({label:'← 返回', action:toBattle});
-  setOptions(moveOpts);
+  clearLog(); renderBar();
+  const opts = BALL_KEYS.filter(k=>state.bag[k]>0).map(k=>({label:`${ITEMS[k].label} ×${state.bag[k]}`, half:true, html:`${esc(ITEMS[k].label)} ×${state.bag[k]}<span class="sub">${esc(ITEMS[k].desc)}</span>`, action:()=>tryCatch(k)}));
+  if(!opts.length) print('<span class="bad">你沒有任何精靈球了！去商店買吧。</span>');
+  opts.push({label:'← 返回', action:toBattle});
+  setOptions(opts,'選擇球種');
 }
-function hpBars(p, w){
-  const pp = Math.max(0, Math.round(100*p.hp/p.maxhp));
-  const wp = Math.max(0, Math.round(100*w.hp/w.maxhp));
-  print(`我方 ${nm(p)} Lv.${p.level}　HP ${p.hp}/${p.maxhp}　速度 ${p.spd}${statusTag(p)}`);
-  print(`<div class="hpwrap"><div class="hpfill" style="width:${pp}%"></div></div>`);
-  print(`敵方 ${nm(w)} Lv.${w.level}　HP ${w.hp}/${w.maxhp}　速度 ${w.spd}${statusTag(w)}`);
-  print(`<div class="hpwrap"><div class="hpfill" style="width:${wp}%;background:${wp<30?'var(--danger)':'var(--accent2)'}"></div></div>`);
-}
+function screenMoveSelect(){ screenBattle(); }
+
+function hpBars(){ /* 改由 renderStage() 畫對戰卡片 */ }
+
 function randomWildMove(w){ return w.moves[Math.floor(Math.random()*w.moves.length)]; }
 function clearBattleModifiers(){ state.party.forEach(m=>{ m.status=null; m.atkMul=1; m.defMul=1; }); }
 function effText(mult){
@@ -879,6 +1031,7 @@ function doAttack(att, def, move){
     print(`<span class="bad">${who(att)} 因麻痺而無法動彈！</span>`);
     return;
   }
+  if(att !== state.battle.wild && move.maxpp !== undefined) move.pp = Math.max(0, move.pp - 1);
   const isEnemy = att === state.battle.wild;
   const d = dmg(att, def, move);
   def.hp = Math.max(0, def.hp - d);
@@ -918,12 +1071,14 @@ function endOfTurn(){
   if(w.hp<=0){ return winBattle(); }
   const tP = tickStatus(p); if(tP) print(tP);
   if(afterFaintCheck(p)) return;
+  b.turn = (b.turn||1) + 1;
   screenBattle();
 }
 function playerMove(moveIdx){
   const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
   clearLog();
-  const pm = p.moves[moveIdx], wm = randomWildMove(w);
+  if(moveIdx>=0 && !(p.moves[moveIdx].pp>0)) return screenMoveSelect();
+  const pm = moveIdx<0 ? STRUGGLE : p.moves[moveIdx], wm = randomWildMove(w);
   const ps = effSpd(p), ws = effSpd(w);
   const playerFirst = ps > ws || (ps === ws && Math.random() < 0.5);
   const order = playerFirst ? [[p,w,pm],[w,p,wm]] : [[w,p,wm],[p,w,pm]];
@@ -934,19 +1089,20 @@ function playerMove(moveIdx){
   }
   endOfTurn();
 }
-function tryCatch(){
-  const b = state.battle; const w = b.wild;
+function tryCatch(ballKey){
+  if(typeof ballKey !== 'string') ballKey = 'pokeball';
+  const b = state.battle; const w = b.wild; const ball = ITEMS[ballKey];
   clearLog();
-  if(state.bag.pokeball<=0){
-    print('<span class="bad">精靈球用完了！去商店補貨吧。</span>');
+  if(!(state.bag[ballKey]>0)){
+    print(`<span class="bad">${ball.label}用完了！去商店補貨吧。</span>`);
     return screenBattle();
   }
-  state.bag.pokeball--;
+  state.bag[ballKey]--;
   const hpRatio = w.hp/w.maxhp;
-  const chance = Math.min(0.92, (1-hpRatio)*0.75 + 0.15);
-  print(`你對 ${nm(w)} 丟出了精靈球……`);
+  const chance = ball.master ? 1 : Math.min(0.97, (1-hpRatio)*0.75 + 0.15 + ball.ball);
+  print(`你對 ${nm(w)} 丟出了${ball.label}……`);
   if(Math.random() < chance){
-    w.status = null; w.atkMul = 1; w.defMul = 1;
+    w.status = null; w.atkMul = 1; w.defMul = 1; bump('catches'); battleDone();
     state.caught.add(w.dex);
     if(w.shiny) state.shinyCaught.add(w.dex);
     print(`<span class="good">抓到了！${nm(w)} 已加入圖鑑！</span>`);
@@ -968,13 +1124,13 @@ function screenItemSelect(){
   const opts = [];
   Object.keys(ITEMS).forEach(kind=>{
     const it = ITEMS[kind];
-    if(kind==='pokeball' || !(state.bag[kind] > 0)) return;
-    const relevant = it.heal ? p.hp < p.maxhp : p.status === it.cure;
+    if(it.ball!==undefined || !(state.bag[kind] > 0)) return;
+    const relevant = it.pp ? p.moves.some(m=>m.pp<m.maxpp) : it.heal ? p.hp < p.maxhp : p.status === it.cure;
     if(relevant) opts.push({label:`${it.label}：${it.desc}（剩 ${state.bag[kind]}）`, action:()=>useItem(kind)});
   });
   if(opts.length===0) print('<span class="sys">（目前沒有能用的道具）</span>');
   opts.push({label:'← 返回', action:toBattle});
-  setOptions(opts);
+  setOptions(opts,'選擇道具');
 }
 function useItem(kind){
   const b = state.battle; const p = state.party[b.playerIdx];
@@ -982,7 +1138,10 @@ function useItem(kind){
   clearLog();
   if(!it || !(state.bag[kind]>0)){ print('<span class="bad">道具用完了！</span>'); return screenBattle(); }
   state.bag[kind]--;
-  if(it.heal){
+  if(it.pp){
+    restorePP(p);
+    print(`<span class="good">使用了${it.label}，${nm(p)} 的全部招式 PP 恢復了！</span>`);
+  } else if(it.heal){
     const before = p.hp;
     p.hp = Math.min(p.maxhp, p.hp + it.heal);
     print(`<span class="good">使用了${it.label}，${nm(p)} 回復了 ${p.hp-before} 點 HP。</span>`);
@@ -1011,10 +1170,10 @@ function screenSwitch(){
   const opts = state.party.map((m,i)=>{
     const tag = i===b.playerIdx ? '（目前上場）' : (m.hp<=0 ? '（已無法戰鬥）' : `HP ${m.hp}/${m.maxhp}`);
     const usable = i!==b.playerIdx && m.hp>0;
-    return { label:`${monName(m)} Lv.${m.level} ${tag}`, action: usable ? ()=>doSwitch(i) : screenSwitch };
+    return { label:`${monName(m)} Lv.${m.level} ${tag}`, half:true, action: usable ? ()=>doSwitch(i) : screenSwitch };
   });
   opts.push({label:'取消，返回戰鬥', action:toBattle});
-  setOptions(opts);
+  setOptions(opts,'選擇寶可夢');
 }
 function doSwitch(idx){
   const b = state.battle;
@@ -1042,6 +1201,7 @@ function evolveIfReady(p){
   state.caught.add(toIdx); state.seen.add(toIdx);
   if(p.shiny) state.shinyCaught.add(toIdx);
   print(`<span class="em">✦ ${esc(oldName)} 進化成了 ${nm(p)}！</span>`);
+  bump('evolves');
   return true;
 }
 function evolveFully(p){ while(evolveIfReady(p)){} }
@@ -1075,18 +1235,35 @@ function warnIfWiped(){
 function winBattle(){
   const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
   const mode = b.mode;
+  bump('wins'); if(mode==='tower'){ bump('floors'); if(b.boss) bump('bosses'); }
   print(`<span class="good">擊敗了${mode==='wild'?'野生的 ':' '}${nm(w)}！</span>`);
   const expMul = (mode==='tower') ? TOWER_EXP_MUL : 1;
   if(p.hp>0) grantExp(p, w.level, expMul, '獲得');
+  if(b.foes && b.foes.length){
+    const nx = b.foes.shift(); b.wild = nx;
+    print(`<span class="em">${esc(b.title)} 派出了 ${nm(nx)}（Lv.${nx.level}）！</span>`);
+    const cur = state.party[b.playerIdx];
+    if(cur.hp<=0) return afterFaintCheck(cur);
+    return screenBattle();
+  }
   state.battle=null;
+  battleDone();
 
+  if(mode==='trainer'){
+    giveMoney(b.reward); bump('trainers'); warnIfWiped(); return screenField();
+  }
+  if(mode==='gym'){
+    giveMoney(b.reward); state.meta.badges++; bump('gyms');
+    print(`<span class="boss">🏅 獲得了【${esc(GYMS[b.gymIdx][1])}】的徽章！（${state.meta.badges}/${GYMS.length}）</span>`);
+    warnIfWiped(); return screenGym(true);
+  }
   if(mode==='tower'){
     const t = state.tower;
     giveMoney(w.level * 10 * (b.boss ? 3 : 1));
     t.coins++;
     if(b.endless){
       t.endlessPtr++;
-      if(t.endlessPtr >= BOSSES.length){ t.endlessPtr = 0; t.loop++; print(`<span class="boss">無盡小魔王第 ${t.loop} 輪完成！下一輪能力再提升。</span>`); }
+      if(t.endlessPtr >= BOSSES.length){ t.endlessPtr = 0; t.loop++; print(`<span class="boss">第 ${t.loop+1} 輪小魔王全數擊破！下一輪再度強化。</span>`); }
     } else {
       t.floorPtr++;
     }
@@ -1096,7 +1273,7 @@ function winBattle(){
       print('<span class="good">小魔王倒下時留下了一道光，你的隊伍全部回滿了！現在可以返回地面。</span>');
     }
     if(!b.endless && t.floorPtr === NONLEG.length){
-      print(`<span class="boss">塔內 ${NONLEG.length} 層全數突破！接下來會依圖鑑順序不斷出現小魔王。</span>`);
+      print(`<span class="boss">塔內 ${NONLEG.length} 層全數突破！接下來進入第二輪小魔王（HP、能力大幅強化）。</span>`);
     }
     warnIfWiped();
     return screenTower(true);
@@ -1118,9 +1295,11 @@ function winBattle(){
 }
 function loseBattle(){
   print('<span class="bad">你的隊伍全部失去戰鬥能力了……你被送回了補給站。</span>');
-  state.party.forEach(m=>{ m.hp=Math.max(1, Math.floor(m.maxhp*0.5)); m.status=null; });
+  state.party.forEach(m=>{ m.hp=Math.max(1, Math.floor(m.maxhp*0.5)); m.status=null; restorePP(m); });
   const mode = state.battle && state.battle.mode;
   state.battle=null;
+  battleDone();
+  if(mode==='trainer' || mode==='gym'){ const lost = Math.floor(state.money*0.1); state.money -= lost; print(`<span class="bad">你輸給了對手，賠了 💰 ${lost}。</span>`); }
   if(mode==='tower' || mode==='legendary') return kickOutOfTower();
   screenField();
 }
@@ -1144,10 +1323,10 @@ function screenParty(back, msg){
   }
   const opts=[];
   state.party.forEach((m,i)=>{
-    if(i>0) opts.push({label:`★ 設為隊長：${monName(m)}`, action:()=>setLeader(i, back)});
+    if(i>0) opts.push({label:`★ 設為隊長：${monName(m)}`, half:true, action:()=>setLeader(i, back)});
   });
-  if(state.party.length>1) opts.push({label:"📦 放生一隻到倉庫", action:()=>screenReleaseSelect(back)});
-  opts.push({label:`📦 查看倉庫（${state.box.length}）`, action:()=>screenBox(back)});
+  if(state.party.length>1) opts.push({label:"📦 放生一隻到倉庫", half:true, action:()=>screenReleaseSelect(back)});
+  opts.push({label:`📦 查看倉庫（${state.box.length}）`, half:true, action:()=>screenBox(back)});
   opts.push({label:"返回", action:back});
   setOptions(opts);
 }
@@ -1187,9 +1366,9 @@ function screenBox(back, msg){
   state.box.forEach((m,i)=>{
     print(`${i+1}. ${nm(m)}  Lv.${m.level}  HP ${m.hp}/${m.maxhp}  屬性:${typeStr(m)}${statusTag(m)}`);
     if(state.party.length<6){
-      opts.push({label:`⬆ 拉回隊伍：${monName(m)}`, action:()=>withdrawFromBox(i, back)});
+      opts.push({label:`⬆ 拉回隊伍：${monName(m)}`, half:true, action:()=>withdrawFromBox(i, back)});
     } else {
-      opts.push({label:`🔁 與隊伍交換：${monName(m)}`, action:()=>screenSwapSelect(i, back)});
+      opts.push({label:`🔁 與隊伍交換：${monName(m)}`, half:true, action:()=>screenSwapSelect(i, back)});
     }
   });
   opts.push({label:"返回隊伍畫面", action:()=>screenParty(back)});
@@ -1253,10 +1432,228 @@ function screenDex(){
     else print(`#${no} <span class="sys">？？？</span>`);
   }
   const opts=[];
-  if(start+perPage<DEX.length) opts.push({label:"下一頁", action:()=>{dexPage++; screenDex();}});
-  if(dexPage>0) opts.push({label:"上一頁", action:()=>{dexPage--; screenDex();}});
+  if(start+perPage<DEX.length) opts.push({label:"下一頁 ▶", half:true, action:()=>{dexPage++; screenDex();}});
+  if(dexPage>0) opts.push({label:"◀ 上一頁", half:true, action:()=>{dexPage--; screenDex();}});
   opts.push({label:"返回", action:()=>{dexPage=0; toField();}});
   setOptions(opts);
+}
+
+/* ---------- TRAINERS / GYMS / ROAD ITEMS ---------- */
+const TRAINERS = ['短褲小子','蟲網少年','登山男','迷你裙少女','釣手','野餐女孩','空手道王','露營少年','研究員','水手'];
+// [道館名, 館主, 屬性, 圖鑑編號池]　前 8 間為第一世代，後 8 間為第二世代
+const GYMS = [
+  ['深灰道館','小剛','岩石',[74,75,76,95]], ['華藍道館','小霞','水',[54,55,118,119,120,121]],
+  ['枯葉道館','馬志士','電',[25,26,81,82,100,101,125]], ['彩虹道館','莉佳','草',[43,44,45,69,70,71,102,103,114]],
+  ['淺紅道館','阿桔','毒',[41,42,48,49,88,89,109,110]], ['金黃道館','娜姿','超能力',[63,64,65,79,80,96,97,122]],
+  ['紅蓮道館','夏伯','火',[37,38,58,59,77,78,126]], ['常磐道館','坂木','地面',[27,28,50,51,104,105,111,112]],
+  ['桔梗道館','阿速','飛行',[16,17,18,21,22,163,164]], ['煙墨道館','阿筆','蟲',[10,11,12,13,14,15,123,127,165,167]],
+  ['綠鬱道館','小茜','一般',[19,39,40,52,53,108,113,128,241]], ['圓朵道館','松葉','幽靈',[92,93,94,200]],
+  ['湛藍道館','阿四','格鬥',[56,57,66,67,68,106,107,237]], ['淺蔥道館','阿蜜','鋼',[81,82,205,208,212,227]],
+  ['烏丸道館','柳伯','冰',[87,91,124,215,220,221,225,238]], ['凌雲道館','小蓮','龍',[147,148,149,230]]
+];
+function defaultMeta(){ return {cd:0, since:0, next:8+Math.floor(Math.random()*5), badges:0}; }
+function battleDone(){ if(state.meta.cd > 0) state.meta.cd--; }
+function startMultiBattle(mode, foes, title, extra){
+  foes.forEach(f=>state.seen.add(f.dex));
+  const first = foes.shift();
+  clearBattleModifiers();
+  state.battle = Object.assign({wild:first, foes, playerIdx:firstAlive(), mode, title}, extra);
+  return first;
+}
+function startTrainer(){
+  const z = state.zone, n = 1 + (z>=3?1:0) + (Math.random()<0.35?1:0), foes = [];
+  for(let i=0;i<n;i++) foes.push(makeMon(pickWildIndex(z), Math.max(2, Math.min(MAX_LEVEL, z*4 + Math.floor(Math.random()*5) - 1)), {shiny:false}));
+  const title = TRAINERS[Math.floor(Math.random()*TRAINERS.length)];
+  const first = startMultiBattle('trainer', foes, title, {reward: foes.reduce((a,f)=>a+f.level*25,0)});
+  clearLog();
+  print(`<span class="em">🎽 訓練家【${esc(title)}】向你挑戰！（共 ${n} 隻寶可夢）</span>`);
+  print(`${esc(title)} 派出了 ${nm(first)}（Lv.${first.level}）！`);
+  screenBattle();
+}
+function gymFoeCount(i){ return Math.min(5, 2 + Math.floor(i/3)); }
+function startGym(){
+  const i = state.meta.badges, g = GYMS[i];
+  if(!g || state.caught.size < (i+1)*10) return screenGym();
+  if(noAlive()){ clearLog(); print('<span class="bad">你的隊伍已經沒有能戰鬥的寶可夢了，先去補給站治療吧。</span>'); return screenField(); }
+  const cnt = gymFoeCount(i), lv = 10 + i*4, foes = [];
+  for(let k=0;k<cnt;k++) foes.push(makeMon(g[3][Math.floor(Math.random()*g[3].length)]-1, Math.min(MAX_LEVEL, lv + (k===cnt-1?3:0)), {shiny:false}));
+  const first = startMultiBattle('gym', foes, `${g[0]}館主 ${g[1]}`, {reward:1200 + i*400, gymIdx:i});
+  clearLog();
+  print(`<span class="boss">🏛 ${esc(g[0])}（${esc(g[2])}系）館主【${esc(g[1])}】向你挑戰！（共 ${cnt} 隻）</span>`);
+  print(`${esc(g[1])} 派出了 ${nm(first)}（Lv.${first.level}）！`);
+  screenBattle();
+}
+function screenGym(keepLog){
+  if(keepLog===true) hr(); else clearLog();
+  renderBar();
+  const i = state.meta.badges, n = state.caught.size, g = GYMS[i], opts = [];
+  print(`<span class="em">🏛 道館挑戰　徽章 ${i}/${GYMS.length}</span>`);
+  if(i>0) print(`<span class="sys">🏅 ${GYMS.slice(0,i).map(x=>x[1]).join('、')}</span>`);
+  if(!g) print('<span class="good">恭喜！你已經集滿全部 16 枚徽章！</span>');
+  else {
+    const need = (i+1)*10, ok = n >= need;
+    print(`下一間：${esc(g[0])}（${esc(g[2])}系）館主 ${esc(g[1])}${i>=8?'　<span class="sys">［第二世代］</span>':''}`);
+    print(`　${ok?'✅':'❌'} 圖鑑登錄 ≥ ${need} 隻（目前 ${n}）`);
+    print(`<span class="sys">建議等級約 Lv.${10+i*4}；館主有 ${gymFoeCount(i)} 隻寶可夢，不能逃跑或捕捉。</span>`);
+    opts.push(ok ? {label:`⚔ 挑戰 ${g[0]}`, action:startGym} : {label:`（圖鑑還差 ${need-n} 隻）`, action:()=>screenGym()});
+  }
+  opts.push({label:'← 返回', action:toField});
+  setOptions(opts);
+}
+const FIND_TABLE = [['potion',30],['pokeball',25],['antidote',8],['burnheal',8],['paralyzeheal',8],['greatball',10],['superpotion',6],['ether',5]];
+function findItem(){
+  let r = Math.random()*FIND_TABLE.reduce((a,x)=>a+x[1],0), key = FIND_TABLE[0][0];
+  for(const [k,w] of FIND_TABLE){ if((r-=w) < 0){ key = k; break; } }
+  const qty = key==='pokeball' ? 1 + Math.floor(Math.random()*2) : 1;
+  state.bag[key] = (state.bag[key]||0) + qty; bump('found');
+  clearLog();
+  print(`<span class="good">🎁 你在路邊撿到了 ${ITEMS[key].label} ×${qty}！</span>`);
+  screenField();
+}
+
+/* ---------- MONTHLY CHECK-IN ---------- */
+let nowFn = () => new Date();
+const CHECKIN_BASE = [{money:500}, {money:300}, {items:{pokeball:5}}, {items:{potion:3}}]; // 依累計簽到天數 n%4 輪替
+const CHECKIN_MILESTONE = {
+  7:  {money:500,  items:{greatball:5}},
+  14: {money:0,    items:{ether:5, superpotion:3}},
+  21: {money:1500, items:{ultraball:5}},
+  28: {money:3000, items:{masterball:1, maxpotion:3}}
+};
+function checkinReward(n){ return CHECKIN_MILESTONE[n] || CHECKIN_BASE[n % 4]; }
+function checkinNow(){
+  const d = nowFn(), ym = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  if(state.checkin.ym !== ym) state.checkin = {ym, days:[]}; // 每月重置
+  return {ym, day:d.getDate(), dim:new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(), first:new Date(d.getFullYear(), d.getMonth(), 1).getDay(), month:d.getMonth()+1};
+}
+function canCheckin(){ const t = checkinNow(); return !state.checkin.days.includes(t.day); }
+function doCheckin(){
+  const t = checkinNow(); if(state.checkin.days.includes(t.day)) return;
+  state.checkin.days.push(t.day);
+  const n = state.checkin.days.length, r = checkinReward(n);
+  giveReward(r); bump('checkins'); saveGame();
+  notify(`📅 簽到成功（本月第 ${n} 天）：${rewardText(r)}`); openMenu('checkin'); refreshMenuDot();
+}
+function checkinHtml(){
+  const t = checkinNow(), got = state.checkin.days, n = got.length, next = checkinReward(n+1);
+  let h = `<div class="mh">${t.month} 月簽到　本月已簽 ${n} 天（每月 1 號重置，不能補簽）</div>`;
+  h += canCheckin() ? `<button class="bigclaim" onclick="doCheckin()">✅ 今日簽到　可得：${esc(rewardText(next))}</button>` : `<button class="bigclaim off" disabled>今天已簽到 ✔　明天可得：${esc(rewardText(next))}</button>`;
+  h += '<div class="cal">' + ['日','一','二','三','四','五','六'].map(x=>`<div class="wd">${x}</div>`).join('');
+  for(let i=0;i<t.first;i++) h += '<div class="day blank"></div>';
+  for(let d=1; d<=t.dim; d++) h += `<div class="day${got.includes(d)?' on':''}${d===t.day?' today':''}">${got.includes(d)?'✓':d}</div>`;
+  h += '</div><div class="mh">累計簽到獎勵</div>';
+  Object.keys(CHECKIN_MILESTONE).forEach(k=>{
+    h += `<div class="qi${n>=k?' done':''}"><div class="qrow"><span>${k} 天：${esc(rewardText(CHECKIN_MILESTONE[k]))}</span><span>${n>=k?'✅':`還差 ${k-n} 天`}</span></div></div>`;
+  });
+  return h + '<div style="color:var(--dim);font-size:12px">其他天數：輪流領 💰500／💰300／精靈球×5／藥水×3</div>';
+}
+
+/* ---------- QUESTS / ACHIEVEMENTS / MENU ---------- */
+function bump(k, n){ state.stats[k] = (state.stats[k]||0) + (n||1); }
+const modalEl = document.getElementById('modal'), mbodyEl = document.getElementById('mbody'), toastEl = document.getElementById('toast'), dotEl = document.getElementById('menuDot');
+let menuTab = 'quest', toastTimer = null;
+function notify(msg){ toastEl.textContent = msg; toastEl.classList.add('on'); if(toastTimer) clearTimeout(toastTimer); toastTimer = setTimeout(()=>toastEl.classList.remove('on'), 2600); }
+function giveReward(r){
+  if(r.money) state.money += r.money;
+  Object.keys(r.items||{}).forEach(k=>{ state.bag[k] = (state.bag[k]||0) + r.items[k]; });
+}
+function rewardText(r){ return [r.money?`💰 ${r.money}`:'', ...Object.keys(r.items||{}).map(k=>`${ITEMS[k].label} ×${r.items[k]}`)].filter(Boolean).join('、'); }
+const QUESTS = [
+  {id:'q_win',   name:'擊敗 10 隻寶可夢',   key:'wins',    target:10, reward:{money:500}},
+  {id:'q_catch', name:'捕捉 3 隻寶可夢',     key:'catches', target:3,  reward:{items:{pokeball:5}}},
+  {id:'q_floor', name:'在無限之塔通過 5 層', key:'floors',  target:5,  reward:{money:1200}},
+  {id:'q_boss',  name:'擊破 2 隻小魔王',     key:'bosses',  target:2,  reward:{items:{greatball:3}}},
+  {id:'q_evo',   name:'讓寶可夢進化 1 次',   key:'evolves', target:1,  reward:{items:{ether:2}}},
+  {id:'q_tr',    name:'擊敗 2 位訓練家',     key:'trainers',target:2,  reward:{money:800}},
+  {id:'q_gym',   name:'通過 1 間道館',       key:'gyms',    target:1,  reward:{items:{ultraball:2}}}
+];
+function questProg(q){ return Math.max(0, (state.stats[q.key]||0) - (state.quest.base[q.id]||0)); }
+function claimQuest(id){
+  const q = QUESTS.find(x=>x.id===id); if(!q || questProg(q) < q.target) return;
+  state.quest.base[id] = (state.quest.base[id]||0) + q.target;
+  giveReward(q.reward); saveGame(); notify('📜 任務完成！獲得 '+rewardText(q.reward)); openMenu('quest'); refreshMenuDot();
+}
+const ACH = [
+  {id:'a_win1',   name:'初出茅廬',   desc:'贏得 1 場戰鬥',           pts:1,  cur:()=>state.stats.wins||0, target:1},
+  {id:'a_win50',  name:'身經百戰',   desc:'贏得 50 場戰鬥',          pts:3,  cur:()=>state.stats.wins||0, target:50},
+  {id:'a_win300', name:'戰鬥狂人',   desc:'贏得 300 場戰鬥',         pts:6,  cur:()=>state.stats.wins||0, target:300},
+  {id:'a_cat10',  name:'捕獲新手',   desc:'捕捉 10 隻寶可夢',        pts:2,  cur:()=>state.stats.catches||0, target:10},
+  {id:'a_cat50',  name:'捕獲達人',   desc:'捕捉 50 隻寶可夢',        pts:5,  cur:()=>state.stats.catches||0, target:50},
+  {id:'a_dex50',  name:'圖鑑收藏家', desc:'圖鑑收集 50 隻',          pts:3,  cur:()=>state.caught.size, target:50},
+  {id:'a_dex150', name:'圖鑑大師',   desc:'圖鑑收集 150 隻',         pts:8,  cur:()=>state.caught.size, target:150},
+  {id:'a_dex251', name:'全圖鑑達成', desc:'圖鑑收集全部 251 隻',     pts:20, cur:()=>state.caught.size, target:251},
+  {id:'a_flr30',  name:'塔的挑戰者', desc:'在塔中通過 30 層',        pts:3,  cur:()=>state.stats.floors||0, target:30},
+  {id:'a_flr150', name:'攀塔勇者',   desc:'在塔中通過 150 層',       pts:8,  cur:()=>state.stats.floors||0, target:150},
+  {id:'a_top',    name:'登頂',       desc:'清空塔內全部普通樓層',    pts:12, cur:()=>Math.min(state.tower.floorPtr, NONLEG.length), target:NONLEG.length},
+  {id:'a_boss10', name:'小魔王剋星', desc:'擊破 10 隻小魔王',        pts:4,  cur:()=>state.stats.bosses||0, target:10},
+  {id:'a_evo10',  name:'進化培育家', desc:'讓寶可夢進化 10 次',      pts:3,  cur:()=>state.stats.evolves||0, target:10},
+  {id:'a_shiny',  name:'閃亮登場',   desc:'捕獲 1 隻色違寶可夢',     pts:10, cur:()=>state.shinyCaught.size, target:1},
+  {id:'a_leg1',   name:'傳說降臨',   desc:'收服 1 隻傳說寶可夢',     pts:5,  cur:()=>state.tower.legendaryPtr, target:1},
+  {id:'a_legall', name:'傳說收集家', desc:'收服全部 11 隻傳說寶可夢', pts:15, cur:()=>state.tower.legendaryPtr, target:LEGENDARIES.length},
+  {id:'a_max',    name:'極限突破',   desc:'讓寶可夢升到 Lv.100',     pts:5,  cur:()=>[...state.party,...state.box].some(m=>m.level>=MAX_LEVEL)?1:0, target:1},
+  {id:'a_r2',     name:'二周目霸者', desc:'打完第二輪全部小魔王',    pts:15, cur:()=>state.tower.loop, target:1},
+  {id:'a_tr1',    name:'初次交鋒',   desc:'擊敗 1 位訓練家',         pts:1,  cur:()=>state.stats.trainers||0, target:1},
+  {id:'a_tr30',   name:'訓練家殺手', desc:'擊敗 30 位訓練家',        pts:4,  cur:()=>state.stats.trainers||0, target:30},
+  {id:'a_gym1',   name:'徽章收藏',   desc:'取得第 1 枚道館徽章',     pts:3,  cur:()=>state.meta.badges, target:1},
+  {id:'a_gym8',   name:'關都制霸',   desc:'集滿前 8 枚徽章（第一世代）', pts:10, cur:()=>state.meta.badges, target:8},
+  {id:'a_gym16',  name:'道館大師',   desc:'集滿全部 16 枚徽章',      pts:20, cur:()=>state.meta.badges, target:16},
+  {id:'a_ci7',    name:'每日報到',   desc:'累計簽到 7 天',           pts:2,  cur:()=>state.stats.checkins||0, target:7},
+  {id:'a_ci30',   name:'簽到達人',   desc:'累計簽到 30 天',          pts:5,  cur:()=>state.stats.checkins||0, target:30}
+];
+const MILESTONES = [
+  {pts:10,  reward:{items:{greatball:5}}},
+  {pts:25,  reward:{items:{superpotion:5}}},
+  {pts:45,  reward:{items:{ultraball:5}}},
+  {pts:70,  reward:{items:{ether:5}}},
+  {pts:100, reward:{items:{maxpotion:3}}},
+  {pts:120, reward:{items:{masterball:1}}},
+  {pts:150, reward:{items:{maxpotion:5, ultraball:5}}}
+];
+function achPoints(){ return ACH.filter(a=>state.ach.done.includes(a.id)).reduce((n,a)=>n+a.pts,0); }
+function checkAch(){
+  ACH.forEach(a=>{ if(!state.ach.done.includes(a.id) && a.cur() >= a.target){ state.ach.done.push(a.id); notify(`🏆 成就解鎖：${a.name}（+${a.pts} 點）`); } });
+}
+function claimMilestone(pts){
+  const m = MILESTONES.find(x=>x.pts===pts);
+  if(!m || achPoints() < pts || state.ach.claimed.includes(pts)) return;
+  state.ach.claimed.push(pts); giveReward(m.reward); saveGame(); notify('🏆 領取成就獎勵：'+rewardText(m.reward)); openMenu('ach'); refreshMenuDot();
+}
+function hasClaimable(){
+  return canCheckin() || QUESTS.some(q=>questProg(q)>=q.target) || MILESTONES.some(m=>achPoints()>=m.pts && !state.ach.claimed.includes(m.pts));
+}
+function refreshMenuDot(){ checkAch(); if(hasClaimable()) dotEl.classList.add('on'); else dotEl.classList.remove('on'); }
+function closeMenu(){ modalEl.classList.remove('open'); }
+function openMenu(tab){
+  if(typeof tab === 'string') menuTab = tab;
+  checkAch();
+  const bar = (c,t)=>`<div class="qbar"><i style="width:${Math.min(100,Math.round(100*c/t))}%"></i></div>`;
+  let h = '';
+  if(menuTab==='checkin'){
+    h = checkinHtml();
+  } else if(menuTab==='quest'){
+    h += '<div class="mh">可重複完成的任務，完成後可再次挑戰</div>';
+    QUESTS.forEach(q=>{
+      const c = questProg(q), ok = c >= q.target;
+      h += `<div class="qi${ok?' done':''}"><div>${esc(q.name)}<small>獎勵：${esc(rewardText(q.reward))}</small></div>${bar(Math.min(c,q.target),q.target)}<div class="qrow"><span>${Math.min(c,q.target)} / ${q.target}</span>${ok?`<button class="claim" onclick="claimQuest('${q.id}')">領取</button>`:''}</div></div>`;
+    });
+  } else {
+    const pts = achPoints();
+    h += `<div class="mh">成就點數：${pts}</div>`;
+    MILESTONES.forEach(m=>{
+      const got = state.ach.claimed.includes(m.pts), can = pts >= m.pts && !got;
+      h += `<div class="qi${can?' done':''}"><div class="qrow"><span>${m.pts} 點：${esc(rewardText(m.reward))}</span>${got?'<span>✅ 已領取</span>':can?`<button class="claim" onclick="claimMilestone(${m.pts})">領取</button>`:`<span style="color:var(--dim)">還差 ${m.pts-pts} 點</span>`}</div></div>`;
+    });
+    h += '<div class="mh" style="margin-top:12px">成就列表</div>';
+    ACH.forEach(a=>{
+      const done = state.ach.done.includes(a.id), c = Math.min(a.cur(), a.target);
+      h += `<div class="qi${done?' done':''}"><div>${done?'✅ ':''}${esc(a.name)}　<span style="color:var(--accent)">+${a.pts} 點</span><small>${esc(a.desc)}</small></div>${done?'':bar(c,a.target)+`<div class="qrow"><span>${c} / ${a.target}</span></div>`}</div>`;
+    });
+  }
+  mbodyEl.innerHTML = h;
+  document.getElementById('tabQuest').className = 'tab' + (menuTab==='quest'?' on':'');
+  document.getElementById('tabAch').className = 'tab' + (menuTab==='ach'?' on':'');
+  document.getElementById('tabCheckin').className = 'tab' + (menuTab==='checkin'?' on':'');
+  modalEl.classList.add('open');
 }
 
 /* ---------- BOOT ---------- */
