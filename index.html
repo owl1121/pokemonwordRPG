@@ -177,6 +177,31 @@ header{border-radius:24px 24px 0 0;}
 .opt:active{ background:linear-gradient(#111b16,#17261e); }
 .opt.off, .opt.off:active, .bigclaim.off{ transform:none; box-shadow:0 2px 0 #07100b; }
 #opts{ gap:9px 7px; }
+/* ---- 立體按鍵 ---- */
+.opt,#menuBtn,.mhead .tab{
+  background:linear-gradient(#27392f,#1a2a22);
+  border:1px solid #3d6650;
+  box-shadow:0 5px 0 #0a120e, 0 8px 10px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.12);
+  transition:transform .08s, box-shadow .08s;
+  -webkit-tap-highlight-color:transparent;
+}
+.opt:active,.opt.pressed,#menuBtn:active,#menuBtn.pressed,
+.mhead .tab:active,.mhead .tab.pressed{
+  transform:translateY(4px);
+  background:linear-gradient(#1a2a22,#1f3328);
+  box-shadow:0 1px 0 #0a120e, 0 2px 3px rgba(0,0,0,.4), inset 0 2px 5px rgba(0,0,0,.4);
+}
+.mhead .tab.on{background:#1f3a2c;}
+.claim,.bigclaim:not(.off){
+  background:linear-gradient(#95f09d,#5fc86a);
+  box-shadow:0 4px 0 #2f7a3a;
+  transition:transform .08s, box-shadow .08s;
+}
+.claim:active,.claim.pressed,.bigclaim:active,.bigclaim.pressed{
+  transform:translateY(3px); box-shadow:0 1px 0 #2f7a3a;
+}
+#opts{gap:11px 6px;}
+
 </style>
 </head>
 <body>
@@ -1592,6 +1617,26 @@ function openMenu(tab){
 /* ---------- BOOT ---------- */
 loadGame();
 screenCover();
+</script>
+<script>
+/* 按下去先陷 0.2 秒，再執行動作 */
+(function(){
+  const DELAY = 200; // 毫秒，想調整就改這裡
+  let pressLock = false;
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest('button');
+    if(!btn || btn._go) return;
+    e.stopImmediatePropagation(); e.preventDefault();
+    if(pressLock) return;
+    pressLock = true;
+    btn.classList.add('pressed');
+    setTimeout(function(){
+      btn.classList.remove('pressed');
+      pressLock = false;
+      btn._go = true; btn.click(); btn._go = false;
+    }, DELAY);
+  }, true);
+})();
 </script>
 </body>
 </html>
