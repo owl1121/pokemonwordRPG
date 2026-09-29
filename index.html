@@ -1619,9 +1619,9 @@ loadGame();
 screenCover();
 </script>
 <script>
-/* 按下去先陷 0.2 秒，再執行動作 */
+/* 按下去先陷 0.12秒，再執行動作 */
 (function(){
-  const DELAY = 200; // 毫秒，想調整就改這裡
+  const DELAY = 120; // 毫秒，想調整就改這裡
   let pressLock = false;
   document.addEventListener('click', function(e){
     const btn = e.target.closest('button');
