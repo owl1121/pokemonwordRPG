@@ -200,6 +200,13 @@ header{border-radius:24px 24px 0 0;}
 .claim:active,.claim.pressed,.bigclaim:active,.bigclaim.pressed{
   transform:translateY(3px); box-shadow:0 1px 0 #2f7a3a;
 }
+@keyframes btnRebound{
+  0%{transform:translateY(4px);box-shadow:0 1px 0 #0a120e,0 2px 3px rgba(0,0,0,.4)}
+  40%{transform:translateY(-3px);box-shadow:0 8px 0 #0a120e,0 11px 12px rgba(0,0,0,.35)}
+  70%{transform:translateY(1px);box-shadow:0 4px 0 #0a120e,0 6px 8px rgba(0,0,0,.4)}
+  100%{transform:translateY(0);box-shadow:0 5px 0 #0a120e,0 8px 10px rgba(0,0,0,.4)}
+}
+.opt.bounce,#menuBtn.bounce,.mhead .tab.bounce,.claim.bounce,.bigclaim.bounce{animation:btnRebound .24s ease-out;}
 #opts{gap:11px 6px;}
 
 </style>
@@ -1626,7 +1633,8 @@ screenCover();
 <script>
 /* 按下去先陷 0.2 秒，再執行動作 */
 (function(){
-  const DELAY = 200; // 毫秒，想調整就改這裡
+  const DELAY = 200;   // 按住多久（毫秒）
+  const REBOUND = 140; // 彈回動畫播多久才執行動作（毫秒）
   let pressLock = false;
   document.addEventListener('click', function(e){
     const btn = e.target.closest('button');
@@ -1637,8 +1645,12 @@ screenCover();
     btn.classList.add('pressed');
     setTimeout(function(){
       btn.classList.remove('pressed');
-      pressLock = false;
-      btn._go = true; btn.click(); btn._go = false;
+      btn.classList.add('bounce');          // 彈回來
+      setTimeout(function(){
+        btn.classList.remove('bounce');
+        pressLock = false;
+        btn._go = true; btn.click(); btn._go = false;
+      }, REBOUND);
     }, DELAY);
   }, true);
 })();
