@@ -1633,8 +1633,8 @@ screenCover();
 <script>
 /* 按下去先陷 0.2 秒，再執行動作 */
 (function(){
-  const DELAY = 80;   // 按住多久（毫秒）
-  const REBOUND = 60; // 彈回動畫播多久才執行動作（毫秒）
+  const DELAY = 40;   // 按住多久（毫秒）
+  const REBOUND = 40; // 彈回動畫播多久才執行動作（毫秒）
   let pressLock = false;
   document.addEventListener('click', function(e){
     const btn = e.target.closest('button');
