@@ -209,13 +209,30 @@ header{border-radius:24px 24px 0 0;}
 .opt.bounce,#menuBtn.bounce,.mhead .tab.bounce,.claim.bounce,.bigclaim.bounce{animation:btnRebound .24s ease-out;}
 #opts{gap:11px 6px;}
 
+/* ---- 個人檔案 ---- */
+#hdrleft{min-width:0;flex:1;}
+#profBtn{display:flex;align-items:center;gap:9px;max-width:100%;background:transparent;border:none;padding:0;color:var(--text);font-family:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.av,.pav{flex:none;border-radius:50%;background:radial-gradient(circle at 35% 30%,#5fe0a0,#1f5a3c);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-weight:bold;color:#0d1210;box-shadow:0 3px 0 #07100b;}
+.av{width:40px;height:40px;font-size:18px;transition:transform .06s,box-shadow .06s;}
+#profBtn:active .av,#profBtn.pressed .av{transform:translateY(2px);box-shadow:0 1px 0 #07100b;}
+#profBtn .pn{display:flex;flex-direction:column;min-width:0;line-height:1.3;}
+#profBtn .pn b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#profBtn .pn i{font-style:normal;font-size:11px;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mhead .tab{padding:8px 2px;font-size:12px;}
+.pcard{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:16px;padding:10px;margin-bottom:10px;}
+.pav{width:52px;height:52px;font-size:24px;}
+.pinfo{flex:1;min-width:0;}
+.pname{font-size:16px;font-weight:bold;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ptitle{color:var(--accent);font-size:12px;}
+.pstat{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;}
+.pstat .qi{margin:0;padding:6px 9px;}
+.qi.lock{opacity:.5;}
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <div><div class="title">◆ 寶可夢文字冒險</div>
-    <div class="sub" id="hdrsub">關都・城都 · 全國圖鑑 251 隻</div></div>
+    <div id="hdrleft"></div>
     <button id="menuBtn" onclick="openMenu()">☰ 選單<i id="menuDot"></i></button>
   </header>
   <div id="stage"></div>
@@ -224,7 +241,7 @@ header{border-radius:24px 24px 0 0;}
   <div id="opts"></div>
   <div id="turnbar"></div>
   <div id="modal" onclick="if(event.target===this)closeMenu()"><div class="mbox">
-    <div class="mhead"><button class="tab" id="tabQuest" onclick="openMenu('quest')">📜 任務</button><button class="tab" id="tabAch" onclick="openMenu('ach')">🏆 成就</button><button class="tab" id="tabCheckin" onclick="openMenu('checkin')">📅 簽到</button><button class="x" onclick="closeMenu()">✕</button></div>
+    <div class="mhead"><button class="tab" id="tabProfile" onclick="openMenu('profile')">👤 檔案</button><button class="tab" id="tabQuest" onclick="openMenu('quest')">📜 任務</button><button class="tab" id="tabAch" onclick="openMenu('ach')">🏆 成就</button><button class="tab" id="tabCheckin" onclick="openMenu('checkin')">📅 簽到</button><button class="x" onclick="closeMenu()">✕</button></div>
     <div id="mbody"></div></div></div>
   <div id="toast"></div>
 </div>
@@ -373,9 +390,11 @@ let state = {
   bag:defaultBag(), money:START_MONEY,
   zone:1, battle:null,
   tower:defaultTower(),
-  stats:{}, quest:{base:{}}, ach:{done:[],claimed:[]}, meta:defaultMeta(), checkin:{ym:'',days:[]}
+  stats:{}, quest:{base:{}}, ach:{done:[],claimed:[]}, meta:defaultMeta(), checkin:{ym:'',days:[]},
+  profile:{name:'', titleId:''}
 };
 
+const hdrLeft = document.getElementById('hdrleft');
 const logEl = document.getElementById('log');
 const barEl = document.getElementById('bar');
 const optsEl = document.getElementById('opts');
@@ -470,7 +489,7 @@ function saveGame(){
       v:2, party:state.party, box:state.box,
       seen:Array.from(state.seen), caught:Array.from(state.caught), shinyCaught:Array.from(state.shinyCaught),
       bag:state.bag, money:state.money, zone:state.zone, tower:state.tower,
-      stats:state.stats, quest:state.quest, ach:state.ach, meta:state.meta, checkin:state.checkin
+      stats:state.stats, quest:state.quest, ach:state.ach, meta:state.meta, checkin:state.checkin, profile:state.profile
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     return true;
@@ -504,6 +523,7 @@ function loadGame(){
     if(!(d.tower && d.tower.coinPtr!==undefined)) state.tower.coinPtr = state.tower.floorPtr; // 舊存檔：已通過的樓層視為已領過硬幣
     state.meta = Object.assign(defaultMeta(), d.meta||{});
     state.checkin = Object.assign({ym:'',days:[]}, d.checkin||{});
+    state.profile = Object.assign({name:'',titleId:''}, d.profile||{});
     state.stats = Object.assign({}, d.stats||{});
     state.quest = Object.assign({base:{}}, d.quest||{});
     state.ach = Object.assign({done:[],claimed:[]}, d.ach||{});
@@ -517,7 +537,8 @@ function resetGame(){
   state.bag=defaultBag(); state.money=START_MONEY; state.zone=1; state.battle=null;
   state.tower=defaultTower();
   state.stats={}; state.quest={base:{}}; state.ach={done:[],claimed:[]}; state.meta=defaultMeta(); state.checkin={ym:'',days:[]};
-  screenTitle();
+  state.profile={name:'',titleId:''};
+  screenNamePrompt(screenTitle);
 }
 function screenContinue(){
   clearLog();
@@ -527,7 +548,8 @@ function screenContinue(){
   if(state.tower.inTower) print('<span class="sys">（上次離開時你還在無限之塔裡）</span>');
   renderBar();
   setOptions([
-    {label:"繼續冒險", action: state.tower.inTower ? screenTower : toField},
+    {label:"繼續冒險", action:()=>{ const go = state.tower.inTower ? screenTower : toField; state.profile.name ? go() : screenNamePrompt(go); }},
+    {label:"💾 存檔匯出 / 匯入", action:()=> screenSaveIO(screenContinue)},
     {label:"清除存檔，重新開始", action:screenResetConfirm}
   ]);
 }
@@ -538,6 +560,95 @@ function screenResetConfirm(){
     {label:"是，清除並重新開始", action:resetGame},
     {label:"取消，返回", action:()=> state.party.length ? screenContinue() : screenTitle()}
   ]);
+}
+
+/* ---------- EXPORT / IMPORT ---------- */
+let pendingImport = null, saveIOBack = null;
+function getSaveRaw(){
+  if(state.party.length) saveGame();
+  try{ return localStorage.getItem(SAVE_KEY); }catch(e){ return null; }
+}
+function encodeSave(raw){ return btoa(unescape(encodeURIComponent(raw))); }
+function decodeSave(text){
+  text = (text||'').trim();
+  if(!text) throw new Error('empty');
+  let raw = text;
+  if(text[0] !== '{') raw = decodeURIComponent(escape(atob(text.replace(/\s+/g,''))));
+  const d = JSON.parse(raw);
+  if(!d || !Array.isArray(d.party) || !d.party.length) throw new Error('invalid');
+  return {raw, d};
+}
+function downloadText(name, text){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type:'application/json'}));
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+function screenSaveIO(back){
+  if(typeof back === 'function') saveIOBack = back;
+  clearLog();
+  print('<span class="em">💾 存檔匯出 / 匯入</span>');
+  print('存檔只存在這個瀏覽器裡，換手機、換瀏覽器或清除瀏覽資料就會消失，建議定期匯出備份。');
+  print('<div style="margin:10px 0 4px" class="sys">從檔案匯入：</div><input type="file" id="saveFile" accept=".json,.txt,application/json,text/plain" style="width:100%;color:var(--text);font-size:13px">');
+  print('<div style="margin:10px 0 4px" class="sys">或把存檔代碼貼在這裡：</div><textarea id="saveBox" rows="4" spellcheck="false" style="width:100%;box-sizing:border-box;background:transparent;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px;font-size:12px;font-family:monospace"></textarea>');
+  document.getElementById('saveFile').onchange = function(e){
+    const f = e.target.files && e.target.files[0]; if(!f) return;
+    const fr = new FileReader();
+    fr.onload = ()=> stageImport(String(fr.result));
+    fr.onerror = ()=> print('<span class="bad">檔案讀取失敗。</span>');
+    fr.readAsText(f);
+  };
+  setOptions([
+    {label:'📤 匯出存檔（下載檔案）', action:exportSaveFile},
+    {label:'📋 複製存檔代碼', half:true, action:exportSaveCopy},
+    {label:'📥 匯入貼上的代碼', half:true, action:()=> stageImport(document.getElementById('saveBox').value)},
+    {label:'返回', action:()=> (saveIOBack || screenCover)()}
+  ]);
+}
+function exportSaveFile(){
+  const raw = getSaveRaw();
+  if(!raw){ print('<span class="bad">目前沒有可匯出的存檔。</span>'); return; }
+  const d = new Date(), p = n=>String(n).padStart(2,'0');
+  downloadText(`pokemon-save-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.json`, raw);
+  print('<span class="good">已匯出存檔檔案。若沒有跳出下載，請改用「複製存檔代碼」。</span>');
+}
+function exportSaveCopy(){
+  const raw = getSaveRaw();
+  if(!raw){ print('<span class="bad">目前沒有可匯出的存檔。</span>'); return; }
+  const code = encodeSave(raw), box = document.getElementById('saveBox');
+  box.value = code;
+  const ok = ()=> print('<span class="good">已複製存檔代碼！請貼到記事本或傳給自己保存。</span>');
+  const fallback = ()=>{
+    box.focus(); box.select();
+    let done = false; try{ done = document.execCommand('copy'); }catch(e){}
+    if(done) ok(); else print('<span class="sys">請手動長按上方文字框，全選後複製。</span>');
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(ok, fallback);
+  else fallback();
+}
+function stageImport(text){
+  let r;
+  try{ r = decodeSave(text); }catch(e){ print('<span class="bad">讀取失敗：這不是有效的存檔。</span>'); return; }
+  pendingImport = r.raw;
+  clearLog();
+  print('<span class="bad">確定要用匯入的存檔覆蓋目前本機存檔嗎？目前的進度會消失。</span>');
+  print(`匯入存檔：隊伍 ${r.d.party.length} 隻　💰 ${r.d.money||0}　🪙 ${(r.d.tower&&r.d.tower.coins)||0}　圖鑑 ${(r.d.caught||[]).length}/${DEX.length}`);
+  setOptions([
+    {label:'是，覆蓋並讀取', action:confirmImport},
+    {label:'取消', action:()=> screenSaveIO()}
+  ]);
+}
+function confirmImport(){
+  let prev = null;
+  try{ prev = localStorage.getItem(SAVE_KEY); localStorage.setItem(SAVE_KEY, pendingImport); }
+  catch(e){ print('<span class="bad">無法寫入本機存檔。</span>'); return; }
+  state.battle = null; pendingImport = null;
+  if(loadGame()){ saveGame(); screenContinue(); return; }
+  try{ if(prev===null) localStorage.removeItem(SAVE_KEY); else localStorage.setItem(SAVE_KEY, prev); }catch(e){}
+  loadGame();
+  print('<span class="bad">匯入失敗，存檔內容有問題，已保留原本的進度。</span>');
+  setOptions([{label:'返回', action:()=> screenSaveIO()}]);
 }
 
 /* ---------- COVER / INTRO ---------- */
@@ -552,9 +663,10 @@ function screenCover(){
   </div>`);
   renderBar();
   setOptions([
-    {label: hasSave ? "▶ 開始遊戲（讀取存檔）" : "▶ 開始遊戲", action: hasSave ? screenContinue : screenTitle},
+    {label: hasSave ? "▶ 開始遊戲（讀取存檔）" : "▶ 開始遊戲", action: hasSave ? screenContinue : ()=>screenNamePrompt(screenTitle)},
     {label:"📖 遊戲簡介", half:true, action:screenIntro},
-    ...(hasSave ? [{label:"🗑 清除存檔", half:true, action:screenResetConfirm}] : [])
+    ...(hasSave ? [{label:"🗑 清除存檔", half:true, action:screenResetConfirm}] : []),
+    {label:"💾 存檔匯出 / 匯入", action:()=> screenSaveIO(screenCover)}
   ]);
 }
 function screenIntro(){
@@ -579,7 +691,7 @@ function screenIntro(){
 /* ---------- TITLE / START ---------- */
 function screenTitle(){
   clearLog();
-  print('<span class="em">歡迎來到寶可夢的世界。</span>');
+  print(`<span class="em">歡迎來到寶可夢的世界${state.profile.name ? '，'+esc(state.profile.name) : ''}。</span>`);
   print('這是一場純文字寶可夢冒險：探索小徑、遭遇野生寶可夢、捕捉、戰鬥、練等，收集你的圖鑑。');
   hr();
   print('請先選擇你出身的地方（世代）：');
@@ -631,17 +743,25 @@ function screenField(){
   renderBar();
   setOptions([
     {label:"🌿 往草叢前進（遭遇野生寶可夢）", action:()=>encounter()},
-    {label:"🗼 無限之塔", half:true, action:enterTower},
-    {label:`🏛 道館（${state.meta.badges}/${GYMS.length}）`, half:true, action:screenGym},
+    {label:"⚔️ 對戰", action:screenBattleMenu},
     {label:"👥 隊伍", half:true, action:screenParty},
     {label:"🎒 背包", half:true, action:screenBag},
     {label:"🏪 商店", half:true, action:()=>{ shopQty=1; screenShop(); }},
-    {label:"📖 圖鑑", half:true, action:screenDex},
     {label:`💊 補給站${state.meta.cd>0?`（再 ${state.meta.cd} 場）`:''}`, half:true, action:()=>healAll(screenField)},
-    {label: state.zone < MAP_NAMES.length ? `⏩ 前往 ${zoneName(state.zone+1)}` : '⏩ 已到最後一站', half:true, action:advanceZone}
+    {label: state.zone < MAP_NAMES.length ? `⏩ 前往 ${zoneName(state.zone+1)}` : '⏩ 已到最後一站', action:advanceZone}
   ]);
 }
 
+function screenBattleMenu(){
+  clearLog();
+  print('<span class="em">⚔️ 對戰</span>');
+  print('要挑戰哪裡？');
+  setOptions([
+    {label:`1. 🏛 道館（${state.meta.badges}/${GYMS.length}）`, action:screenGym},
+    {label:"2. 🗼 寶可塔（無限之塔）", action:enterTower},
+    {label:"返回", action:toField}
+  ]);
+}
 function toField(){ clearLog(); screenField(); }
 function toBattle(){ clearLog(); screenBattle(); }
 function advanceZone(){
@@ -1552,6 +1672,26 @@ function claimQuest(id){
   state.quest.base[id] = (state.quest.base[id]||0) + q.target;
   giveReward(q.reward); saveGame(); notify('📜 任務完成！獲得 '+rewardText(q.reward)); openMenu('quest'); refreshMenuDot();
 }
+const TITLE_OF = {
+  a_win1:'見習訓練家', a_win50:'老練訓練家', a_win300:'不敗傳說',
+  a_cat10:'捕獲新星', a_cat50:'寶可夢獵人',
+  a_dex50:'圖鑑研究員', a_dex150:'圖鑑博士', a_dex251:'寶可夢大師',
+  a_flr30:'塔之挑戰者', a_flr150:'攀塔勇者', a_top:'登頂者', a_boss10:'魔王剋星',
+  a_evo10:'進化培育家', a_shiny:'閃亮的幸運兒',
+  a_leg1:'傳說的見證者', a_legall:'傳說收集家', a_max:'極限突破者', a_r2:'二周目霸者',
+  a_tr1:'初次交鋒', a_tr30:'訓練家殺手',
+  a_gym1:'徽章收集者', a_gym8:'關都霸主', a_gym16:'道館大師',
+  a_ci7:'勤奮的旅人', a_ci30:'簽到之王'
+};
+const DEFAULT_TITLE = '新手訓練家';
+function curTitle(){ const id = state.profile.titleId; return (id && state.ach.done.includes(id) && TITLE_OF[id]) || DEFAULT_TITLE; }
+function renderHeader(){
+  const n = state.profile && state.profile.name;
+  const html = !n
+    ? '<div class="title">◆ 寶可夢文字冒險</div><div class="sub">關都・城都 · 全國圖鑑 251 隻</div>'
+    : `<button id="profBtn" onclick="openMenu('profile')"><span class="av">${esc(Array.from(n)[0])}</span><span class="pn"><b>${esc(n)}</b><i>${esc(curTitle())}</i></span></button>`;
+  if(hdrLeft.dataset.h !== html){ hdrLeft.innerHTML = html; hdrLeft.dataset.h = html; }
+}
 const ACH = [
   {id:'a_win1',   name:'初出茅廬',   desc:'贏得 1 場戰鬥',           pts:1,  cur:()=>state.stats.wins||0, target:1},
   {id:'a_win50',  name:'身經百戰',   desc:'贏得 50 場戰鬥',          pts:3,  cur:()=>state.stats.wins||0, target:50},
@@ -1581,7 +1721,7 @@ const ACH = [
 ];
 function achPoints(){ return ACH.filter(a=>state.ach.done.includes(a.id)).reduce((n,a)=>n+a.pts,0); }
 function checkAch(){
-  ACH.forEach(a=>{ if(!state.ach.done.includes(a.id) && a.cur() >= a.target){ state.ach.done.push(a.id); notify(`🏆 成就解鎖：${a.name}（+${a.pts} 點）`); } });
+  ACH.forEach(a=>{ if(!state.ach.done.includes(a.id) && a.cur() >= a.target){ state.ach.done.push(a.id); notify(`🏆 成就解鎖：${a.name}（+${a.pts} 點）${TITLE_OF[a.id]?'，解鎖稱號「'+TITLE_OF[a.id]+'」':''}`); } });
 }
 function claimMilestone(pts){
   const m = MILESTONES.find(x=>x.pts===pts);
@@ -1591,14 +1731,83 @@ function claimMilestone(pts){
 function hasClaimable(){
   return canCheckin() || QUESTS.some(q=>questProg(q)>=q.target) || MILESTONES.some(m=>achPoints()>=m.pts && !state.ach.claimed.includes(m.pts));
 }
-function refreshMenuDot(){ checkAch(); if(hasClaimable()) dotEl.classList.add('on'); else dotEl.classList.remove('on'); }
+function refreshMenuDot(){ checkAch(); renderHeader(); if(hasClaimable()) dotEl.classList.add('on'); else dotEl.classList.remove('on'); }
+function profileHtml(){
+  const p = state.profile, st = state.stats, lead = state.party[0];
+  const done = state.ach.done, cur = curTitle();
+  let h = `<div class="pcard"><div class="pav">${esc(Array.from(p.name||'?')[0])}</div><div class="pinfo"><div class="pname">${esc(p.name||'（未命名）')}</div><div class="ptitle">🎖 ${esc(cur)}</div></div><button class="claim" onclick="renameFromProfile()">✏️ 改名</button></div>`;
+  const cell = (k,v)=>`<div class="qi"><small>${k}</small>${v}</div>`;
+  h += '<div class="pstat">'
+    + cell('隊長', lead ? esc(lead.name)+' Lv.'+lead.level : '—')
+    + cell('所在地', esc(zoneName(state.zone)))
+    + cell('勝場', st.wins||0)
+    + cell('捕捉數', st.catches||0)
+    + cell('圖鑑', state.caught.size+' / '+DEX.length)
+    + cell('✨ 色違', state.shinyCaught.size)
+    + cell('道館徽章', state.meta.badges+' / '+GYMS.length)
+    + cell('塔層通過', st.floors||0)
+    + cell('小魔王擊破', st.bosses||0)
+    + cell('成就點數', achPoints())
+    + '</div>';
+  h += `<button class="bigclaim" onclick="openDexFromProfile()">📖 開啟圖鑑（${state.caught.size} / ${DEX.length}）</button>`;
+  h += '<div class="mh">🎖 稱號（裝備後會顯示在主頁左上角）</div>';
+  const row = (id,name,hint)=>{
+    const on = (id==='' ? cur===DEFAULT_TITLE : (id===p.titleId && cur===name));
+    return `<div class="qi${on?' done':''}"><div class="qrow"><span>${esc(name)}</span>${on?'<span>✅ 使用中</span>':`<button class="claim" onclick="equipTitle('${id}')">裝備</button>`}</div></div>`;
+  };
+  h += row('', DEFAULT_TITLE);
+  const ids = Object.keys(TITLE_OF);
+  ids.filter(id=>done.includes(id)).forEach(id=>{ h += row(id, TITLE_OF[id]); });
+  ids.filter(id=>!done.includes(id)).forEach(id=>{
+    const a = ACH.find(x=>x.id===id);
+    h += `<div class="qi lock"><div>🔒 ${esc(TITLE_OF[id])}<small>解鎖條件：${esc(a?a.name+'（'+a.desc+'）':'')}</small></div></div>`;
+  });
+  return h;
+}
+function equipTitle(id){
+  if(id!=='' && !state.ach.done.includes(id)) return;
+  state.profile.titleId = id;
+  if(state.party.length) saveGame();
+  renderHeader(); openMenu('profile'); notify('🎖 已裝備稱號：'+curTitle());
+}
+function canLeaveScreen(){ return state.party.length>0 && !state.battle && !state.tower.inTower; }
+function openDexFromProfile(){
+  if(!canLeaveScreen()){ notify('戰鬥中或在塔內無法開啟圖鑑'); return; }
+  closeMenu(); dexPage = 0; screenDex();
+}
+function renameFromProfile(){
+  if(!canLeaveScreen()){ notify('戰鬥中或在塔內無法改名'); return; }
+  closeMenu(); screenNamePrompt(toField, true);
+}
+function screenNamePrompt(next, isRename){
+  clearLog();
+  print(`<span class="em">${isRename ? '想改成什麼名字呢？' : '出發之前，先告訴我——你叫什麼名字呢？'}</span>`);
+  print('<input id="nameInput" type="text" maxlength="8" autocomplete="off" placeholder="輸入名字（最多 8 個字）" style="width:100%;box-sizing:border-box;background:transparent;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:10px;font-size:16px;font-family:inherit;margin-top:6px">');
+  const inp = document.getElementById('nameInput');
+  inp.value = state.profile.name || '';
+  inp.addEventListener('click', e=>e.stopPropagation());
+  const opts = [{label:'✔ 確定', action:()=>confirmName(next, isRename)}];
+  if(isRename) opts.push({label:'取消', action:toField});
+  else if(!state.party.length) opts.push({label:'← 返回封面', action:screenCover});
+  renderBar(); setOptions(opts);
+}
+function confirmName(next, isRename){
+  const v = Array.from(document.getElementById('nameInput').value.trim()).slice(0,8).join('');
+  if(!v){ print('<span class="bad">名字不能是空的喔。</span>'); return; }
+  state.profile.name = v;
+  if(state.party.length) saveGame();
+  renderHeader();
+  if(isRename){ notify('已改名為 '+v); toField(); } else next();
+}
 function closeMenu(){ modalEl.classList.remove('open'); }
 function openMenu(tab){
   if(typeof tab === 'string') menuTab = tab;
   checkAch();
   const bar = (c,t)=>`<div class="qbar"><i style="width:${Math.min(100,Math.round(100*c/t))}%"></i></div>`;
   let h = '';
-  if(menuTab==='checkin'){
+  if(menuTab==='profile'){
+    h = profileHtml();
+  } else if(menuTab==='checkin'){
     h = checkinHtml();
   } else if(menuTab==='quest'){
     h += '<div class="mh">可重複完成的任務，完成後可再次挑戰</div>';
@@ -1616,10 +1825,11 @@ function openMenu(tab){
     h += '<div class="mh" style="margin-top:12px">成就列表</div>';
     ACH.forEach(a=>{
       const done = state.ach.done.includes(a.id), c = Math.min(a.cur(), a.target);
-      h += `<div class="qi${done?' done':''}"><div>${done?'✅ ':''}${esc(a.name)}　<span style="color:var(--accent)">+${a.pts} 點</span><small>${esc(a.desc)}</small></div>${done?'':bar(c,a.target)+`<div class="qrow"><span>${c} / ${a.target}</span></div>`}</div>`;
+      h += `<div class="qi${done?' done':''}"><div>${done?'✅ ':''}${esc(a.name)}　<span style="color:var(--accent)">+${a.pts} 點</span><small>${esc(a.desc)}</small><small>🎖 稱號：${esc(TITLE_OF[a.id]||'—')}</small></div>${done?'':bar(c,a.target)+`<div class="qrow"><span>${c} / ${a.target}</span></div>`}</div>`;
     });
   }
   mbodyEl.innerHTML = h;
+  document.getElementById('tabProfile').className = 'tab' + (menuTab==='profile'?' on':'');
   document.getElementById('tabQuest').className = 'tab' + (menuTab==='quest'?' on':'');
   document.getElementById('tabAch').className = 'tab' + (menuTab==='ach'?' on':'');
   document.getElementById('tabCheckin').className = 'tab' + (menuTab==='checkin'?' on':'');
@@ -1633,8 +1843,8 @@ screenCover();
 <script>
 /* 按下去先陷 0.2 秒，再執行動作 */
 (function(){
-  const DELAY = 40;   // 按住多久（毫秒）
-  const REBOUND = 40; // 彈回動畫播多久才執行動作（毫秒）
+  const DELAY = 200;   // 按住多久（毫秒）
+  const REBOUND = 140; // 彈回動畫播多久才執行動作（毫秒）
   let pressLock = false;
   document.addEventListener('click', function(e){
     const btn = e.target.closest('button');
