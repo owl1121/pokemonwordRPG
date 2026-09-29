@@ -356,7 +356,7 @@ function endlessHpMul(){ return ROUND2_HP_MUL + state.tower.loop * 0.2; }
 
 function totalBalls(){ return BALL_KEYS.reduce((a,k)=>a+(state.bag[k]||0),0); }
 function defaultBag(){ return {pokeball:5, greatball:0, ultraball:0, masterball:0, potion:3, superpotion:0, maxpotion:0, ether:0, antidote:2, burnheal:2, paralyzeheal:2, firestone:0, waterstone:0, thunderstone:0, leafstone:0, moonstone:0, sunstone:0}; }
-function defaultTower(){ return {rev:3, floorPtr:0, coins:0, legendaryPtr:0, endlessPtr:0, loop:0, inTower:false}; }
+function defaultTower(){ return {rev:3, floorPtr:0, coinPtr:0, coins:0, legendaryPtr:0, endlessPtr:0, loop:0, inTower:false}; }
 
 /* ---------- GAME STATE ---------- */
 let state = {
@@ -494,6 +494,7 @@ function loadGame(){
     state.zone = d.zone || 1;
     const oldTower = !(d.tower && d.tower.rev);
     state.tower = Object.assign(defaultTower(), d.tower||{});
+    if(!(d.tower && d.tower.coinPtr!==undefined)) state.tower.coinPtr = state.tower.floorPtr; // 舊存檔：已通過的樓層視為已領過硬幣
     state.meta = Object.assign(defaultMeta(), d.meta||{});
     state.checkin = Object.assign({ym:'',days:[]}, d.checkin||{});
     state.stats = Object.assign({}, d.stats||{});
@@ -1230,14 +1231,18 @@ function winBattle(){
   if(mode==='tower'){
     const t = state.tower;
     giveMoney(w.level * 10 * (b.boss ? 3 : 1));
-    t.coins++;
+    let gotCoin = true;
     if(b.endless){
+      t.coins++;
       t.endlessPtr++;
       if(t.endlessPtr >= BOSSES.length){ t.endlessPtr = 0; t.loop++; print(`<span class="boss">第 ${t.loop+1} 輪小魔王全數擊破！下一輪再度強化。</span>`); }
     } else {
+      gotCoin = t.floorPtr >= (t.coinPtr||0); // 只有第一次通過的樓層才有硬幣
+      if(gotCoin){ t.coins++; t.coinPtr = t.floorPtr+1; }
       t.floorPtr++;
     }
-    print(`<span class="good">🪙 ${b.boss?'小魔王擊破':'樓層突破'}！獲得 1 枚硬幣（目前 ${t.coins} 枚）</span>`);
+    if(gotCoin) print(`<span class="good">🪙 ${b.boss?'小魔王擊破':'樓層突破'}！獲得 1 枚硬幣（目前 ${t.coins} 枚）</span>`);
+    else print(`<span class="sys">${b.boss?'小魔王擊破':'樓層突破'}！這層已經領過硬幣了，不會重複獲得（目前 ${t.coins} 枚）</span>`);
     if(b.boss){
       fullHeal();
       print('<span class="good">小魔王倒下時留下了一道光，你的隊伍全部回滿了！現在可以返回地面。</span>');
@@ -1619,9 +1624,9 @@ loadGame();
 screenCover();
 </script>
 <script>
-/* 按下去先陷 0.12秒，再執行動作 */
+/* 按下去先陷 0.2 秒，再執行動作 */
 (function(){
-  const DELAY = 120; // 毫秒，想調整就改這裡
+  const DELAY = 200; // 毫秒，想調整就改這裡
   let pressLock = false;
   document.addEventListener('click', function(e){
     const btn = e.target.closest('button');
