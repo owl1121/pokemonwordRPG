@@ -227,6 +227,36 @@ header{border-radius:24px 24px 0 0;}
 .pstat{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;}
 .pstat .qi{margin:0;padding:6px 9px;}
 .qi.lock{opacity:.5;}
+/* ---- 受擊：卡片左右晃一下 ---- */
+@keyframes cardHit{
+  0%{transform:translateX(0);filter:none}
+  12%{transform:translateX(-10px);filter:brightness(1.6)}
+  27%{transform:translateX(9px)}
+  42%{transform:translateX(-7px);filter:brightness(1.3)}
+  58%{transform:translateX(5px)}
+  74%{transform:translateX(-3px)}
+  100%{transform:translateX(0);filter:none}
+}
+.card.hit{animation:cardHit .42s ease-out;}
+@keyframes cardHitStrong{
+  0%{transform:translateX(0) rotate(0);filter:none}
+  10%{transform:translateX(-18px) rotate(-2deg);filter:brightness(2) saturate(1.5)}
+  24%{transform:translateX(16px) rotate(2deg);filter:brightness(1.5)}
+  38%{transform:translateX(-13px) rotate(-1.5deg);filter:brightness(1.8)}
+  52%{transform:translateX(10px) rotate(1deg)}
+  68%{transform:translateX(-6px)}
+  84%{transform:translateX(3px)}
+  100%{transform:translateX(0) rotate(0);filter:none}
+}
+@keyframes cardHitWeak{
+  0%{transform:translateX(0)}
+  25%{transform:translateX(-4px)}
+  55%{transform:translateX(3px)}
+  100%{transform:translateX(0)}
+}
+.card.hit.strong{animation:cardHitStrong .6s ease-out;}
+.card.hit.weak{animation:cardHitWeak .3s ease-out;}
+@media (prefers-reduced-motion:reduce){.card.hit,.card.hit.strong,.card.hit.weak{animation:none;}}
 </style>
 </head>
 <body>
@@ -247,20 +277,8 @@ header{border-radius:24px 24px 0 0;}
 </div>
 
 <script src="data.js"></script>
+<script src="battle.js"></script>
 <script>
-function eff(atkType, defTypes){
-  let m = 1;
-  const c = CHART[atkType];
-  if(!c) return m;
-  for(const t of defTypes){
-    if(!t) continue;
-    if(c.n && c.n.includes(t)) return 0;
-    if(c.s.includes(t)) m *= 2;
-    if(c.w.includes(t)) m *= 0.5;
-  }
-  return m;
-}
-
 /* ---------- CONSTANTS ---------- */
 const MAX_LEVEL = 100;
 const SHINY_RATE = 1/1024;
@@ -273,25 +291,6 @@ function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
 function monName(m){ return (m.shiny ? '✨' : '') + m.name; }
 function nm(m){ return m.shiny ? `<span class="shiny">${esc(monName(m))}</span>` : esc(m.name); }
 
-function applyMoveEffect(atkMon, defMon, move){
-  const fx = STATUS_FX[move.type];
-  if(!fx || Math.random() > fx.chance) return '';
-  switch(fx.kind){
-    case 'burn': if(defMon.status) return ''; defMon.status='burn'; return `<span class="bad">${nm(defMon)} 陷入了灼傷！</span>`;
-    case 'poison': if(defMon.status) return ''; defMon.status='poison'; return `<span class="bad">${nm(defMon)} 中毒了！</span>`;
-    case 'paralyze': if(defMon.status) return ''; defMon.status='paralyze'; return `<span class="bad">${nm(defMon)} 被麻痺了！</span>`;
-    case 'atkDown': defMon.atkMul = Math.max(0.4, (defMon.atkMul||1)*0.75); return `<span class="bad">${nm(defMon)} 的攻擊下降了！</span>`;
-    case 'defDown': defMon.defMul = Math.max(0.4, (defMon.defMul||1)*0.75); return `<span class="bad">${nm(defMon)} 的防禦下降了！</span>`;
-    case 'selfDefUp': atkMon.defMul = Math.min(2, (atkMon.defMul||1)*1.3); return `<span class="good">${nm(atkMon)} 的防禦提升了！</span>`;
-  }
-  return '';
-}
-function tickStatus(mon){
-  if(!mon.status || mon.hp<=0) return '';
-  if(mon.status==='poison'){ const d=Math.max(1,Math.floor(mon.maxhp/8)); mon.hp=Math.max(0,mon.hp-d); return `<span class="bad">${nm(mon)} 因中毒損失了 ${d} 點HP。</span>`; }
-  if(mon.status==='burn'){ const d=Math.max(1,Math.floor(mon.maxhp/16)); mon.hp=Math.max(0,mon.hp-d); return `<span class="bad">${nm(mon)} 因灼傷損失了 ${d} 點HP。</span>`; }
-  return '';
-}
 function buildMoves(entry){
   const t1=entry[1], t2=entry[2];
   const m1 = MOVES[t1] || MOVES["一般"];
@@ -333,18 +332,20 @@ function typeStr(m){ return m.t2 ? m.t1+"／"+m.t2 : m.t1; }
 function isFinalForm(dexIdx){ return !EVO[dexIdx] && !STONE_EVO[dexIdx] && !TIME_EVO[dexIdx]; }
 
 /* ---------- TOWER MODE ---------- */
-const LEGENDARIES = [143,144,145,149,150, 242,243,244,248,249,250]; // 急凍鳥 閃電鳥 火焰鳥 超夢 夢幻 雷公 炎帝 水君 洛奇亞 鳳王 時拉比
+const LEGENDARIES = [143,144,145,149,150, 242,243,244,248,249,250, 376,377,378,379,380,381,382,383,384,385]; // 第三世代：雷吉洛克 雷吉艾斯 雷吉斯奇魯 拉帝亞斯 拉帝歐斯 蓋歐卡 固拉多 烈空坐 基拉祈 代歐奇希斯
+// // 急凍鳥 閃電鳥 火焰鳥 超夢 夢幻 雷公 炎帝 水君 洛奇亞 鳳王 時拉比
 const NONLEG = []; for(let i=0;i<DEX.length;i++){ if(!LEGENDARIES.includes(i)) NONLEG.push(i); }
 const BOSSES = NONLEG.filter(isFinalForm); // 最終進化型（含無進化的單一型態），全破後的無盡循環名單
 const COIN_COST = 50;
-const LEGENDARY_COST = [50,50,60,90,150, 80,80,80,120,120,200];
+const LEGENDARY_COST = [50,50,60,90,150, 80,80,80,120,120,200, 100,100,100,130,130,170,170,220,260,260];
 // 幻之寶可夢（夢幻=第一世代、時拉比=第二世代）：需清空該世代的普通樓層＋第二輪小魔王（無等級限制）
-const MYTHIC_GEN = {4:1, 10:2}; // 神獸順序編號 -> 世代
-const GEN_SPLIT = 151;          // 圖鑑編號 0~150 為第一世代
+const MYTHIC_GEN = {4:1, 10:2, 19:3, 20:3}; // 神獸順序編號 -> 世代
+const GEN_SPLIT = 151;
+const GEN_START = [0, 0, 151, 251, DEX.length]; // 依世代編號取得該世代的起點；GEN_START[gen+1] 為終點          // 圖鑑編號 0~150 為第一世代
 function isMythicPtr(ptr){ return MYTHIC_GEN[ptr] !== undefined; }
 const ROUND2_MUL = 1.3, ROUND2_HP_MUL = 1.8; // 第二輪小魔王：能力 ×1.3、HP ×1.8，之後每多一輪再加強
 function genProgress(gen){
-  const t = state.tower, inGen = i => gen===1 ? i<GEN_SPLIT : i>=GEN_SPLIT;
+  const t = state.tower, inGen = i => i >= GEN_START[gen] && i < GEN_START[gen+1];
   const floors = NONLEG.filter(inGen), bosses = BOSSES.filter(inGen);
   const floorsDone = Math.max(0, Math.min(floors.length, t.floorPtr - NONLEG.indexOf(floors[0])));
   const bossDone = t.loop>=1 ? bosses.length : Math.max(0, Math.min(bosses.length, t.endlessPtr - BOSSES.indexOf(bosses[0])));
@@ -399,32 +400,6 @@ const logEl = document.getElementById('log');
 const barEl = document.getElementById('bar');
 const optsEl = document.getElementById('opts');
 const appEl = document.getElementById('app'), stageEl = document.getElementById('stage'), turnEl = document.getElementById('turnbar');
-function pctHp(m){ return Math.max(0, Math.round(100*m.hp/m.maxhp)); }
-function stChip(m){ const t={burn:'🔥灼傷',poison:'☠️中毒',paralyze:'⚡麻痺'}[m.status]; return t ? ' · '+t : ''; }
-// 對戰卡片：at = 幾毫秒後才更新（讓血條跟著文字一起變），換了寶可夢則立即更新
-let stageTimers = [], stageLatest = null, stageKey = null;
-function flushStage(){ stageTimers.forEach(clearTimeout); stageTimers = []; if(stageLatest){ stageLatest(); stageLatest = null; } }
-function renderStage(at){
-  const b=state.battle, p=state.party[b.playerIdx], w=b.wild;
-  const nmx = m => (m.shiny?'✨':'')+esc(m.name);
-  const xp = p.level>=MAX_LEVEL ? 100 : Math.min(100, Math.round(100*p.exp/p.expNext));
-  const html =
-    `<div class="card foe"><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${String(w.dex+1).padStart(4,'0')} · ${esc(typeStr(w))}${stChip(w)}${b.foes&&b.foes.length?` · 還有 ${b.foes.length} 隻`:''}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
-    `<div class="card me"><div class="r1"><span>${nmx(p)}</span><span>Lv.${p.level}</span></div><div class="r2">${esc(typeStr(p))} · 速度 ${p.spd}${stChip(p)}</div><div class="bar${pctHp(p)<30?' low':''}"><i style="width:${pctHp(p)}%"></i></div><div class="hpt">HP: ${p.hp}/${p.maxhp}</div><div class="xp"><i style="width:${xp}%"></i></div></div>`;
-  const turnHtml = `<div>回合<br><b>${b.turn||1}</b></div><div>狀態<br><b>${b.phase||'選擇行動'}</b></div>`;
-  const apply = ()=>{ stageEl.innerHTML = html; turnEl.innerHTML = turnHtml; if(stageLatest===apply) stageLatest=null; };
-  const fresh = stageKey && (stageKey[0]!==w || stageKey[1]!==p);
-  stageKey = [w,p];
-  if(!at || at<=0 || fresh || !stageEl.innerHTML){ apply(); return; }
-  stageLatest = apply;
-  stageTimers.push(setTimeout(apply, at));
-}
-function syncBattleUI(phase){
-  const b=state.battle;
-  if(b && state.party[b.playerIdx]){ if(phase) b.phase=phase; appEl.classList.add('battle'); renderStage(curDelay()); }
-  else appEl.classList.remove('battle');
-}
-
 const LINE_DELAY = 260;
 const ATTACK_GAP = 1000; // 雙方出招之間多停一下
 let lineCount = 0, extraDelay = 0;
@@ -658,7 +633,7 @@ function screenCover(){
   print(`<div class="cover">
     <div class="pokeball" aria-hidden="true"><span></span></div>
     <div class="cover-title">寶可夢文字冒險</div>
-    <div class="cover-sub">關都・城都地方 · 全國圖鑑第一、二世代</div>
+    <div class="cover-sub">關都・城都・豐緣地方 · 全國圖鑑第一～三世代</div>
     <div class="cover-tagline">探索草叢、捕捉寶可夢、鍛鍊隊伍、挑戰無限之塔——<br>一場完全用文字寫成的寶可夢旅程。</div>
   </div>`);
   renderBar();
@@ -672,7 +647,7 @@ function screenCover(){
 function screenIntro(){
   clearLog();
   print('<span class="em">— 遊戲簡介 —</span>');
-  print('這是一款純文字的寶可夢養成、戰鬥、收集遊戲，收錄第一、二世代全 251 隻寶可夢（關都＋城都）。');
+  print('這是一款純文字的寶可夢養成、戰鬥、收集遊戲，收錄第一～三世代全 386 隻寶可夢（關都＋城都＋豐緣）。');
   hr();
   print('<span class="intro-h">◆ 探索</span>　從 1 號道路出發，一路經過常磐森林、月見山……走到城都的白銀山，越後面等級越高，也越常遇到進化型。');
   print('<span class="intro-h">◆ 戰鬥</span>　選擇招式攻擊，或用道具治療、解除異常狀態；速度快的一方先出手。');
@@ -684,7 +659,7 @@ function screenIntro(){
   print('<span class="intro-h">◆ 訓練家與道館</span>　草叢中每 8～12 場戰鬥會遇到訓練家（贏了有獎金）；圖鑑每登錄 10 隻可開啟下一間道館，先打關都 8 間，再打城都 8 間。');
   print('<span class="intro-h">◆ 補給站</span>　用過之後要再打完 2 場戰鬥才能再用（隊伍全倒時例外）；探索時偶爾會撿到道具。招式有 PP，用完只能「掙扎」。右上角「☰ 選單」可領任務與成就獎勵。');
   hr();
-  print('<span class="sys">目標：抓齊全國圖鑑 251 隻、收服所有傳說寶可夢！進度會自動儲存在這台裝置的瀏覽器裡。</span>');
+  print('<span class="sys">目標：抓齊全國圖鑑 386 隻、收服所有傳說寶可夢！進度會自動儲存在這台裝置的瀏覽器裡。</span>');
   setOptions([{label:"← 返回封面", action:screenCover}]);
 }
 
@@ -695,17 +670,18 @@ function screenTitle(){
   print('這是一場純文字寶可夢冒險：探索小徑、遭遇野生寶可夢、捕捉、戰鬥、練等，收集你的圖鑑。');
   hr();
   print('請先選擇你出身的地方（世代）：');
-  print('<span class="sys">選擇只影響初始夥伴，冒險開始後兩個世代的寶可夢都會遇到。</span>');
+  print('<span class="sys">選擇只影響初始夥伴，冒險開始後三個世代的寶可夢都會遇到。</span>');
   renderBar();
   setOptions([
     {label:"第一世代　關都地方（妙蛙種子／小火龍／傑尼龜／皮卡丘）", action:()=>screenStarterPick(1)},
     {label:"第二世代　城都地方（菊草葉／火球鼠／小鋸鱷）", action:()=>screenStarterPick(2)},
+    {label:"第三世代　豐緣地方（木守宮／火稚雞／水躍魚）", action:()=>screenStarterPick(3)},
     {label:"← 返回封面", action:screenCover}
   ]);
 }
 function screenStarterPick(gen){
   clearLog();
-  print(gen===1 ? '<span class="em">— 關都地方 —</span>' : '<span class="em">— 城都地方 —</span>');
+  print(`<span class="em">— ${gen===1 ? '關都地方' : gen===2 ? '城都地方' : '豐緣地方'} —</span>`);
   print('請選擇你的第一隻夥伴寶可夢：');
   renderBar();
   const list = gen===1 ? [
@@ -713,10 +689,14 @@ function screenStarterPick(gen){
     {label:"小火龍（火）－高攻擊，後期強力", action:()=>pickStarter(3)},
     {label:"傑尼龜（水）－高防禦，穩健耐久", action:()=>pickStarter(6)},
     {label:"皮卡丘（電）－速度快，先手優勢", action:()=>pickStarter(24)}
-  ] : [
+  ] : gen===2 ? [
     {label:"菊草葉（草）－穩健的草系，耐打", action:()=>pickStarter(151)},
     {label:"火球鼠（火）－火力型，後期強力", action:()=>pickStarter(154)},
     {label:"小鋸鱷（水）－物理強攻，穩健耐久", action:()=>pickStarter(157)}
+  ] : [
+    {label:"木守宮（草）－速度型，進化後輕盈強攻", action:()=>pickStarter(251)},
+    {label:"火稚雞（火）－火＋格鬥，火力十足", action:()=>pickStarter(254)},
+    {label:"水躍魚（水）－水＋地面，屬性抗性優秀", action:()=>pickStarter(257)}
   ];
   list.push({label:"← 重新選擇世代", action:screenTitle});
   setOptions(list);
@@ -1021,391 +1001,6 @@ function kickOutOfTower(){
   screenField();
 }
 
-/* ---------- BATTLE ---------- */
-function statusTag(m){
-  if(!m.status) return '';
-  const tag = {burn:'🔥灼傷', poison:'☠️中毒', paralyze:'⚡麻痺'}[m.status] || '';
-  return tag ? ` <span class="bad">[${tag}]</span>` : '';
-}
-function who(m){
-  const b = state.battle;
-  if(b && m === b.wild) return (b.mode==='wild' ? '野生的 ' : '對手 ') + nm(m);
-  return nm(m);
-}
-function screenBattle(){
-  const b = state.battle, p = state.party[b.playerIdx];
-  renderBar();
-  const FX={burn:'灼傷',poison:'中毒',paralyze:'麻痺',drain:'吸血',atkDown:'降攻',defDown:'降防',selfDefUp:'升防'};
-  const mk = (mv,i)=>{
-    const off = !mv.struggle && !(mv.pp>0), fx = STATUS_FX[mv.type];
-    const ppTxt = mv.struggle ? 'PP ∞' : `PP ${mv.pp}/${mv.maxpp}`;
-    const ppCls = mv.struggle ? '' : (mv.pp<=0 ? ' zero' : mv.pp <= Math.ceil(mv.maxpp/4) ? ' low' : '');
-    const sub = `威力 ${mv.power}` + (fx?` · ✦${FX[fx.kind]}`:'') + (mv.recoil?' · ⚠反作用力':'');
-    return { label:`${mv.name}（${mv.type}／威力${mv.power}／${ppTxt}）`, half:!mv.struggle, cls:'mv'+(off?' off':''),
-      html:`<span class="mvn">${esc(mv.name)}</span><span class="mvt" style="background:${TYPE_COLOR[mv.type]||'#2b3a8c'}">${mv.type}</span><span class="mvpp${ppCls}">${ppTxt}</span><span class="mvp">${sub}</span>`,
-      action: off ? ()=>screenBattle() : ()=>playerMove(i) };
-  };
-  let opts;
-  if(p.moves.some(m=>m.pp>0)) opts = p.moves.map(mk);
-  else { print('<span class="bad">所有招式的 PP 都用完了！只能使用「掙扎」（會受到反作用力）。</span>'); opts = [mk(STRUGGLE,-1)]; }
-  opts.push({label:'🎒 道具', cls:'q', action:screenItemSelect});
-  if(state.party.filter(m=>m.hp>0).length>1) opts.push({label:'🔄 換上場', cls:'q', action:screenSwitch});
-  if(b.mode==='wild'){
-    opts.push({label:'🎯 捕捉', cls:'q', action:screenBallSelect});
-    opts.push({label:'🏃 逃跑', cls:'q', action:tryFlee});
-  }
-  if(b.mode==='legendary') print('<span class="sys">（神獸戰無法逃跑，也無法用精靈球——擊敗牠就能收服）</span>');
-  else if(b.mode==='trainer' || b.mode==='gym') print('<span class="sys">（訓練家對戰不能逃跑，也不能捕捉）</span>');
-  else if(b.mode==='tower') print('<span class="sys">（塔內不能捕捉也不能逃跑，輸了會被送出塔外）</span>');
-  setOptions(opts,'選擇招式');
-}
-
-function screenBallSelect(){
-  const b = state.battle;
-  clearLog(); renderBar();
-  const opts = BALL_KEYS.filter(k=>state.bag[k]>0).map(k=>({label:`${ITEMS[k].label} ×${state.bag[k]}`, half:true, html:`${esc(ITEMS[k].label)} ×${state.bag[k]}<span class="sub">${esc(ITEMS[k].desc)}</span>`, action:()=>tryCatch(k)}));
-  if(!opts.length) print('<span class="bad">你沒有任何精靈球了！去商店買吧。</span>');
-  opts.push({label:'← 返回', action:toBattle});
-  setOptions(opts,'選擇球種');
-}
-function screenMoveSelect(){ screenBattle(); }
-
-function hpBars(){ /* 改由 renderStage() 畫對戰卡片 */ }
-
-function randomWildMove(w){ return w.moves[Math.floor(Math.random()*w.moves.length)]; }
-function clearBattleModifiers(){ state.party.forEach(m=>{ m.status=null; m.atkMul=1; m.defMul=1; }); }
-function effText(mult){
-  if(mult === 0) return ' <span class="bad">沒有效果……</span>';
-  if(mult >= 2) return ' <span class="good">效果絕佳！</span>';
-  if(mult < 1) return ' <span class="bad">效果不好...</span>';
-  return '';
-}
-function dmg(atkMon, defMon, move){
-  const stab = typesOf(atkMon).includes(move.type) ? 1.3 : 1.0;
-  const e = moveEff(move, defMon);
-  if(e === 0) return 0;
-  const variance = 0.85 + Math.random()*0.3;
-  const atkStat = atkMon.atk * (atkMon.atkMul||1);
-  const defStat = Math.max(1, defMon.def * (defMon.defMul||1));
-  const raw = ((2*atkMon.level/5+2)*move.power*(atkStat/defStat)/50 + 2);
-  return Math.max(1, Math.floor(raw*stab*e*variance));
-}
-function moveEff(move, defMon){ return move.struggle ? 1 : eff(move.type, typesOf(defMon)); }
-function effSpd(m){ return m.spd * (m.status==='paralyze' ? 0.5 : 1); }
-// 單次出招：處理麻痺、傷害、反作用力、吸血、附加效果
-function doAttack(att, def, move){
-  const t0 = curDelay();
-  attackCore(att, def, move);
-  if(state.battle) renderStage(t0 || 1);
-  gap(ATTACK_GAP);
-}
-function attackCore(att, def, move){
-  if(att.status==='paralyze' && Math.random()<0.25){
-    print(`<span class="bad">${who(att)} 因麻痺而無法動彈！</span>`);
-    return;
-  }
-  if(att !== state.battle.wild && move.maxpp !== undefined) move.pp = Math.max(0, move.pp - 1);
-  const isEnemy = att === state.battle.wild;
-  const e = moveEff(move, def);
-  if(e === 0){
-    print(`${who(att)} 使用了 ${esc(move.name)}！但是對 ${who(def)} 沒有效果……`);
-    return;
-  }
-  const d = dmg(att, def, move);
-  def.hp = Math.max(0, def.hp - d);
-  print(`${who(att)} 使用了 ${esc(move.name)}！造成 <span class="${isEnemy?'bad':'em'}">${d}</span> 點傷害。${effText(e)}`);
-  if(move.recoil){
-    const rec = Math.max(1, Math.floor(d*move.recoil));
-    att.hp = Math.max(0, att.hp-rec);
-    print(`<span class="bad">${who(att)} 因反作用力受到了 ${rec} 點傷害！</span>`);
-  }
-  const fx = STATUS_FX[move.type];
-  if(fx && fx.kind==='drain'){
-    const heal = Math.floor(d*0.5);
-    if(heal>0 && att.hp>0 && att.hp<att.maxhp){ att.hp=Math.min(att.maxhp, att.hp+heal); print(`<span class="good">${who(att)} 吸取了 ${heal} 點 HP！</span>`); }
-  } else if(def.hp>0 || (fx && fx.kind==='selfDefUp')){
-    const msg = applyMoveEffect(att, def, move);
-    if(msg) print(msg);
-  }
-}
-// 回傳 true 代表戰鬥已結束或已切換畫面
-function checkBattleEnd(){
-  const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
-  if(w.hp<=0){
-    if(p.hp<=0) print(`<span class="bad">${nm(p)} 也在同一擊中倒下了！</span>`);
-    winBattle(); return true;
-  }
-  if(p.hp<=0){ afterFaintCheck(p); return true; }
-  return false;
-}
-function enemyTurn(){
-  const b = state.battle;
-  doAttack(b.wild, state.party[b.playerIdx], randomWildMove(b.wild));
-  return checkBattleEnd();
-}
-function endOfTurn(){
-  const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
-  const tW = tickStatus(w); if(tW) print(tW);
-  if(w.hp<=0){ return winBattle(); }
-  const tP = tickStatus(p); if(tP) print(tP);
-  if(afterFaintCheck(p)) return;
-  b.turn = (b.turn||1) + 1;
-  screenBattle();
-}
-function playerMove(moveIdx){
-  const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
-  clearLog();
-  if(moveIdx>=0 && !(p.moves[moveIdx].pp>0)) return screenMoveSelect();
-  const pm = moveIdx<0 ? STRUGGLE : p.moves[moveIdx], wm = randomWildMove(w);
-  const ps = effSpd(p), ws = effSpd(w);
-  const playerFirst = ps > ws || (ps === ws && Math.random() < 0.5);
-  const order = playerFirst ? [[p,w,pm],[w,p,wm]] : [[w,p,wm],[p,w,pm]];
-  for(const [a,d,m] of order){
-    if(a.hp<=0 || d.hp<=0) continue;
-    doAttack(a, d, m);
-    if(checkBattleEnd()) return;
-  }
-  endOfTurn();
-}
-function tryCatch(ballKey){
-  if(typeof ballKey !== 'string') ballKey = 'pokeball';
-  const b = state.battle; const w = b.wild; const ball = ITEMS[ballKey];
-  clearLog();
-  if(!(state.bag[ballKey]>0)){
-    print(`<span class="bad">${ball.label}用完了！去商店補貨吧。</span>`);
-    return screenBattle();
-  }
-  state.bag[ballKey]--;
-  const hpRatio = w.hp/w.maxhp;
-  const chance = ball.master ? 1 : Math.min(0.97, (1-hpRatio)*0.75 + 0.15 + ball.ball);
-  print(`你對 ${nm(w)} 丟出了${ball.label}……`);
-  if(Math.random() < chance){
-    w.status = null; w.atkMul = 1; w.defMul = 1; bump('catches'); battleDone();
-    state.caught.add(w.dex);
-    if(w.shiny) state.shinyCaught.add(w.dex);
-    print(`<span class="good">抓到了！${nm(w)} 已加入圖鑑！</span>`);
-    if(state.party.length<6){ state.party.push(w); print('它加入了你的隊伍！'); }
-    else { state.box.push(w); print('隊伍已滿，它被送到了倉庫。'); }
-    const activeMon = state.party[b.playerIdx];
-    if(activeMon && activeMon.hp>0 && activeMon!==w) grantExp(activeMon, w.level, 0.5, '因為成功捕捉獲得');
-    state.battle=null;
-    return screenField();
-  }
-  print('<span class="bad">牠掙脫了！</span>');
-  if(enemyTurn()) return;
-  endOfTurn();
-}
-function screenItemSelect(){
-  const b = state.battle; const p = state.party[b.playerIdx];
-  clearLog(); renderBar(); hpBars(p, b.wild);
-  print('選擇要使用的道具：');
-  const opts = [];
-  Object.keys(ITEMS).forEach(kind=>{
-    const it = ITEMS[kind];
-    if(it.ball!==undefined || it.stone || !(state.bag[kind] > 0)) return;
-    const relevant = it.pp ? p.moves.some(m=>m.pp<m.maxpp) : it.heal ? p.hp < p.maxhp : p.status === it.cure;
-    if(relevant) opts.push({label:`${it.label}：${it.desc}（剩 ${state.bag[kind]}）`, action:()=>useItem(kind)});
-  });
-  if(opts.length===0) print('<span class="sys">（目前沒有能用的道具）</span>');
-  opts.push({label:'← 返回', action:toBattle});
-  setOptions(opts,'選擇道具');
-}
-function useItem(kind){
-  const b = state.battle; const p = state.party[b.playerIdx];
-  const it = ITEMS[kind];
-  clearLog();
-  if(!it || !(state.bag[kind]>0)){ print('<span class="bad">道具用完了！</span>'); return screenBattle(); }
-  state.bag[kind]--;
-  if(it.pp){
-    restorePP(p);
-    print(`<span class="good">使用了${it.label}，${nm(p)} 的全部招式 PP 恢復了！</span>`);
-  } else if(it.heal){
-    const before = p.hp;
-    p.hp = Math.min(p.maxhp, p.hp + it.heal);
-    print(`<span class="good">使用了${it.label}，${nm(p)} 回復了 ${p.hp-before} 點 HP。</span>`);
-  } else {
-    p.status = null;
-    print(`<span class="good">使用了${it.label}，${nm(p)} 的異常狀態治好了！</span>`);
-  }
-  if(enemyTurn()) return;
-  endOfTurn();
-}
-function tryFlee(){
-  clearLog();
-  if(Math.random()<0.75){
-    print('你成功逃跑了。');
-    state.battle=null;
-    return screenField();
-  }
-  print('<span class="bad">沒能逃脫！</span>');
-  if(enemyTurn()) return;
-  endOfTurn();
-}
-function screenSwitch(){
-  const b = state.battle;
-  clearLog();
-  print('<span class="em">選擇要換上場的寶可夢：</span>');
-  const opts = state.party.map((m,i)=>{
-    const tag = i===b.playerIdx ? '（目前上場）' : (m.hp<=0 ? '（已無法戰鬥）' : `HP ${m.hp}/${m.maxhp}`);
-    const usable = i!==b.playerIdx && m.hp>0;
-    return { label:`${monName(m)} Lv.${m.level} ${tag}`, half:true, action: usable ? ()=>doSwitch(i) : screenSwitch };
-  });
-  opts.push({label:'取消，返回戰鬥', action:toBattle});
-  setOptions(opts,'選擇寶可夢');
-}
-function doSwitch(idx){
-  const b = state.battle;
-  const old = state.party[b.playerIdx];
-  b.playerIdx = idx;
-  clearLog();
-  print(`收回了 ${nm(old)}，換上 ${nm(state.party[idx])}！`);
-  if(enemyTurn()) return;
-  endOfTurn();
-}
-function evolveIfReady(p){
-  const te = TIME_EVO[p.dex];
-  if(te){
-    if(p.level < te.lvl) return false;
-    const h = nowFn().getHours();
-    return evolveTo(p, (h>=6 && h<18) ? te.day : te.night);
-  }
-  const rule = EVO[p.dex];
-  if(!rule) return false;
-  let [toIdx, lvl] = rule;
-  if(p.level < lvl) return false;
-  if(Array.isArray(toIdx)) toIdx = toIdx[Math.floor(Math.random()*toIdx.length)]; // 多分支：隨機
-  return evolveTo(p, toIdx);
-}
-function evolveTo(p, toIdx){
-  const oldName = monName(p);
-  const e = DEX[toIdx];
-  p.dex = toIdx; p.name = e[0]; p.t1 = e[1]; p.t2 = e[2]; p.tier = e[3];
-  const st = statsFor(e, p.level);
-  const hpGain = st.hp - p.maxhp;
-  p.maxhp = st.hp; p.hp = Math.max(1, Math.min(p.maxhp, p.hp + hpGain));
-  p.atk = st.atk; p.def = st.def; p.spd = st.spd;
-  p.moves = buildMoves(e);
-  state.caught.add(toIdx); state.seen.add(toIdx);
-  if(p.shiny) state.shinyCaught.add(toIdx);
-  print(`<span class="em">✦ ${esc(oldName)} 進化成了 ${nm(p)}！</span>`);
-  bump('evolves');
-  return true;
-}
-function evolveFully(p){ while(evolveIfReady(p)){} }
-function grantExp(p, oppLevel, mult, verb, quiet){
-  if(p.level >= MAX_LEVEL){
-    p.exp = 0;
-    evolveFully(p); // 滿級才抓到、或舊存檔中尚未進化的寶可夢，也能進化
-    if(!quiet) print(`<span class="sys">${nm(p)} 已經是 Lv.${MAX_LEVEL}，經驗值無法再增加。</span>`);
-    return;
-  }
-  const gained = Math.max(1, Math.floor((10 + oppLevel*4) * mult));
-  p.exp += gained;
-  if(!quiet) print(`<span class="good">${nm(p)} ${verb} ${gained} 經驗值。</span>`);
-  while(p.level < MAX_LEVEL && p.exp >= p.expNext){
-    p.exp -= p.expNext; p.level++; p.expNext = 18 + p.level*9;
-    const st = statsFor(DEX[p.dex], p.level);
-    const gainHp = st.hp-p.maxhp;
-    p.maxhp=st.hp; p.hp=Math.min(p.hp+gainHp, p.maxhp); p.atk=st.atk; p.def=st.def; p.spd=st.spd;
-    print(`<span class="em">${nm(p)} 升到了 Lv.${p.level}！</span>`);
-    evolveFully(p);
-  }
-  if(p.level >= MAX_LEVEL){ p.exp = 0; print(`<span class="em">${nm(p)} 達到等級上限 Lv.${MAX_LEVEL}！</span>`); }
-}
-// 沒出場但還能戰鬥的隊員分到部分經驗（倒下的不算）
-const SHARE_EXP = 0.3;
-function shareExp(active, oppLevel, mult){
-  const others = state.party.filter(m=>m!==active && m.hp>0 && m.level<MAX_LEVEL);
-  if(!others.length) return;
-  const gained = Math.max(1, Math.floor((10 + oppLevel*4) * mult * SHARE_EXP));
-  print(`<span class="good">隊伍中其他 ${others.length} 隻寶可夢各分到 ${gained} 經驗值。</span>`);
-  others.forEach(m=>grantExp(m, oppLevel, mult*SHARE_EXP, '分到', true));
-}
-function giveMoney(amount){
-  state.money += amount;
-  print(`<span class="good">獲得了 💰 ${amount}！（目前 ${state.money}）</span>`);
-}
-function warnIfWiped(){
-  if(noAlive()) print('<span class="bad">你的隊伍已經沒有能戰鬥的寶可夢了！請先回補給站治療。</span>');
-}
-function winBattle(){
-  const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
-  const mode = b.mode;
-  bump('wins'); if(mode==='tower'){ bump('floors'); if(b.boss) bump('bosses'); }
-  print(`<span class="good">擊敗了${mode==='wild'?'野生的 ':' '}${nm(w)}！</span>`);
-  const expMul = (mode==='tower') ? TOWER_EXP_MUL : 1;
-  if(p.hp>0) grantExp(p, w.level, expMul, '獲得');
-  shareExp(p, w.level, expMul);
-  if(b.foes && b.foes.length){
-    const nx = b.foes.shift(); b.wild = nx;
-    print(`<span class="em">${esc(b.title)} 派出了 ${nm(nx)}（Lv.${nx.level}）！</span>`);
-    const cur = state.party[b.playerIdx];
-    if(cur.hp<=0) return afterFaintCheck(cur);
-    return screenBattle();
-  }
-  state.battle=null;
-  battleDone();
-
-  if(mode==='trainer'){
-    giveMoney(b.reward); bump('trainers'); warnIfWiped(); return screenField();
-  }
-  if(mode==='gym'){
-    giveMoney(b.reward); state.meta.badges++; bump('gyms');
-    { const sk = STONE_KEYS[Math.floor(Math.random()*STONE_KEYS.length)]; state.bag[sk] = (state.bag[sk]||0) + 1; print(`<span class="good">館主另外送了你一顆 ${ITEMS[sk].label}！</span>`); }
-    print(`<span class="boss">🏅 獲得了【${esc(GYMS[b.gymIdx][1])}】的徽章！（${state.meta.badges}/${GYMS.length}）</span>`);
-    warnIfWiped(); return screenGym(true);
-  }
-  if(mode==='tower'){
-    const t = state.tower;
-    giveMoney(w.level * 10 * (b.boss ? 3 : 1));
-    let gotCoin = true;
-    if(b.endless){
-      t.coins++;
-      t.endlessPtr++;
-      if(t.endlessPtr >= BOSSES.length){ t.endlessPtr = 0; t.loop++; print(`<span class="boss">第 ${t.loop+1} 輪小魔王全數擊破！下一輪再度強化。</span>`); }
-    } else {
-      gotCoin = t.floorPtr >= (t.coinPtr||0); // 只有第一次通過的樓層才有硬幣
-      if(gotCoin){ t.coins++; t.coinPtr = t.floorPtr+1; }
-      t.floorPtr++;
-    }
-    if(gotCoin) print(`<span class="good">🪙 ${b.boss?'小魔王擊破':'樓層突破'}！獲得 1 枚硬幣（目前 ${t.coins} 枚）</span>`);
-    else print(`<span class="sys">${b.boss?'小魔王擊破':'樓層突破'}！這層已經領過硬幣了，不會重複獲得（目前 ${t.coins} 枚）</span>`);
-    if(b.boss){
-      fullHeal();
-      print('<span class="good">小魔王倒下時留下了一道光，你的隊伍全部回滿了！現在可以返回地面。</span>');
-    }
-    if(!b.endless && t.floorPtr === NONLEG.length){
-      print(`<span class="boss">塔內 ${NONLEG.length} 層全數突破！接下來進入第二輪小魔王（HP、能力大幅強化）。</span>`);
-    }
-    warnIfWiped();
-    return screenTower(true);
-  }
-  if(mode==='legendary'){
-    giveMoney(w.level * 20);
-    w.hp = w.maxhp; w.status=null; w.atkMul=1; w.defMul=1;
-    state.caught.add(w.dex); state.seen.add(w.dex);
-    if(w.shiny) state.shinyCaught.add(w.dex);
-    if(state.party.length<6){ state.party.push(w); print(`<span class="good">✦ ${nm(w)} 被你的實力降服，加入了隊伍！</span>`); }
-    else { state.box.push(w); print(`<span class="good">✦ ${nm(w)} 被降服，送往了倉庫！</span>`); }
-    state.tower.legendaryPtr++;
-    warnIfWiped();
-    return screenTower(true);
-  }
-  giveMoney(w.level * 10);
-  warnIfWiped();
-  screenField();
-}
-function loseBattle(){
-  print('<span class="bad">你的隊伍全部失去戰鬥能力了……你被送回了補給站。</span>');
-  state.party.forEach(m=>{ m.hp=Math.max(1, Math.floor(m.maxhp*0.5)); m.status=null; restorePP(m); });
-  const mode = state.battle && state.battle.mode;
-  state.battle=null;
-  battleDone();
-  if(mode==='trainer' || mode==='gym'){ const lost = Math.floor(state.money*0.1); state.money -= lost; print(`<span class="bad">你輸給了對手，賠了 💰 ${lost}。</span>`); }
-  if(mode==='tower' || mode==='legendary') return kickOutOfTower();
-  screenField();
-}
-
 /* ---------- PARTY / BAG / DEX ---------- */
 function screenParty(back, msg){
   back = (typeof back === 'function') ? back : toField;
@@ -1548,7 +1143,7 @@ function useStone(k, box, i){
 let dexPage=0;
 function screenDex(){
   clearLog();
-  print(`<span class="em">— 全國圖鑑（第一・二世代）—</span>　已捕捉 ${state.caught.size} / ${DEX.length}　✨ 色違 ${state.shinyCaught.size}`);
+  print(`<span class="em">— 全國圖鑑（第一～三世代）—</span>　已捕捉 ${state.caught.size} / ${DEX.length}　✨ 色違 ${state.shinyCaught.size}`);
   hr();
   const perPage=15;
   const start=dexPage*perPage;
@@ -1605,10 +1200,10 @@ function screenGym(keepLog){
   const i = state.meta.badges, n = state.caught.size, g = GYMS[i], opts = [];
   print(`<span class="em">🏛 道館挑戰　徽章 ${i}/${GYMS.length}</span>`);
   if(i>0) print(`<span class="sys">🏅 ${GYMS.slice(0,i).map(x=>x[1]).join('、')}</span>`);
-  if(!g) print('<span class="good">恭喜！你已經集滿全部 16 枚徽章！</span>');
+  if(!g) print(`<span class="good">恭喜！你已經集滿全部 ${GYMS.length} 枚徽章！</span>`);
   else {
     const need = (i+1)*10, ok = n >= need;
-    print(`下一間：${esc(g[0])}（${esc(g[2])}系）館主 ${esc(g[1])}${i>=8?'　<span class="sys">［第二世代］</span>':''}`);
+    print(`下一間：${esc(g[0])}（${esc(g[2])}系）館主 ${esc(g[1])}${i>=16?'　<span class="sys">［第三世代］</span>':i>=8?'　<span class="sys">［第二世代］</span>':''}`);
     print(`　${ok?'✅':'❌'} 圖鑑登錄 ≥ ${need} 隻（目前 ${n}）`);
     print(`<span class="sys">建議等級約 Lv.${10+i*4}；館主有 ${gymFoeCount(i)} 隻寶可夢，不能逃跑或捕捉。</span>`);
     opts.push(ok ? {label:`⚔ 挑戰 ${g[0]}`, action:startGym} : {label:`（圖鑑還差 ${need-n} 隻）`, action:()=>screenGym()});
@@ -1675,12 +1270,12 @@ function claimQuest(id){
 const TITLE_OF = {
   a_win1:'見習訓練家', a_win50:'老練訓練家', a_win300:'不敗傳說',
   a_cat10:'捕獲新星', a_cat50:'寶可夢獵人',
-  a_dex50:'圖鑑研究員', a_dex150:'圖鑑博士', a_dex251:'寶可夢大師',
+  a_dex50:'圖鑑研究員', a_dex150:'圖鑑博士', a_dex251:'關都圖鑑博士', a_dexg2:'城都圖鑑博士', a_dexg3:'豐緣圖鑑博士', a_dex386:'寶可夢大師',
   a_flr30:'塔之挑戰者', a_flr150:'攀塔勇者', a_top:'登頂者', a_boss10:'魔王剋星',
   a_evo10:'進化培育家', a_shiny:'閃亮的幸運兒',
   a_leg1:'傳說的見證者', a_legall:'傳說收集家', a_max:'極限突破者', a_r2:'二周目霸者',
   a_tr1:'初次交鋒', a_tr30:'訓練家殺手',
-  a_gym1:'徽章收集者', a_gym8:'關都霸主', a_gym16:'道館大師',
+  a_gym1:'徽章收集者', a_gym8:'關都霸主', a_gym16:'城都霸主', a_gym24:'豐緣霸主',
   a_ci7:'勤奮的旅人', a_ci30:'簽到之王'
 };
 const DEFAULT_TITLE = '新手訓練家';
@@ -1688,10 +1283,12 @@ function curTitle(){ const id = state.profile.titleId; return (id && state.ach.d
 function renderHeader(){
   const n = state.profile && state.profile.name;
   const html = !n
-    ? '<div class="title">◆ 寶可夢文字冒險</div><div class="sub">關都・城都 · 全國圖鑑 251 隻</div>'
+    ? '<div class="title">◆ 寶可夢文字冒險</div><div class="sub">關都・城都・豐緣 · 全國圖鑑 386 隻</div>'
     : `<button id="profBtn" onclick="openMenu('profile')"><span class="av">${esc(Array.from(n)[0])}</span><span class="pn"><b>${esc(n)}</b><i>${esc(curTitle())}</i></span></button>`;
   if(hdrLeft.dataset.h !== html){ hdrLeft.innerHTML = html; hdrLeft.dataset.h = html; }
 }
+const genSize = g => GEN_START[g+1] - GEN_START[g];
+const genCaught = g => { let n = 0; for(let i=GEN_START[g]; i<GEN_START[g+1]; i++) if(state.caught.has(i)) n++; return n; };
 const ACH = [
   {id:'a_win1',   name:'初出茅廬',   desc:'贏得 1 場戰鬥',           pts:1,  cur:()=>state.stats.wins||0, target:1},
   {id:'a_win50',  name:'身經百戰',   desc:'贏得 50 場戰鬥',          pts:3,  cur:()=>state.stats.wins||0, target:50},
@@ -1700,7 +1297,11 @@ const ACH = [
   {id:'a_cat50',  name:'捕獲達人',   desc:'捕捉 50 隻寶可夢',        pts:5,  cur:()=>state.stats.catches||0, target:50},
   {id:'a_dex50',  name:'圖鑑收藏家', desc:'圖鑑收集 50 隻',          pts:3,  cur:()=>state.caught.size, target:50},
   {id:'a_dex150', name:'圖鑑大師',   desc:'圖鑑收集 150 隻',         pts:8,  cur:()=>state.caught.size, target:150},
-  {id:'a_dex251', name:'全圖鑑達成', desc:'圖鑑收集全部 251 隻',     pts:20, cur:()=>state.caught.size, target:251},
+  // 依世代的圖鑑完成（a_dex251 為舊存檔相容的 id，現在代表第一世代）
+  {id:'a_dex251', name:'關都圖鑑完成', desc:'收集第一世代（關都）全部 151 隻', pts:10, cur:()=>genCaught(1), target:genSize(1)},
+  {id:'a_dexg2',  name:'城都圖鑑完成', desc:'收集第二世代（城都）全部 100 隻', pts:10, cur:()=>genCaught(2), target:genSize(2)},
+  {id:'a_dexg3',  name:'豐緣圖鑑完成', desc:'收集第三世代（豐緣）全部 135 隻', pts:12, cur:()=>genCaught(3), target:genSize(3)},
+  {id:'a_dex386', name:'全國圖鑑完成', desc:`集滿三個世代，全部 ${DEX.length} 隻`, pts:25, cur:()=>state.caught.size, target:DEX.length},
   {id:'a_flr30',  name:'塔的挑戰者', desc:'在塔中通過 30 層',        pts:3,  cur:()=>state.stats.floors||0, target:30},
   {id:'a_flr150', name:'攀塔勇者',   desc:'在塔中通過 150 層',       pts:8,  cur:()=>state.stats.floors||0, target:150},
   {id:'a_top',    name:'登頂',       desc:'清空塔內全部普通樓層',    pts:12, cur:()=>Math.min(state.tower.floorPtr, NONLEG.length), target:NONLEG.length},
@@ -1708,14 +1309,15 @@ const ACH = [
   {id:'a_evo10',  name:'進化培育家', desc:'讓寶可夢進化 10 次',      pts:3,  cur:()=>state.stats.evolves||0, target:10},
   {id:'a_shiny',  name:'閃亮登場',   desc:'捕獲 1 隻色違寶可夢',     pts:10, cur:()=>state.shinyCaught.size, target:1},
   {id:'a_leg1',   name:'傳說降臨',   desc:'收服 1 隻傳說寶可夢',     pts:5,  cur:()=>state.tower.legendaryPtr, target:1},
-  {id:'a_legall', name:'傳說收集家', desc:'收服全部 11 隻傳說寶可夢', pts:15, cur:()=>state.tower.legendaryPtr, target:LEGENDARIES.length},
+  {id:'a_legall', name:'傳說收集家', desc:`收服全部 ${LEGENDARIES.length} 隻傳說寶可夢`, pts:15, cur:()=>state.tower.legendaryPtr, target:LEGENDARIES.length},
   {id:'a_max',    name:'極限突破',   desc:'讓寶可夢升到 Lv.100',     pts:5,  cur:()=>[...state.party,...state.box].some(m=>m.level>=MAX_LEVEL)?1:0, target:1},
   {id:'a_r2',     name:'二周目霸者', desc:'打完第二輪全部小魔王',    pts:15, cur:()=>state.tower.loop, target:1},
   {id:'a_tr1',    name:'初次交鋒',   desc:'擊敗 1 位訓練家',         pts:1,  cur:()=>state.stats.trainers||0, target:1},
   {id:'a_tr30',   name:'訓練家殺手', desc:'擊敗 30 位訓練家',        pts:4,  cur:()=>state.stats.trainers||0, target:30},
   {id:'a_gym1',   name:'徽章收藏',   desc:'取得第 1 枚道館徽章',     pts:3,  cur:()=>state.meta.badges, target:1},
-  {id:'a_gym8',   name:'關都制霸',   desc:'集滿前 8 枚徽章（第一世代）', pts:10, cur:()=>state.meta.badges, target:8},
-  {id:'a_gym16',  name:'道館大師',   desc:'集滿全部 16 枚徽章',      pts:20, cur:()=>state.meta.badges, target:16},
+  {id:'a_gym8',   name:'關都制霸',   desc:'集滿第一世代（關都）8 枚徽章', pts:10, cur:()=>state.meta.badges, target:8},
+  {id:'a_gym16',  name:'城都制霸',   desc:'集滿第二世代（城都）8 枚徽章', pts:12, cur:()=>state.meta.badges, target:16},
+  {id:'a_gym24',  name:'豐緣制霸',   desc:`集滿第三世代（豐緣）8 枚徽章，共 ${GYMS.length} 枚`, pts:15, cur:()=>state.meta.badges, target:GYMS.length},
   {id:'a_ci7',    name:'每日報到',   desc:'累計簽到 7 天',           pts:2,  cur:()=>state.stats.checkins||0, target:7},
   {id:'a_ci30',   name:'簽到達人',   desc:'累計簽到 30 天',          pts:5,  cur:()=>state.stats.checkins||0, target:30}
 ];
