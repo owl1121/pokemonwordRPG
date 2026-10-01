@@ -257,6 +257,13 @@ header{border-radius:24px 24px 0 0;}
 .card.hit.strong{animation:cardHitStrong .6s ease-out;}
 .card.hit.weak{animation:cardHitWeak .3s ease-out;}
 @media (prefers-reduced-motion:reduce){.card.hit,.card.hit.strong,.card.hit.weak{animation:none;}}
+/* ---- 對戰前轉場動畫 ---- */
+#introFx{position:fixed;top:0;z-index:100;overflow:hidden;display:flex;align-items:center;justify-content:center;font-family:ui-monospace,Menlo,Consolas,'Courier New',monospace;pointer-events:auto;touch-action:none;}
+#introFx pre{position:absolute;left:0;top:0;margin:0;font-size:14px;line-height:1;letter-spacing:0;white-space:pre;user-select:none;}
+#introFx .introTxt{display:none;position:relative;text-align:center;animation:introPop .35s ease-out;}
+#introFx .vs{font-size:60px;font-weight:bold;letter-spacing:6px;color:#eafff2;text-shadow:0 0 14px #3fbf7f,0 3px 0 #07100b;}
+#introFx .sub{font-size:15px;color:#9ad9b6;margin-top:6px;}
+@keyframes introPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.18);opacity:1}100%{transform:scale(1)}}
 </style>
 </head>
 <body>
@@ -402,7 +409,7 @@ const optsEl = document.getElementById('opts');
 const appEl = document.getElementById('app'), stageEl = document.getElementById('stage'), turnEl = document.getElementById('turnbar');
 const LINE_DELAY = 260;
 const ATTACK_GAP = 1000; // 雙方出招之間多停一下
-let lineCount = 0, extraDelay = 0;
+let lineCount = 0, extraDelay = 0, introLead = 0;   // introLead：對戰轉場動畫要讓文字晚點出現的毫秒數
 function curDelay(){ return lineCount*LINE_DELAY + extraDelay; }
 function gap(ms){ extraDelay += ms; }
 let pendingTimer = null;
@@ -415,7 +422,7 @@ function print(html){
   lineCount++;
   logEl.scrollTop = logEl.scrollHeight;
 }
-function clearLog(){ flushStage(); logEl.innerHTML=""; lineCount=0; extraDelay=0; }
+function clearLog(){ flushStage(); logEl.innerHTML=""; lineCount=0; extraDelay=introLead; introLead=0; }
 function hr(){ print('<div class="hr"></div>'); }
 function holdOptionsUntilRevealed(){
   optsEl.classList.add('pending');
@@ -652,7 +659,7 @@ function screenIntro(){
   print('<span class="intro-h">◆ 探索</span>　從 1 號道路出發，一路經過常磐森林、月見山……走到城都的白銀山，越後面等級越高，也越常遇到進化型。');
   print('<span class="intro-h">◆ 戰鬥</span>　選擇招式攻擊，或用道具治療、解除異常狀態；速度快的一方先出手。');
   print('<span class="intro-h">◆ 捕捉</span>　用精靈球捕捉野生寶可夢，對方血量越低成功率越高。');
-  print('<span class="intro-h">◆ 培養</span>　戰鬥獲勝可得經驗值，等級到了會自動進化，最高 Lv.100。');
+  print('<span class="intro-h">◆ 培養</span>　戰鬥獲勝可得經驗值，等級到了會詢問要不要進化，最高 Lv.100。');
   print('<span class="intro-h">◆ 進化石</span>　皮卡丘、六尾、伊布等要用火／水／雷／葉／月／日之石進化，商店有賣、路邊偶爾撿得到，打贏道館也會送一顆。');
   print('<span class="intro-h">◆ 隊伍</span>　最多帶 6 隻上場，抓超過的會送進倉庫；可隨時查看隊伍、設定隊長、與倉庫交換寶可夢，完全不用浪費戰鬥中的回合。');
   print('<span class="intro-h">◆ 無限之塔</span>　依全國圖鑑順序一路挑戰，打倒小魔王（最終進化型）能拿硬幣，集滿硬幣可以挑戰急凍鳥、閃電鳥、火焰鳥、超夢、夢幻，以及雷公、炎帝、水君、洛奇亞、鳳王、時拉比共十一隻傳說寶可夢。幻之寶可夢（夢幻、時拉比）需先清空該世代的普通樓層與「第二輪」強化小魔王。');
@@ -783,10 +790,11 @@ function encounter(){
   state.seen.add(dexIndex);
   clearBattleModifiers();
   state.battle = { wild, playerIdx: firstAlive(), mode:'wild' };
+  introLead = introLeadFor('wild');
   clearLog();
   announceShiny(wild);
   print(`<span class="em">野生的 ${nm(wild)}（Lv.${wild.level}）出現了！</span>`);
-  screenBattle();
+  screenBattle(); battleIntro('wild');
 }
 function zoneName(z){ return MAP_NAMES[Math.min(z, MAP_NAMES.length)-1]; }
 // 進化階段：1=基本、2=一階進化、3=二階進化；沒有進化的寶可夢依強度歸類
@@ -961,11 +969,13 @@ function startTowerFloor(){
   state.seen.add(f.dexIdx);
   clearBattleModifiers();
   state.battle = { wild, playerIdx: firstAlive(), mode:'tower', boss:f.boss, endless:f.endless };
+  const introKind = f.boss ? 'big' : 'wild';
+  introLead = introLeadFor(introKind);
   clearLog();
   announceShiny(wild);
   if(f.boss) print(`<span class="boss">【小魔王】${nm(wild)}（Lv.${wild.level}）現身了！</span>`);
   else print(`<span class="em">第 ${t.floorPtr+1} 層的 ${nm(wild)}（Lv.${wild.level}）擋在你面前！</span>`);
-  screenBattle();
+  screenBattle(); battleIntro(introKind);
 }
 function startLegendaryChallenge(){
   if(noAlive()){
@@ -982,11 +992,12 @@ function startLegendaryChallenge(){
   state.seen.add(dexIdx);
   clearBattleModifiers();
   state.battle = { wild, playerIdx: firstAlive(), mode:'legendary' };
+  introLead = introLeadFor('big');
   clearLog();
   print(`<span class="em">你支付了 ${g.cost} 枚硬幣……</span>`);
   announceShiny(wild);
   print(`<span class="em">傳說中的 ${nm(wild)}（Lv.${wild.level}）現身了！這場戰鬥無法逃跑。</span>`);
-  screenBattle();
+  screenBattle(); battleIntro('big');
 }
 function kickOutOfTower(){
   const t = state.tower;
@@ -1176,10 +1187,11 @@ function startTrainer(){
   for(let i=0;i<n;i++) foes.push(makeMon(pickWildIndex(z), Math.max(2, Math.min(MAX_LEVEL, z*4 + Math.floor(Math.random()*5) - 1)), {shiny:false}));
   const title = TRAINERS[Math.floor(Math.random()*TRAINERS.length)];
   const first = startMultiBattle('trainer', foes, title, {reward: foes.reduce((a,f)=>a+f.level*25,0)});
+  introLead = introLeadFor('trainer');
   clearLog();
   print(`<span class="em">🎽 訓練家【${esc(title)}】向你挑戰！（共 ${n} 隻寶可夢）</span>`);
   print(`${esc(title)} 派出了 ${nm(first)}（Lv.${first.level}）！`);
-  screenBattle();
+  screenBattle(); battleIntro('trainer');
 }
 function gymFoeCount(i){ return Math.min(5, 2 + Math.floor(i/3)); }
 function startGym(){
@@ -1189,10 +1201,11 @@ function startGym(){
   const cnt = gymFoeCount(i), lv = 10 + i*4, foes = [];
   for(let k=0;k<cnt;k++) foes.push(makeMon(g[3][Math.floor(Math.random()*g[3].length)]-1, Math.min(MAX_LEVEL, lv + (k===cnt-1?3:0)), {shiny:false}));
   const first = startMultiBattle('gym', foes, `${g[0]}館主 ${g[1]}`, {reward:1200 + i*400, gymIdx:i});
+  introLead = introLeadFor('big');
   clearLog();
   print(`<span class="boss">🏛 ${esc(g[0])}（${esc(g[2])}系）館主【${esc(g[1])}】向你挑戰！（共 ${cnt} 隻）</span>`);
   print(`${esc(g[1])} 派出了 ${nm(first)}（Lv.${first.level}）！`);
-  screenBattle();
+  screenBattle(); battleIntro('big');
 }
 function screenGym(keepLog){
   if(keepLog===true) hr(); else clearLog();
