@@ -526,10 +526,12 @@ function battleIntro(kind){
   const cfg = INTRO[kind];
   if(!cfg || introReduced()) return;
   if(introEl){ cancelAnimationFrame(introRaf); introEl.remove(); introEl = null; }
-  const rect = appEl.getBoundingClientRect();
-  const W = Math.round(rect.width), H = window.innerHeight;
+  // 只蓋在上方的對戰畫面（兩張寶可夢卡片那一塊），不是全螢幕
+  const rect = stageEl.getBoundingClientRect();
+  const W = Math.round(rect.width), H = Math.round(rect.height);
+  if(W < 40 || H < 40) return;
   const el = document.createElement('div'); el.id = 'introFx';
-  el.style.left = rect.left+'px'; el.style.width = W+'px'; el.style.height = H+'px';
+  el.style.left = rect.left+'px'; el.style.top = rect.top+'px'; el.style.width = W+'px'; el.style.height = H+'px';
   const pre = document.createElement('pre'); el.appendChild(pre);
   const lab = document.createElement('div'); lab.className = 'introTxt'; lab.innerHTML = introLabel(kind); el.appendChild(lab);
   document.body.appendChild(el); introEl = el;
