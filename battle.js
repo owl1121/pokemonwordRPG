@@ -243,7 +243,7 @@ function tryCatch(ballKey){
     const activeMon = state.party[b.playerIdx];
     if(activeMon && activeMon.hp>0 && activeMon!==w) grantExp(activeMon, w.level, 0.5, '因為成功捕捉獲得');
     state.battle=null;
-    return screenField();
+    return runEvolutions(()=>screenField());
   }
   print('<span class="bad">牠掙脫了！</span>');
   if(enemyTurn()) return;
@@ -316,22 +316,29 @@ function doSwitch(idx){
   if(enemyTurn()) return;
   endOfTurn();
 }
-function evolveIfReady(p){
+/* ---------- 進化：先詢問玩家，同意後才進化 ---------- */
+const evoSkip = new WeakMap();   // 玩家選了「不進化」：同一等級不再詢問（重新整理頁面後會再問一次）
+let evoQueue = [];
+function evoTarget(p){           // 回傳進化後的圖鑑索引；現在還不能進化則回傳 null
   const te = TIME_EVO[p.dex];
   if(te){
-    if(p.level < te.lvl) return false;
+    if(p.level < te.lvl) return null;
     const h = nowFn().getHours();
-    return evolveTo(p, (h>=6 && h<18) ? te.day : te.night);
+    return (h>=6 && h<18) ? te.day : te.night;
   }
   const rule = EVO[p.dex];
-  if(!rule) return false;
-  let [toIdx, lvl] = rule;
-  if(p.level < lvl) return false;
-  if(Array.isArray(toIdx)) toIdx = toIdx[Math.floor(Math.random()*toIdx.length)]; // 多分支：隨機
-  return evolveTo(p, toIdx);
+  if(!rule) return null;
+  const [toIdx, lvl] = rule;
+  if(p.level < lvl) return null;
+  return Array.isArray(toIdx) ? toIdx[Math.floor(Math.random()*toIdx.length)] : toIdx; // 多分支：隨機
+}
+function queueEvolution(p){      // 達成進化條件就排進詢問佇列
+  if(evoSkip.get(p) === p.level) return;
+  if(evoTarget(p) === null) return;
+  if(!evoQueue.includes(p)) evoQueue.push(p);
 }
 function evolveTo(p, toIdx){
-  const oldName = monName(p);
+  const oldName = esc(monName(p));
   const e = DEX[toIdx];
   p.dex = toIdx; p.name = e[0]; p.t1 = e[1]; p.t2 = e[2]; p.tier = e[3];
   const st = statsFor(e, p.level);
@@ -341,15 +348,39 @@ function evolveTo(p, toIdx){
   p.moves = buildMoves(e);
   state.caught.add(toIdx); state.seen.add(toIdx);
   if(p.shiny) state.shinyCaught.add(toIdx);
-  print(`<span class="em">✦ ${esc(oldName)} 進化成了 ${nm(p)}！</span>`);
+  print(`<span class="em">「${oldName}」正在進化…</span>`);
+  print(`<span class="em">✦ 「${oldName}」進化成了「${esc(monName(p))}」！</span>`);
   bump('evolves');
   return true;
 }
-function evolveFully(p){ while(evolveIfReady(p)){} }
+// 戰鬥／捕捉結束後呼叫：有寶可夢可以進化就逐隻詢問，全部處理完才執行 next()
+function runEvolutions(next){
+  state.party.forEach(queueEvolution);
+  evoQueue = evoQueue.filter(p => state.party.includes(p) && evoSkip.get(p) !== p.level && evoTarget(p) !== null);
+  if(!evoQueue.length) return next();
+  const p = evoQueue[0], n = esc(monName(p));
+  print(`<span class="em">咦……？「${n}」的樣子……！</span>`);
+  print(`要讓「${n}」進化嗎？`);
+  setOptions([
+    {label:'✔ 進化', action:()=>{
+      evoQueue.shift();
+      const to = evoTarget(p);
+      if(to !== null) evolveTo(p, to);
+      saveGame();
+      runEvolutions(next);
+    }},
+    {label:'✖ 不進化', action:()=>{
+      evoQueue.shift();
+      evoSkip.set(p, p.level);
+      print(`<span class="sys">「${n}」停止了進化。</span>`);
+      runEvolutions(next);
+    }}
+  ]);
+}
 function grantExp(p, oppLevel, mult, verb, quiet){
   if(p.level >= MAX_LEVEL){
     p.exp = 0;
-    evolveFully(p); // 滿級才抓到、或舊存檔中尚未進化的寶可夢，也能進化
+    queueEvolution(p); // 滿級才抓到、或舊存檔中尚未進化的寶可夢，也能進化
     if(!quiet) print(`<span class="sys">${nm(p)} 已經是 Lv.${MAX_LEVEL}，經驗值無法再增加。</span>`);
     return;
   }
@@ -362,7 +393,7 @@ function grantExp(p, oppLevel, mult, verb, quiet){
     const gainHp = st.hp-p.maxhp;
     p.maxhp=st.hp; p.hp=Math.min(p.hp+gainHp, p.maxhp); p.atk=st.atk; p.def=st.def; p.spd=st.spd;
     print(`<span class="em">${nm(p)} 升到了 Lv.${p.level}！</span>`);
-    evolveFully(p);
+    queueEvolution(p);
   }
   if(p.level >= MAX_LEVEL){ p.exp = 0; print(`<span class="em">${nm(p)} 達到等級上限 Lv.${MAX_LEVEL}！</span>`); }
 }
@@ -394,20 +425,19 @@ function winBattle(){
     const nx = b.foes.shift(); b.wild = nx;
     print(`<span class="em">${esc(b.title)} 派出了 ${nm(nx)}（Lv.${nx.level}）！</span>`);
     const cur = state.party[b.playerIdx];
-    if(cur.hp<=0) return afterFaintCheck(cur);
-    return screenBattle();
+    return runEvolutions(()=> cur.hp<=0 ? afterFaintCheck(cur) : screenBattle());
   }
   state.battle=null;
   battleDone();
 
   if(mode==='trainer'){
-    giveMoney(b.reward); bump('trainers'); warnIfWiped(); return screenField();
+    giveMoney(b.reward); bump('trainers'); warnIfWiped(); return runEvolutions(()=>screenField());
   }
   if(mode==='gym'){
     giveMoney(b.reward); state.meta.badges++; bump('gyms');
     { const sk = STONE_KEYS[Math.floor(Math.random()*STONE_KEYS.length)]; state.bag[sk] = (state.bag[sk]||0) + 1; print(`<span class="good">館主另外送了你一顆 ${ITEMS[sk].label}！</span>`); }
     print(`<span class="boss">🏅 獲得了【${esc(GYMS[b.gymIdx][1])}】的徽章！（${state.meta.badges}/${GYMS.length}）</span>`);
-    warnIfWiped(); return screenGym(true);
+    warnIfWiped(); return runEvolutions(()=>screenGym(true));
   }
   if(mode==='tower'){
     const t = state.tower;
@@ -432,7 +462,7 @@ function winBattle(){
       print(`<span class="boss">塔內 ${NONLEG.length} 層全數突破！接下來進入第二輪小魔王（HP、能力大幅強化）。</span>`);
     }
     warnIfWiped();
-    return screenTower(true);
+    return runEvolutions(()=>screenTower(true));
   }
   if(mode==='legendary'){
     giveMoney(w.level * 20);
@@ -443,11 +473,11 @@ function winBattle(){
     else { state.box.push(w); print(`<span class="good">✦ ${nm(w)} 被降服，送往了倉庫！</span>`); }
     state.tower.legendaryPtr++;
     warnIfWiped();
-    return screenTower(true);
+    return runEvolutions(()=>screenTower(true));
   }
   giveMoney(w.level * 10);
   warnIfWiped();
-  screenField();
+  runEvolutions(()=>screenField());
 }
 function loseBattle(){
   print('<span class="bad">你的隊伍全部失去戰鬥能力了……你被送回了補給站。</span>');
@@ -458,4 +488,102 @@ function loseBattle(){
   if(mode==='trainer' || mode==='gym'){ const lost = Math.floor(state.money*0.1); state.money -= lost; print(`<span class="bad">你輸給了對手，賠了 💰 ${lost}。</span>`); }
   if(mode==='tower' || mode==='legendary') return kickOutOfTower();
   screenField();
+}
+
+
+/* ---------- 對戰前轉場動畫（用文字符號畫的全螢幕效果） ---------- */
+// kind：wild（旋渦）、trainer（橫條＋VS）、big（道館／小魔王／傳說：三閃＋橫條＋大字）
+const INTRO = {
+  wild:    {flash:2, flashMs:60, close:380, hold:60,  open:260, style:'spiral'},
+  trainer: {flash:2, flashMs:60, close:380, hold:360, open:280, style:'stripes'},
+  big:     {flash:3, flashMs:60, close:400, hold:520, open:320, style:'stripes'}
+};
+function introReduced(){ try{ return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+// 從動畫開始到「開始掀開畫面」的時間；戰鬥文字會等這麼久才開始出現
+function introLeadFor(kind){
+  const c = INTRO[kind];
+  return (!c || introReduced()) ? 0 : c.flash*c.flashMs*2 + c.close + c.hold;
+}
+function introSpiral(rows, cols){
+  const o = []; let t=0, b=rows-1, l=0, r=cols-1;
+  while(t<=b && l<=r){
+    for(let c=l;c<=r;c++) o.push([t,c]); t++;
+    for(let i=t;i<=b;i++) o.push([i,r]); r--;
+    if(t<=b){ for(let c=r;c>=l;c--) o.push([b,c]); b--; }
+    if(l<=r){ for(let i=b;i>=t;i--) o.push([i,l]); l++; }
+  }
+  return o;
+}
+function introLabel(kind){
+  const b = state.battle; if(!b || kind==='wild') return '';
+  if(kind==='trainer') return `<div class="vs">VS</div><div class="sub">${esc(b.title||'')}</div>`;
+  if(b.mode==='gym')       return `<div class="vs">🏛</div><div class="sub">${esc(b.title||'')}</div>`;
+  if(b.mode==='legendary') return `<div class="vs">✦</div><div class="sub">傳說的 ${esc(monName(b.wild))}</div>`;
+  return `<div class="vs">💀</div><div class="sub">小魔王 ${esc(monName(b.wild))}</div>`;
+}
+let introEl = null, introRaf = 0;
+function battleIntro(kind){
+  const cfg = INTRO[kind];
+  if(!cfg || introReduced()) return;
+  if(introEl){ cancelAnimationFrame(introRaf); introEl.remove(); introEl = null; }
+  const rect = appEl.getBoundingClientRect();
+  const W = Math.round(rect.width), H = window.innerHeight;
+  const el = document.createElement('div'); el.id = 'introFx';
+  el.style.left = rect.left+'px'; el.style.width = W+'px'; el.style.height = H+'px';
+  const pre = document.createElement('pre'); el.appendChild(pre);
+  const lab = document.createElement('div'); lab.className = 'introTxt'; lab.innerHTML = introLabel(kind); el.appendChild(lab);
+  document.body.appendChild(el); introEl = el;
+  pre.textContent = '█'.repeat(20);
+  const pr = pre.getBoundingClientRect();
+  const cw = (pr.width/20) || 8.4, ch = pr.height || 14;
+  const cols = Math.ceil(W/cw)+1, rows = Math.ceil(H/ch)+1, cx = cols/2;
+  const order = cfg.style==='spiral' ? introSpiral(rows, cols) : null;
+  const tF = cfg.flash*cfg.flashMs*2, tC = tF + cfg.close, tH = tC + cfg.hold, tEnd = tH + cfg.open;
+  const COVER = '#0f2c1e';
+  const render = grid => { pre.textContent = grid.map(r=>r.join('')).join('\n'); };
+  const blank = ch1 => Array.from({length:rows}, ()=>Array(cols).fill(ch1));
+  const t0 = performance.now();
+  function frame(){
+    const t = performance.now() - t0;
+    if(t >= tEnd){ el.remove(); if(introEl===el) introEl = null; return; }
+    if(t < tF){                                   // 1. 閃光
+      const on = Math.floor(t/cfg.flashMs) % 2 === 0;
+      el.style.background = on ? '#0b1410' : '#060907';
+      pre.style.color = on ? '#d8ffe9' : '#1d3a2b';
+      render(blank(on ? '█' : '░'));
+    } else if(t < tC){                            // 2. 蓋住畫面
+      const p = (t - tF) / cfg.close;
+      el.style.background = '#060907'; pre.style.color = '#2a8a5c';
+      const g = blank(' ');
+      if(order){                                  // 旋渦：由外圈往中心
+        const n = Math.floor(p*order.length), edge = Math.ceil(cols*0.6);
+        for(let i=0;i<n;i++) g[order[i][0]][order[i][1]] = '█';
+        for(let i=n;i<Math.min(order.length, n+edge);i++) g[order[i][0]][order[i][1]] = i-n < edge/2 ? '▓' : '▒';
+      } else {                                    // 橫條：奇偶列由左右兩邊對衝
+        const len = Math.round(p*(cols+4));
+        for(let r=0;r<rows;r++){
+          const rev = Math.floor(r/2)%2 === 1;
+          for(let k=0;k<Math.min(len,cols);k++){
+            const c = rev ? cols-1-k : k, d = len-k;
+            g[r][c] = d>3 ? '█' : d>2 ? '▓' : d>1 ? '▒' : '░';
+          }
+        }
+      }
+      render(g);
+    } else if(t < tH){                            // 3. 全蓋住：顯示字樣
+      el.style.background = COVER; pre.style.color = COVER; render(blank('█'));
+      lab.style.display = 'block';
+    } else {                                      // 4. 兩邊往外掀開
+      const p = (t - tH) / cfg.open;
+      el.style.background = 'transparent'; pre.style.color = COVER; lab.style.display = 'none';
+      const g = blank(' '), half = cx*(1-p);
+      for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+        const d = Math.abs(c-cx) - (cx-half);     // 離開口邊緣的距離（>0 代表仍被蓋住）
+        g[r][c] = d>2 ? '█' : d>1 ? '▓' : d>0 ? '▒' : d>-1 ? '░' : ' ';
+      }
+      render(g);
+    }
+    introRaf = requestAnimationFrame(frame);
+  }
+  frame();
 }
