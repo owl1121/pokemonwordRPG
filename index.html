@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>寶可夢文字冒險</title>
+<!-- 寶可夢風格像素字型：俐方體11號 Cubic 11（繁體中文點陣體，SIL OFL 授權，可免費商用） -->
+<link rel="preconnect" href="https://fontsapi.zeoseven.com" crossorigin>
+<link rel="stylesheet" href="https://fontsapi.zeoseven.com/101/main/result.css">
 <style>
 :root{
   --bg:#0d1210; --panel:#111a16; --line:#2c4a3a; --text:#c9f7d8; --dim:#6f9a84;
@@ -18,7 +21,7 @@ html{height:100%; scroll-padding-top:env(safe-area-inset-top,0px);}
 *{box-sizing:border-box;}
 body{
   margin:0; height:100%; background:var(--bg); color:var(--text);
-  font-family:'Courier New',ui-monospace,monospace;
+  font-family:'Cubic 11','DotGothic16','Courier New',ui-monospace,monospace;
   display:flex; justify-content:center;
 }
 #app{
@@ -257,6 +260,11 @@ header{border-radius:24px 24px 0 0;}
 .card.hit.strong{animation:cardHitStrong .6s ease-out;}
 .card.hit.weak{animation:cardHitWeak .3s ease-out;}
 @media (prefers-reduced-motion:reduce){.card.hit,.card.hit.strong,.card.hit.weak{animation:none;}}
+/* ---- 像素字型 ---- */
+html{font-synthesis:none;}                      /* 點陣字型沒有粗體，禁止瀏覽器假粗體把像素糊掉 */
+body{-webkit-font-smoothing:none;font-smooth:never;text-rendering:optimizeSpeed;letter-spacing:.3px;}
+button,input,textarea,select{font-family:inherit;}
+.card .r1,.mvn,.pname{letter-spacing:.5px;}
 /* ---- 對戰前轉場動畫 ---- */
 #introFx{position:fixed;z-index:100;overflow:hidden;border-radius:20px;display:flex;align-items:center;justify-content:center;font-family:ui-monospace,Menlo,Consolas,'Courier New',monospace;pointer-events:none;}
 #introFx pre{position:absolute;left:0;top:0;margin:0;font-size:14px;line-height:1;letter-spacing:0;white-space:pre;user-select:none;}
