@@ -394,6 +394,9 @@ function legendaryGate(ptr){
 }
 
 function towerFloorLevel(ptr){ return Math.min(MAX_LEVEL, 6 + Math.floor(ptr*1.15)); }
+// 神獸強化：越後面的神獸越強（第 20 隻之後固定在最高）。HP ×2.2~3.2、能力 ×1.25~1.65，招式威力 ×1.25，再多一招專屬大招
+function legendaryMul(ptr){ return 1.25 + Math.min(ptr, 20)*0.02; }
+function legendaryHpMul(ptr){ return 2.2 + Math.min(ptr, 20)*0.05; }
 function legendaryLevel(ptr){ return Math.min(MAX_LEVEL, ptr < 5 ? 48 + ptr*12 : 62 + (ptr-5)*7); }
 function endlessMul(){ return ROUND2_MUL + state.tower.loop * ENDLESS_STAT_STEP; }
 function endlessHpMul(){ return ROUND2_HP_MUL + state.tower.loop * 0.2; }
@@ -1006,6 +1009,12 @@ function startLegendaryChallenge(){
   t.coins -= g.cost;
   const dexIdx = LEGENDARIES[t.legendaryPtr];
   const wild = makeMon(dexIdx, legendaryLevel(t.legendaryPtr));
+  const lm = legendaryMul(t.legendaryPtr), lh = legendaryHpMul(t.legendaryPtr);
+  wild.maxhp = Math.floor(wild.maxhp*lh); wild.hp = wild.maxhp;
+  wild.atk = Math.floor(wild.atk*lm); wild.def = Math.floor(wild.def*lm); wild.spd = Math.floor(wild.spd*lm);
+  wild.moves = wild.moves.map(m => Object.assign({}, m, {power: Math.round((m.power||0)*1.25)}));
+  wild.moves.push({name:'神獸之力', type:DEX[dexIdx][1], power:110, pp:8, maxpp:8});
+  wild.legend = true;   // 讓對方出招時會挑對你最有效的招（見 battle.js 的 randomWildMove）
   state.seen.add(dexIdx);
   clearBattleModifiers();
   state.battle = { wild, playerIdx: firstAlive(), mode:'legendary' };
@@ -1014,6 +1023,7 @@ function startLegendaryChallenge(){
   print(`<span class="em">你支付了 ${g.cost} 枚硬幣……</span>`);
   announceShiny(wild);
   print(`<span class="em">傳說中的 ${nm(wild)}（Lv.${wild.level}）現身了！這場戰鬥無法逃跑。</span>`);
+  print(`<span class="bad">壓倒性的氣勢……（強化：HP ×${lh.toFixed(1)}、能力 ×${lm.toFixed(2)}、招式威力 ×1.25，並會使用專屬大招「神獸之力」）</span>`);
   screenBattle(); battleIntro('big');
 }
 function kickOutOfTower(){
