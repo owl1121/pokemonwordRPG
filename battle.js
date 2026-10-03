@@ -124,7 +124,27 @@ function screenMoveSelect(){ screenBattle(); }
 
 function hpBars(){ /* 改由 renderStage() 畫對戰卡片 */ }
 
-function randomWildMove(w){ return w.moves[Math.floor(Math.random()*w.moves.length)]; }
+function normalizeLegend(w){
+  if(!w.legend) return;
+  const fresh = makeMon(w.dex, w.level, {shiny:w.shiny});
+  Object.assign(w, {maxhp:fresh.maxhp, hp:fresh.maxhp, atk:fresh.atk, def:fresh.def, spd:fresh.spd, moves:fresh.moves, exp:0, expNext:fresh.expNext});
+  delete w.legend;
+}
+function randomWildMove(w){
+  // 傳說寶可夢：有 55% 機率挑「威力 × 屬性相剋 × 本系加成」最高的招，其餘隨機
+  if(w.legend && state.battle){
+    const p = state.party[state.battle.playerIdx];
+    if(p && Math.random() < 0.55){
+      let best = null, bs = -1;
+      w.moves.forEach(m=>{
+        const s = (m.power||0) * moveEff(m, p) * ((m.type===w.t1 || m.type===w.t2) ? 1.2 : 1);
+        if(s > bs){ bs = s; best = m; }
+      });
+      if(best) return best;
+    }
+  }
+  return w.moves[Math.floor(Math.random()*w.moves.length)];
+}
 function clearBattleModifiers(){ state.party.forEach(m=>{ m.status=null; m.atkMul=1; m.defMul=1; }); }
 function effText(mult){
   if(mult === 0) return ' <span class="bad">沒有效果……</span>';
@@ -235,6 +255,7 @@ function tryCatch(ballKey){
   print(`你對 ${nm(w)} 丟出了${ball.label}……`);
   if(Math.random() < chance){
     w.status = null; w.atkMul = 1; w.defMul = 1; bump('catches'); battleDone();
+
     state.caught.add(w.dex);
     if(w.shiny) state.shinyCaught.add(w.dex);
     print(`<span class="good">抓到了！${nm(w)} 已加入圖鑑！</span>`);
@@ -466,6 +487,7 @@ function winBattle(){
   }
   if(mode==='legendary'){
     giveMoney(w.level * 20);
+    normalizeLegend(w);   // 降服後強化消失，數值與招式恢復成一般的神獸
     w.hp = w.maxhp; w.status=null; w.atkMul=1; w.defMul=1;
     state.caught.add(w.dex); state.seen.add(w.dex);
     if(w.shiny) state.shinyCaught.add(w.dex);
