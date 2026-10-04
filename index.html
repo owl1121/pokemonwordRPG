@@ -302,6 +302,42 @@ button,input,textarea,select{font-family:inherit;}
   background:linear-gradient(#dff6f8,#dff6f8) padding-box, var(--fr) border-box;box-shadow:0 0 0 1px #1b1b1b;}
 .frchip::before,.frchip::after{width:11px;height:11px;margin-top:-6px;border-width:2px;}
 .frchip::before{left:-8px;} .frchip::after{right:-8px;}
+/* ---- 節日活動：背景主題 ---- */
+.thchip{display:flex;align-items:center;justify-content:center;width:54px;height:30px;border-radius:10px;border:2px solid #1b1b1b;font-size:16px;}
+.th-default{background:#050805;color:#7ee787;border-color:#2c4a3a;font-size:13px;letter-spacing:-1px;}
+.th-halloween{background:linear-gradient(#2a1040,#7a2f9e 55%,#ff8a1f);}
+.frbtn.lock .thchip{filter:grayscale(1);opacity:.45;}
+/* 萬聖節 */
+:root[data-fest="halloween"]{--bg:#150b1f;--panel:#1f1030;--line:#5b2f86;--text:#ffe9cf;--dim:#b895d6;--accent:#ff9a1f;--accent2:#c58bff;--danger:#ff5d73;--good:#ffcf5a;}
+:root[data-fest="halloween"] body{background:radial-gradient(ellipse at 15% 0%,rgba(255,138,31,.18),transparent 45%),radial-gradient(ellipse at 90% 100%,rgba(138,63,255,.24),transparent 50%),var(--bg);background-attachment:fixed;}
+:root[data-fest="halloween"] #app{position:relative;z-index:1;}
+:root[data-fest="halloween"] header{background:rgba(21,11,31,.9);}
+:root[data-fest="halloween"] .opt,:root[data-fest="halloween"] #menuBtn,:root[data-fest="halloween"] .mhead .tab{
+  background:linear-gradient(#5b2d8a,#3a1a5c);border-color:#a75cff;
+  box-shadow:0 5px 0 #1a0a2a,0 8px 10px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.18);}
+:root[data-fest="halloween"] .opt:active,:root[data-fest="halloween"] .opt.pressed,
+:root[data-fest="halloween"] #menuBtn:active,:root[data-fest="halloween"] #menuBtn.pressed,
+:root[data-fest="halloween"] .mhead .tab:active,:root[data-fest="halloween"] .mhead .tab.pressed{
+  background:linear-gradient(#3a1a5c,#44206b);
+  box-shadow:0 1px 0 #1a0a2a,0 2px 3px rgba(0,0,0,.4),inset 0 2px 5px rgba(0,0,0,.45);}
+:root[data-fest="halloween"] .mhead .tab.on{background:#6a2f12;border-color:#ff9a1f;}
+:root[data-fest="halloween"] .claim,:root[data-fest="halloween"] .bigclaim:not(.off){
+  background:linear-gradient(#ffc36b,#ff8a1f);color:#2a1100;box-shadow:0 4px 0 #a14c00;}
+:root[data-fest="halloween"] .claim:active,:root[data-fest="halloween"] .claim.pressed,
+:root[data-fest="halloween"] .bigclaim:active,:root[data-fest="halloween"] .bigclaim.pressed{box-shadow:0 1px 0 #a14c00;}
+:root[data-fest="halloween"] .av,:root[data-fest="halloween"] .pav{background:radial-gradient(circle at 35% 30%,#ffb85c,#9a3f0c);box-shadow:0 3px 0 #1a0a2a;}
+:root[data-fest="halloween"] #introFx .vs{color:#ffe3b8;text-shadow:0 0 14px #ff8a1f,0 3px 0 #1a0a2a;}
+:root[data-fest="halloween"] #introFx .sub{color:#e6b8ff;}
+#festFx{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+#festFx .moon{position:absolute;top:70px;right:6%;width:84px;height:84px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff6d6,#ffd98a 60%,#e0a94a);box-shadow:0 0 40px 10px rgba(255,190,90,.30);opacity:.5;}
+#festFx .web{position:absolute;top:-6px;left:0;font-size:72px;opacity:.28;transform:rotate(-8deg);}
+#festFx .bat{position:absolute;left:-12%;font-size:22px;opacity:.7;animation:fxFly 15s linear infinite;}
+#festFx .b1{top:8%;} #festFx .b2{top:20%;animation-duration:21s;animation-delay:-7s;font-size:16px;} #festFx .b3{top:34%;animation-duration:18s;animation-delay:-12s;font-size:26px;}
+@keyframes fxFly{0%{transform:translate(0,0)}25%{transform:translate(35vw,-14px)}50%{transform:translate(70vw,8px)}75%{transform:translate(95vw,-10px)}100%{transform:translate(125vw,0)}}
+#festFx .gh{position:absolute;right:10px;bottom:30%;font-size:34px;opacity:.35;animation:fxFloat 4s ease-in-out infinite;}
+@keyframes fxFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+#festFx .pk{position:absolute;bottom:6px;font-size:40px;opacity:.45;} #festFx .pl{left:8px;} #festFx .pr{right:8px;}
+@media (prefers-reduced-motion:reduce){#festFx .bat,#festFx .gh{animation:none;}}
 </style>
 </head>
 <body>
@@ -316,13 +352,14 @@ button,input,textarea,select{font-family:inherit;}
   <div id="opts"></div>
   <div id="turnbar"></div>
   <div id="modal" onclick="if(event.target===this)closeMenu()"><div class="mbox">
-    <div class="mhead"><button class="tab" id="tabProfile" onclick="openMenu('profile')">👤 檔案</button><button class="tab" id="tabQuest" onclick="openMenu('quest')">📜 任務</button><button class="tab" id="tabAch" onclick="openMenu('ach')">🏆 成就</button><button class="tab" id="tabCheckin" onclick="openMenu('checkin')">📅 簽到</button><button class="x" onclick="closeMenu()">✕</button></div>
+    <div class="mhead"><button class="tab" id="tabProfile" onclick="openMenu('profile')">👤 檔案</button><button class="tab" id="tabQuest" onclick="openMenu('quest')">📜 任務</button><button class="tab" id="tabAch" onclick="openMenu('ach')">🏆 成就</button><button class="tab" id="tabEvent" onclick="openMenu('event')">🎉 活動</button><button class="tab" id="tabCheckin" onclick="openMenu('checkin')">📅 簽到</button><button class="x" onclick="closeMenu()">✕</button></div>
     <div id="mbody"></div></div></div>
   <div id="toast"></div>
 </div>
 
 <script src="data.js"></script>
 <script src="battle.js"></script>
+<script src="events.js"></script>
 <script>
 /* ---------- CONSTANTS ---------- */
 const MAX_LEVEL = 100;
@@ -442,7 +479,8 @@ let state = {
   zone:1, battle:null,
   tower:defaultTower(),
   stats:{}, quest:{base:{}}, ach:{done:[],claimed:[]}, meta:defaultMeta(), checkin:{ym:'',days:[]},
-  profile:{name:'', titleId:'', frame:'auto'}
+  profile:{name:'', titleId:'', frame:'auto'},
+  fest:{joined:{}, themes:[], theme:'default'}
 };
 
 const hdrLeft = document.getElementById('hdrleft');
@@ -514,7 +552,7 @@ function saveGame(){
       v:2, party:state.party, box:state.box,
       seen:Array.from(state.seen), caught:Array.from(state.caught), shinyCaught:Array.from(state.shinyCaught),
       bag:state.bag, money:state.money, zone:state.zone, tower:state.tower,
-      stats:state.stats, quest:state.quest, ach:state.ach, meta:state.meta, checkin:state.checkin, profile:state.profile
+      stats:state.stats, quest:state.quest, ach:state.ach, meta:state.meta, checkin:state.checkin, profile:state.profile, fest:state.fest
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     return true;
@@ -549,6 +587,7 @@ function loadGame(){
     state.meta = Object.assign(defaultMeta(), d.meta||{});
     state.checkin = Object.assign({ym:'',days:[]}, d.checkin||{});
     state.profile = Object.assign({name:'',titleId:'',frame:'auto'}, d.profile||{});
+    state.fest = Object.assign({joined:{},themes:[],theme:'default'}, d.fest||{});
     state.stats = Object.assign({}, d.stats||{});
     state.quest = Object.assign({base:{}}, d.quest||{});
     state.ach = Object.assign({done:[],claimed:[]}, d.ach||{});
@@ -563,6 +602,7 @@ function resetGame(){
   state.tower=defaultTower();
   state.stats={}; state.quest={base:{}}; state.ach={done:[],claimed:[]}; state.meta=defaultMeta(); state.checkin={ym:'',days:[]};
   state.profile={name:'',titleId:'',frame:'auto'};
+  state.fest={joined:{},themes:[],theme:'default'}; applyFestTheme();
   screenNamePrompt(screenTitle);
 }
 function screenContinue(){
@@ -1404,7 +1444,7 @@ function claimMilestone(pts){
 function hasClaimable(){
   return canCheckin() || QUESTS.some(q=>questProg(q)>=q.target) || MILESTONES.some(m=>achPoints()>=m.pts && !state.ach.claimed.includes(m.pts));
 }
-function refreshMenuDot(){ checkAch(); renderHeader(); if(hasClaimable()) dotEl.classList.add('on'); else dotEl.classList.remove('on'); }
+function refreshMenuDot(){ checkAch(); renderHeader(); festTick(); if(hasClaimable() || festClaimable()) dotEl.classList.add('on'); else dotEl.classList.remove('on'); }
 function profileHtml(){
   const p = state.profile, st = state.stats, lead = state.party[0];
   const done = state.ach.done, cur = curTitle();
@@ -1432,6 +1472,7 @@ function profileHtml(){
   h += '</div>';
   const locked = ['great','ultra','master'].filter(k=>!frameUnlocked(k));
   if(locked.length) h += '<div class="sub" style="margin:-4px 0 12px;opacity:.8">' + locked.map(k=>`🔒 ${FRAME_NAMES[k]}邊框：${FRAME_UNLOCK[k].text}`).join('<br>') + '</div>';
+  if(typeof festThemeGrid === 'function') h += '<div class="mh">🖼 背景（完成節日活動就能解鎖更多）</div>' + festThemeGrid();
   h += '<div class="mh">🎖 稱號（裝備後會顯示在主頁左上角）</div>';
   const row = (id,name,hint)=>{
     const on = (id==='' ? cur===DEFAULT_TITLE : (id===p.titleId && cur===name));
@@ -1495,6 +1536,8 @@ function openMenu(tab){
   let h = '';
   if(menuTab==='profile'){
     h = profileHtml();
+  } else if(menuTab==='event'){
+    h = festHtml();
   } else if(menuTab==='checkin'){
     h = checkinHtml();
   } else if(menuTab==='quest'){
@@ -1520,12 +1563,14 @@ function openMenu(tab){
   document.getElementById('tabProfile').className = 'tab' + (menuTab==='profile'?' on':'');
   document.getElementById('tabQuest').className = 'tab' + (menuTab==='quest'?' on':'');
   document.getElementById('tabAch').className = 'tab' + (menuTab==='ach'?' on':'');
+  document.getElementById('tabEvent').className = 'tab' + (menuTab==='event'?' on':'');
   document.getElementById('tabCheckin').className = 'tab' + (menuTab==='checkin'?' on':'');
   modalEl.classList.add('open');
 }
 
 /* ---------- BOOT ---------- */
 loadGame();
+applyFestTheme();
 screenCover();
 </script>
 <script>
