@@ -281,7 +281,8 @@ function tryCatch(ballKey){
   if(Math.random() < chance){
     w.status = null; w.atkMul = 1; w.defMul = 1; bump('catches'); battleDone();
     w.ball = BALL_TO_FRAME[ballKey] || 'poke';   // 記住被哪種球抓到（決定邊框）
-    { const fk = w.ball, was = frameUnlocked(fk); bump('cb_' + fk);
+    { if([w.t1,w.t2].some(x=>x==='幽靈'||x==='惡')) bump('ghostCatch');   // 節日活動任務用
+      const fk = w.ball, was = frameUnlocked(fk); bump('cb_' + fk);
       if(!was && frameUnlocked(fk)) notify('🎴 解鎖新邊框：' + FRAME_NAMES[fk] + '！（到個人檔案裡設定）'); }
 
     state.caught.add(w.dex);
@@ -594,7 +595,10 @@ function battleIntro(kind){
   const cols = Math.ceil(W/cw)+1, rows = Math.ceil(H/ch)+1, cx = cols/2;
   const order = cfg.style==='spiral' ? introSpiral(rows, cols) : null;
   const tF = cfg.flash*cfg.flashMs*2, tC = tF + cfg.close, tH = tC + cfg.hold, tEnd = tH + cfg.open;
-  const COVER = '#0f2c1e';
+  const hw = document.documentElement.getAttribute('data-fest') === 'halloween';   // 節日主題：換成紫橘配色
+  const PAL = hw ? {onBg:'#1a0a24', offBg:'#0d0614', on:'#ffd9a0', off:'#4a2266', closeBg:'#0d0614', close:'#d9701a', cover:'#2a1040'}
+                 : {onBg:'#0b1410', offBg:'#060907', on:'#d8ffe9', off:'#1d3a2b', closeBg:'#060907', close:'#2a8a5c', cover:'#0f2c1e'};
+  const COVER = PAL.cover;
   const render = grid => { pre.textContent = grid.map(r=>r.join('')).join('\n'); };
   const blank = ch1 => Array.from({length:rows}, ()=>Array(cols).fill(ch1));
   const t0 = performance.now();
@@ -603,12 +607,12 @@ function battleIntro(kind){
     if(t >= tEnd){ el.remove(); if(introEl===el) introEl = null; return; }
     if(t < tF){                                   // 1. 閃光
       const on = Math.floor(t/cfg.flashMs) % 2 === 0;
-      el.style.background = on ? '#0b1410' : '#060907';
-      pre.style.color = on ? '#d8ffe9' : '#1d3a2b';
+      el.style.background = on ? PAL.onBg : PAL.offBg;
+      pre.style.color = on ? PAL.on : PAL.off;
       render(blank(on ? '█' : '░'));
     } else if(t < tC){                            // 2. 蓋住畫面
       const p = (t - tF) / cfg.close;
-      el.style.background = '#060907'; pre.style.color = '#2a8a5c';
+      el.style.background = PAL.closeBg; pre.style.color = PAL.close;
       const g = blank(' ');
       if(order){                                  // 旋渦：由外圈往中心
         const n = Math.floor(p*order.length), edge = Math.ceil(cols*0.6);
