@@ -274,6 +274,34 @@ button,input,textarea,select{font-family:inherit;}
 #introFx .vs{font-size:44px;font-weight:bold;letter-spacing:6px;color:#eafff2;text-shadow:0 0 14px #3fbf7f,0 3px 0 #07100b;}
 #introFx .sub{font-size:14px;color:#9ad9b6;margin-top:6px;}
 @keyframes introPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.18);opacity:1}100%{transform:scale(1)}}
+/* ---- 對戰邊框（球種配色） ---- */
+.fr-poke  {--fr:linear-gradient(180deg,#e53935 0 46%,#1b1b1b 46% 54%,#fff 54% 100%);}
+.fr-great {--fr:linear-gradient(90deg,#e53935 0 13%,transparent 13% 87%,#e53935 87% 100%) top/100% 46% no-repeat border-box,
+                linear-gradient(180deg,#1e6fd9 0 46%,#1b1b1b 46% 54%,#fff 54% 100%);}
+.fr-ultra {--fr:linear-gradient(90deg,transparent 0 17%,#ffd000 17% 30%,transparent 30% 70%,#ffd000 70% 83%,transparent 83%) top/100% 46% no-repeat border-box,
+                linear-gradient(180deg,#2b2b2b 0 46%,#111 46% 54%,#fff 54% 100%);}
+.fr-master{--fr:radial-gradient(circle at 12% 23%,#ff7bbf 0 9%,transparent 10%) border-box,
+                radial-gradient(circle at 88% 23%,#ff7bbf 0 9%,transparent 10%) border-box,
+                linear-gradient(180deg,#7e3fc4 0 46%,#1b1b1b 46% 54%,#fff 54% 100%);}
+.fr-auto  {--fr:linear-gradient(90deg,#e53935 0 25%,#1e6fd9 25% 50%,#2b2b2b 50% 75%,#7e3fc4 75% 100%);}
+.card.me[class*="fr-"]{position:relative;border:5px solid transparent;
+  background:linear-gradient(#dff6f8,#dff6f8) padding-box, var(--fr) border-box;
+  box-shadow:0 0 0 2px #1b1b1b,0 5px 0 2px rgba(0,0,0,.35);}
+.card.me.fr-master{box-shadow:0 0 0 2px #1b1b1b,0 0 12px 3px rgba(199,125,255,.75),0 5px 0 2px rgba(0,0,0,.35);}
+.card.me[class*="fr-"]::before,.card.me[class*="fr-"]::after,.frchip::before,.frchip::after{
+  content:"";position:absolute;top:50%;border-radius:50%;background:#fff;border:3px solid #1b1b1b;}
+.card.me[class*="fr-"]::before,.card.me[class*="fr-"]::after{width:18px;height:18px;margin-top:-9px;}
+.card.me[class*="fr-"]::before{left:-12px;} .card.me[class*="fr-"]::after{right:-12px;}
+.frgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.frbtn{background:transparent;border:2px solid var(--line);border-radius:12px;padding:8px 2px 6px;color:var(--text);font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;}
+.frbtn.on{border-color:var(--accent);}
+.frbtn.lock{opacity:.85;}
+.frbtn.lock .frchip{filter:grayscale(1);opacity:.45;}
+.frbtn small{font-size:11px;}
+.frchip{position:relative;display:block;width:54px;height:30px;border-radius:10px;border:4px solid transparent;
+  background:linear-gradient(#dff6f8,#dff6f8) padding-box, var(--fr) border-box;box-shadow:0 0 0 1px #1b1b1b;}
+.frchip::before,.frchip::after{width:11px;height:11px;margin-top:-6px;border-width:2px;}
+.frchip::before{left:-8px;} .frchip::after{right:-8px;}
 </style>
 </head>
 <body>
@@ -414,7 +442,7 @@ let state = {
   zone:1, battle:null,
   tower:defaultTower(),
   stats:{}, quest:{base:{}}, ach:{done:[],claimed:[]}, meta:defaultMeta(), checkin:{ym:'',days:[]},
-  profile:{name:'', titleId:''}
+  profile:{name:'', titleId:'', frame:'auto'}
 };
 
 const hdrLeft = document.getElementById('hdrleft');
@@ -520,7 +548,7 @@ function loadGame(){
     if(!(d.tower && d.tower.coinPtr!==undefined)) state.tower.coinPtr = state.tower.floorPtr; // 舊存檔：已通過的樓層視為已領過硬幣
     state.meta = Object.assign(defaultMeta(), d.meta||{});
     state.checkin = Object.assign({ym:'',days:[]}, d.checkin||{});
-    state.profile = Object.assign({name:'',titleId:''}, d.profile||{});
+    state.profile = Object.assign({name:'',titleId:'',frame:'auto'}, d.profile||{});
     state.stats = Object.assign({}, d.stats||{});
     state.quest = Object.assign({base:{}}, d.quest||{});
     state.ach = Object.assign({done:[],claimed:[]}, d.ach||{});
@@ -534,7 +562,7 @@ function resetGame(){
   state.bag=defaultBag(); state.money=START_MONEY; state.zone=1; state.battle=null;
   state.tower=defaultTower();
   state.stats={}; state.quest={base:{}}; state.ach={done:[],claimed:[]}; state.meta=defaultMeta(); state.checkin={ym:'',days:[]};
-  state.profile={name:'',titleId:''};
+  state.profile={name:'',titleId:'',frame:'auto'};
   screenNamePrompt(screenTitle);
 }
 function screenContinue(){
@@ -1395,6 +1423,15 @@ function profileHtml(){
     + cell('成就點數', achPoints())
     + '</div>';
   h += `<button class="bigclaim" onclick="openDexFromProfile()">📖 開啟圖鑑（${state.caught.size} / ${DEX.length}）</button>`;
+  h += '<div class="mh">🎴 對戰邊框（顯示在我方寶可夢的卡片上）</div><div class="frgrid">';
+  [['auto','依捕捉的球'],['poke','精靈球'],['great','超級球'],['ultra','高級球'],['master','大師球']].forEach(([k,n])=>{
+    const open = k==='auto' || frameUnlocked(k), on = (p.frame||'auto')===k;
+    const sub = open ? (on?' ✓':'') : (()=>{ const [c,need]=frameProgress(k); return ` 🔒${c}/${need}`; })();
+    h += `<button class="frbtn${on?' on':''}${open?'':' lock'}" onclick="setFrame('${k}')"><span class="frchip fr-${k}"></span><small>${n}${sub}</small></button>`;
+  });
+  h += '</div>';
+  const locked = ['great','ultra','master'].filter(k=>!frameUnlocked(k));
+  if(locked.length) h += '<div class="sub" style="margin:-4px 0 12px;opacity:.8">' + locked.map(k=>`🔒 ${FRAME_NAMES[k]}邊框：${FRAME_UNLOCK[k].text}`).join('<br>') + '</div>';
   h += '<div class="mh">🎖 稱號（裝備後會顯示在主頁左上角）</div>';
   const row = (id,name,hint)=>{
     const on = (id==='' ? cur===DEFAULT_TITLE : (id===p.titleId && cur===name));
@@ -1408,6 +1445,12 @@ function profileHtml(){
     h += `<div class="qi lock"><div>🔒 ${esc(TITLE_OF[id])}<small>解鎖條件：${esc(a?a.name+'（'+a.desc+'）':'')}</small></div></div>`;
   });
   return h;
+}
+function setFrame(k){
+  if(k !== 'auto' && !frameUnlocked(k)){ const [c,need] = frameProgress(k); notify(`🔒 尚未解鎖：${FRAME_UNLOCK[k].text}（${c}/${need}）`); return; }
+  state.profile.frame = k;
+  if(state.party.length) saveGame();
+  openMenu('profile'); notify('🎴 對戰邊框：' + (k==='auto' ? '依捕捉的球' : FRAME_NAMES[k]));
 }
 function equipTitle(id){
   if(id!=='' && !state.ach.done.includes(id)) return;
