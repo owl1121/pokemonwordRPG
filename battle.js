@@ -48,13 +48,38 @@ function stChip(m){ const t={burn:'🔥灼傷',poison:'☠️中毒',paralyze:'�
 // 對戰卡片：at = 幾毫秒後才更新（讓血條跟著文字一起變），換了寶可夢則立即更新
 let stageTimers = [], stageLatest = null, stageKey = null;
 function flushStage(){ stageTimers.forEach(clearTimeout); stageTimers = []; if(stageLatest){ stageLatest(); stageLatest = null; } }
+/* ---------- 對戰邊框：精靈球／超級球／高級球／大師球配色 ---------- */
+const FRAME_NAMES = {poke:'精靈球', great:'超級球', ultra:'高級球', master:'大師球'};
+const BALL_TO_FRAME = {pokeball:'poke', greatball:'great', ultraball:'ultra', masterball:'master'};
+// 邊框解鎖條件：用該種球抓到的寶可夢數（精靈球預設解鎖；大師球也可以靠降服神獸解鎖）
+const FRAME_UNLOCK = {
+  poke:   {need:0,  text:'預設解鎖'},
+  great:  {need:20, key:'cb_great',  text:'用超級球抓 20 隻寶可夢'},
+  ultra:  {need:30, key:'cb_ultra',  text:'用高級球抓 30 隻寶可夢'},
+  master: {need:1,  key:'cb_master', text:'用大師球抓 1 隻寶可夢，或降服 1 隻神獸'}
+};
+function frameProgress(k){                       // 回傳 [目前進度, 需要數量]
+  const u = FRAME_UNLOCK[k]; if(!u || !u.key) return [0, 0];
+  let n = (state.stats && state.stats[u.key]) || 0;
+  if(k === 'master' && state.tower && state.tower.legendaryPtr > 0) n = Math.max(n, 1);
+  return [Math.min(n, u.need), u.need];
+}
+function frameUnlocked(k){ const [n, need] = frameProgress(k); return !!FRAME_UNLOCK[k] && n >= need; }
+// 個人檔案選了固定邊框（且已解鎖）就用它；選「依捕捉的球」（auto）則用這隻寶可夢被抓時用的球；
+// 沒有紀錄（御三家、舊存檔）或那種邊框還沒解鎖的，都當精靈球
+function frameKey(m){
+  const f = state.profile && state.profile.frame;
+  if(f && f !== 'auto' && FRAME_NAMES[f] && frameUnlocked(f)) return f;
+  return (m && FRAME_NAMES[m.ball] && frameUnlocked(m.ball)) ? m.ball : 'poke';
+}
+function frameClass(m){ return 'fr-' + frameKey(m); }
 function renderStage(at, hit, power){   // hit：'foe' 或 'me'，該張卡片會左右晃一下；power：'strong'／'weak'
   const b=state.battle, p=state.party[b.playerIdx], w=b.wild;
   const nmx = m => (m.shiny?'✨':'')+esc(m.name);
   const xp = p.level>=MAX_LEVEL ? 100 : Math.min(100, Math.round(100*p.exp/p.expNext));
   const html =
     `<div class="card foe"><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${String(w.dex+1).padStart(4,'0')} · ${esc(typeStr(w))}${stChip(w)}${b.foes&&b.foes.length?` · 還有 ${b.foes.length} 隻`:''}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
-    `<div class="card me"><div class="r1"><span>${nmx(p)}</span><span>Lv.${p.level}</span></div><div class="r2">${esc(typeStr(p))} · 速度 ${p.spd}${stChip(p)}</div><div class="bar${pctHp(p)<30?' low':''}"><i style="width:${pctHp(p)}%"></i></div><div class="hpt">HP: ${p.hp}/${p.maxhp}</div><div class="xp"><i style="width:${xp}%"></i></div></div>`;
+    `<div class="card me ${frameClass(p)}"><div class="r1"><span>${nmx(p)}</span><span>Lv.${p.level}</span></div><div class="r2">${esc(typeStr(p))} · 速度 ${p.spd}${stChip(p)}</div><div class="bar${pctHp(p)<30?' low':''}"><i style="width:${pctHp(p)}%"></i></div><div class="hpt">HP: ${p.hp}/${p.maxhp}</div><div class="xp"><i style="width:${xp}%"></i></div></div>`;
   const turnHtml = `<div>回合<br><b>${b.turn||1}</b></div><div>狀態<br><b>${b.phase||'選擇行動'}</b></div>`;
   const apply = ()=>{
     stageEl.innerHTML = html; turnEl.innerHTML = turnHtml;
@@ -255,6 +280,9 @@ function tryCatch(ballKey){
   print(`你對 ${nm(w)} 丟出了${ball.label}……`);
   if(Math.random() < chance){
     w.status = null; w.atkMul = 1; w.defMul = 1; bump('catches'); battleDone();
+    w.ball = BALL_TO_FRAME[ballKey] || 'poke';   // 記住被哪種球抓到（決定邊框）
+    { const fk = w.ball, was = frameUnlocked(fk); bump('cb_' + fk);
+      if(!was && frameUnlocked(fk)) notify('🎴 解鎖新邊框：' + FRAME_NAMES[fk] + '！（到個人檔案裡設定）'); }
 
     state.caught.add(w.dex);
     if(w.shiny) state.shinyCaught.add(w.dex);
@@ -488,12 +516,15 @@ function winBattle(){
   if(mode==='legendary'){
     giveMoney(w.level * 20);
     normalizeLegend(w);   // 降服後強化消失，數值與招式恢復成一般的神獸
+    w.ball = 'master';    // 靠實力降服的神獸，邊框是大師球
+    const wasMaster = frameUnlocked('master');
     w.hp = w.maxhp; w.status=null; w.atkMul=1; w.defMul=1;
     state.caught.add(w.dex); state.seen.add(w.dex);
     if(w.shiny) state.shinyCaught.add(w.dex);
     if(state.party.length<6){ state.party.push(w); print(`<span class="good">✦ ${nm(w)} 被你的實力降服，加入了隊伍！</span>`); }
     else { state.box.push(w); print(`<span class="good">✦ ${nm(w)} 被降服，送往了倉庫！</span>`); }
     state.tower.legendaryPtr++;
+    if(!wasMaster && frameUnlocked('master')) notify('🎴 解鎖新邊框：大師球！（到個人檔案裡設定）');
     warnIfWiped();
     return runEvolutions(()=>screenTower(true));
   }
