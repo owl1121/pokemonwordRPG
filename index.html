@@ -183,14 +183,14 @@ header{border-radius:24px 24px 0 0;}
 .opt.off, .opt.off:active, .bigclaim.off{ transform:none; box-shadow:0 2px 0 #07100b; }
 #opts{ gap:9px 7px; }
 /* ---- 立體按鍵 ---- */
-.opt,#menuBtn,.mhead .tab{
+.opt,#menuBtn,#hubBtn,.mhead .tab{
   background:linear-gradient(#27392f,#1a2a22);
   border:1px solid #3d6650;
   box-shadow:0 5px 0 #0a120e, 0 8px 10px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.12);
   transition:transform .08s, box-shadow .08s;
   -webkit-tap-highlight-color:transparent;
 }
-.opt:active,.opt.pressed,#menuBtn:active,#menuBtn.pressed,
+.opt:active,.opt.pressed,#menuBtn:active,#menuBtn.pressed,#hubBtn:active,#hubBtn.pressed,
 .mhead .tab:active,.mhead .tab.pressed{
   transform:translateY(4px);
   background:linear-gradient(#1a2a22,#1f3328);
@@ -338,13 +338,33 @@ button,input,textarea,select{font-family:inherit;}
 @keyframes fxFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 #festFx .pk{position:absolute;bottom:6px;font-size:40px;opacity:.45;} #festFx .pl{left:8px;} #festFx .pr{right:8px;}
 @media (prefers-reduced-motion:reduce){#festFx .bat,#festFx .gh{animation:none;}}
+/* ---- 右上角「活動／信箱」按鈕與視窗 ---- */
+#hdrright{display:flex;align-items:center;gap:8px;flex:none;}
+#hubBtn{position:relative;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-family:inherit;font-size:15px;cursor:pointer;line-height:1.2;}
+#hubDot,#hubEvDot,#mailDot{display:none;position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:var(--danger);}
+#hubDot.on,#hubEvDot.on,#mailDot.on{display:block;}
+#hubEvDot,#mailDot{top:3px;right:3px;}
+.mhead .tab{position:relative;}
+#hub{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:30;align-items:center;justify-content:center;padding:14px;}
+#hub.open{display:flex;}
+#hbody{padding:12px;overflow-y:auto;font-size:13px;line-height:1.5;}
+.mailrow{cursor:pointer;}
+.mailrow.unread{border-color:var(--accent);}
+.mailbtns{display:flex;gap:8px;margin-bottom:10px;}
+.mailbtns .claim{flex:1;}
+:root[data-fest="halloween"] #hubBtn{background:linear-gradient(#5b2d8a,#3a1a5c);border-color:#a75cff;box-shadow:0 5px 0 #1a0a2a,0 8px 10px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.18);}
+:root[data-fest="halloween"] #hubBtn:active,:root[data-fest="halloween"] #hubBtn.pressed{background:linear-gradient(#3a1a5c,#44206b);box-shadow:0 1px 0 #1a0a2a,0 2px 3px rgba(0,0,0,.4),inset 0 2px 5px rgba(0,0,0,.45);}
+/* ---- 內建瀏覽器提醒 ---- */
+#inappBar{position:fixed;left:8px;right:8px;bottom:10px;z-index:60;background:#24323a;color:#fff;border:2px solid #7fd0ff;border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.55;box-shadow:0 6px 18px rgba(0,0,0,.5);}
+#inappBar .ib{display:flex;gap:8px;margin-top:8px;}
+#inappBar button{flex:1;background:#3b5568;color:#fff;border:1px solid #7fd0ff;border-radius:8px;padding:7px 4px;font-family:inherit;font-size:12.5px;cursor:pointer;}
 </style>
 </head>
 <body>
 <div id="app">
   <header>
     <div id="hdrleft"></div>
-    <button id="menuBtn" onclick="openMenu()">☰ 選單<i id="menuDot"></i></button>
+    <div id="hdrright"><button id="hubBtn" onclick="openHub()" aria-label="活動與信箱">🎉<i id="hubDot"></i></button><button id="menuBtn" onclick="openMenu()">☰ 選單<i id="menuDot"></i></button></div>
   </header>
   <div id="stage"></div>
   <div id="log"></div>
@@ -352,8 +372,11 @@ button,input,textarea,select{font-family:inherit;}
   <div id="opts"></div>
   <div id="turnbar"></div>
   <div id="modal" onclick="if(event.target===this)closeMenu()"><div class="mbox">
-    <div class="mhead"><button class="tab" id="tabProfile" onclick="openMenu('profile')">👤 檔案</button><button class="tab" id="tabQuest" onclick="openMenu('quest')">📜 任務</button><button class="tab" id="tabAch" onclick="openMenu('ach')">🏆 成就</button><button class="tab" id="tabEvent" onclick="openMenu('event')">🎉 活動</button><button class="tab" id="tabCheckin" onclick="openMenu('checkin')">📅 簽到</button><button class="x" onclick="closeMenu()">✕</button></div>
+    <div class="mhead"><button class="tab" id="tabProfile" onclick="openMenu('profile')">👤 檔案</button><button class="tab" id="tabQuest" onclick="openMenu('quest')">📜 任務</button><button class="tab" id="tabAch" onclick="openMenu('ach')">🏆 成就</button><button class="tab" id="tabCheckin" onclick="openMenu('checkin')">📅 簽到</button><button class="x" onclick="closeMenu()">✕</button></div>
     <div id="mbody"></div></div></div>
+  <div id="hub" onclick="if(event.target===this)closeHub()"><div class="mbox">
+    <div class="mhead"><button class="tab" id="hubTabEvent" onclick="openHub('event')">🎉 活動<i id="hubEvDot"></i></button><button class="tab" id="hubTabMail" onclick="openHub('mail')">✉️ 信箱<i id="mailDot"></i></button><button class="x" onclick="closeHub()">✕</button></div>
+    <div id="hbody"></div></div></div>
   <div id="toast"></div>
 </div>
 
@@ -422,6 +445,9 @@ function festTick(){
     const j = f.joined[ev.id];
     if(!j || j.year !== festYear()){
       f.joined[ev.id] = {year:festYear(), base:Object.assign({}, state.stats), claimed:[], done:false};
+      const w = festWindow(ev);
+      mailAdd({id:`ev_${ev.id}_${festYear()}`, from:'活動中心', title:`${ev.emoji} ${ev.name}開始了！`,
+        body:`${ev.intro}\n\n活動期間：${fmtMD(w.start)} – ${fmtMD(w.end)}\n點右上角的 🎉 → 活動，就能看到任務。`});
     }
   });
 }
@@ -452,12 +478,14 @@ function festClaim(evId, qid){
       f.theme = ev.theme.id;                  // 解鎖後直接套用
       applyFestTheme();
       msg = `${ev.emoji} 全部完成！解鎖【${ev.theme.name}】，並獲得 ${rewardText(ev.finalReward)}`;
+      mailAdd({id:`evdone_${ev.id}_${festYear()}`, from:'活動中心', title:`${ev.emoji} ${ev.name}完成！`,
+        body:`你完成了「${ev.name}」的全部任務，解鎖了【${ev.theme.name}】。\n\n到右上角的 🎉 → 活動，或選單的「檔案」分頁，就能切換背景。`});
     } else {
       msg = `${ev.emoji} 全部完成！獲得 ${rewardText(ev.finalReward)}`;
     }
   }
   if(state.party.length) saveGame();
-  notify(msg); openMenu('event'); refreshMenuDot();
+  notify(msg); refreshPanels(); refreshMenuDot();
 }
 
 /* ---------- 背景主題 ---------- */
@@ -470,7 +498,7 @@ function festSetTheme(id){
   f.theme = id;
   applyFestTheme();
   if(state.party.length) saveGame();
-  openMenu();   // 留在目前的分頁（檔案或活動）
+  refreshPanels();   // 留在目前開著的視窗（檔案分頁或活動）
   const ev = EVENTS.find(e=>e.theme.id===id);
   notify('🖼 背景：' + (ev ? ev.theme.name : DEFAULT_THEME.name));
 }
@@ -535,6 +563,127 @@ function festHtml(){
   return h;
 }
 
+
+/* =====================================================
+   信箱：系統信件、活動通知。信件可以附帶獎勵（附件領過就不能再領）。
+   新增系統信件：在 MAIL_DEFS 加一筆；有 start:[年,月,日] 的信會等到那天才寄出。
+   ===================================================== */
+const MAIL_DEFS = [
+  {id:'welcome', from:'大木博士', title:'歡迎來到寶可夢的世界！',
+   body:'冒險的路上有很多挑戰：道館、無限之塔，還有傳說中的寶可夢。\n\n這是我準備的一點見面禮，祝你旅途順利！',
+   reward:{items:{pokeball:5, potion:3}}},
+  {id:'mailbox_open', from:'冒險事務局', title:'信箱開通了',
+   body:'從現在開始，活動消息和系統通知都會寄到這裡。\n\n有 📎 的信帶有附件，記得打開領取。',
+   reward:{items:{greatball:3}}},
+  {id:'gen4_open', from:'冒險事務局', title:'神奧地方現已開放',
+   body:'第四世代（神奧地方）的寶可夢、道館與傳說寶可夢都已經開放，期待你去挑戰！',
+   reward:{items:{ultraball:3}}}
+];
+const hubEl = document.getElementById('hub'), hbodyEl = document.getElementById('hbody');
+let hubTab = 'event', hubMail = null;
+function mailState(){
+  if(!state.mail) state.mail = {box:[], seen:[]};
+  if(!Array.isArray(state.mail.box)) state.mail.box = [];
+  if(!Array.isArray(state.mail.seen)) state.mail.seen = [];
+  return state.mail;
+}
+function mailAdd(m){
+  const ms = mailState();
+  if(ms.seen.includes(m.id)) return false;
+  ms.seen.push(m.id);
+  ms.box.unshift({id:m.id, from:m.from||'系統', title:m.title, body:m.body||'', reward:m.reward||null,
+                  date:festNow().toISOString(), read:false, claimed:false});
+  while(ms.box.length > 60){                     // 太多時，先清掉最舊的「已讀且附件已領」信件
+    let k = -1; for(let i=ms.box.length-1;i>=0;i--){ const x = ms.box[i]; if(x.read && (!x.reward || x.claimed)){ k = i; break; } }
+    if(k < 0) break; ms.box.splice(k,1);
+  }
+  return true;
+}
+function mailTick(){
+  const now = festNow(); let added = false;
+  MAIL_DEFS.forEach(d=>{
+    if(d.start && now < new Date(d.start[0], d.start[1]-1, d.start[2])) return;
+    if(mailAdd(d)) added = true;
+  });
+  if(added && state.party && state.party.length) saveGame();
+}
+const mailClaimable = m => !!m.reward && !m.claimed;
+function mailAttention(){ return mailState().box.some(m=>!m.read || mailClaimable(m)); }
+const mailDate = iso => { const d = new Date(iso); return isNaN(d) ? '' : `${d.getMonth()+1}/${d.getDate()}`; };
+function mailOpen(id){
+  const m = mailState().box.find(x=>x.id===id); if(!m) return;
+  m.read = true; hubMail = id;
+  if(state.party.length) saveGame();
+  renderHub(); refreshMenuDot();
+}
+function mailBack(){ hubMail = null; renderHub(); }
+function mailClaim(id){
+  const m = mailState().box.find(x=>x.id===id); if(!m || !mailClaimable(m)) return;
+  m.claimed = true; m.read = true; giveReward(m.reward);
+  if(state.party.length) saveGame();
+  notify('✉️ 領取附件：' + rewardText(m.reward)); renderHub(); refreshMenuDot();
+}
+function mailClaimAll(){
+  const list = mailState().box.filter(mailClaimable);
+  if(!list.length) return;
+  list.forEach(m=>{ m.claimed = true; m.read = true; giveReward(m.reward); });
+  if(state.party.length) saveGame();
+  notify(`✉️ 一次領取了 ${list.length} 封信的附件`); renderHub(); refreshMenuDot();
+}
+function mailDelete(id){
+  const ms = mailState(), m = ms.box.find(x=>x.id===id); if(!m) return;
+  if(mailClaimable(m)){ notify('📎 這封信還有附件沒領，先領取再刪除'); return; }
+  ms.box = ms.box.filter(x=>x.id!==id); hubMail = null;
+  if(state.party.length) saveGame();
+  renderHub(); refreshMenuDot();
+}
+function mailClean(){
+  const ms = mailState(), n = ms.box.length;
+  ms.box = ms.box.filter(m => !(m.read && !mailClaimable(m)));
+  notify(n === ms.box.length ? '沒有可以清除的信件' : `已清除 ${n - ms.box.length} 封已讀信件`);
+  if(state.party.length) saveGame();
+  renderHub(); refreshMenuDot();
+}
+function mailHtml(){
+  const ms = mailState();
+  if(hubMail){
+    const m = ms.box.find(x=>x.id===hubMail);
+    if(m){
+      let h = `<div class="mh">${esc(m.title)}</div><div class="sys">寄件人：${esc(m.from)}　${mailDate(m.date)}</div>`;
+      h += `<div class="qi"><div style="white-space:pre-wrap">${esc(m.body)}</div></div>`;
+      if(m.reward) h += `<div class="qi${mailClaimable(m)?' done':''}"><div>📎 附件：${esc(rewardText(m.reward))}</div><div class="qrow"><span>${m.claimed?'✅ 已領取':'尚未領取'}</span>${mailClaimable(m)?`<button class="claim" onclick="mailClaim('${m.id}')">領取附件</button>`:''}</div></div>`;
+      h += `<div class="mailbtns"><button class="claim" onclick="mailBack()">← 返回信箱</button><button class="claim" onclick="mailDelete('${m.id}')">🗑 刪除</button></div>`;
+      return h;
+    }
+    hubMail = null;
+  }
+  const un = ms.box.filter(m=>!m.read).length, att = ms.box.filter(mailClaimable).length;
+  let h = `<div class="mh">共 ${ms.box.length} 封${un?`　<span style="color:var(--danger)">${un} 封未讀</span>`:''}${att?`　📎 ${att} 封有附件`:''}</div>`;
+  if(ms.box.length){
+    h += `<div class="mailbtns">${att?'<button class="claim" onclick="mailClaimAll()">全部領取</button>':''}<button class="claim" onclick="mailClean()">清除已讀</button></div>`;
+    ms.box.forEach(m=>{
+      h += `<div class="qi mailrow${m.read?'':' unread'}" onclick="mailOpen('${m.id}')"><div>${m.read?'':'🔴 '}${mailClaimable(m)?'📎 ':''}${esc(m.title)}<small>${esc(m.from)}　${mailDate(m.date)}</small></div></div>`;
+    });
+  } else h += '<div class="qi"><div>信箱是空的<small>活動消息和系統通知會寄到這裡</small></div></div>';
+  return h;
+}
+
+/* ---------- 右上角「活動／信箱」視窗 ---------- */
+function renderHub(){
+  hbodyEl.innerHTML = (hubTab === 'mail') ? mailHtml() : festHtml();
+  document.getElementById('hubTabEvent').className = 'tab' + (hubTab==='event'?' on':'');
+  document.getElementById('hubTabMail').className  = 'tab' + (hubTab==='mail'?' on':'');
+}
+function openHub(tab){
+  if(typeof tab === 'string'){ if(tab !== hubTab) hubMail = null; hubTab = tab; }
+  festTick(); mailTick();
+  renderHub(); hubEl.classList.add('open'); refreshMenuDot();
+}
+function closeHub(){ hubEl.classList.remove('open'); hubMail = null; }
+function refreshPanels(){   // 目前開著哪個視窗就重畫哪個
+  if(hubEl.classList.contains('open')) renderHub();
+  else if(typeof modalEl !== 'undefined' && modalEl.classList.contains('open')) openMenu();
+}
 </script>
 <script>
 /* ---- 載入保護：就算某個 .js 檔沒有上傳或載入失敗，遊戲也不會整個空白 ---- */
@@ -666,7 +815,8 @@ let state = {
   tower:defaultTower(),
   stats:{}, quest:{base:{}}, ach:{done:[],claimed:[]}, meta:defaultMeta(), checkin:{ym:'',days:[]},
   profile:{name:'', titleId:'', frame:'auto'},
-  fest:{joined:{}, themes:[], theme:'default'}
+  fest:{joined:{}, themes:[], theme:'default'},
+  mail:{box:[], seen:[]}
 };
 
 const hdrLeft = document.getElementById('hdrleft');
@@ -738,7 +888,7 @@ function saveGame(){
       v:2, party:state.party, box:state.box,
       seen:Array.from(state.seen), caught:Array.from(state.caught), shinyCaught:Array.from(state.shinyCaught),
       bag:state.bag, money:state.money, zone:state.zone, tower:state.tower,
-      stats:state.stats, quest:state.quest, ach:state.ach, meta:state.meta, checkin:state.checkin, profile:state.profile, fest:state.fest
+      stats:state.stats, quest:state.quest, ach:state.ach, meta:state.meta, checkin:state.checkin, profile:state.profile, fest:state.fest, mail:state.mail
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     return true;
@@ -774,6 +924,7 @@ function loadGame(){
     state.checkin = Object.assign({ym:'',days:[]}, d.checkin||{});
     state.profile = Object.assign({name:'',titleId:'',frame:'auto'}, d.profile||{});
     state.fest = Object.assign({joined:{},themes:[],theme:'default'}, d.fest||{});
+    state.mail = Object.assign({box:[],seen:[]}, d.mail||{});
     state.stats = Object.assign({}, d.stats||{});
     state.quest = Object.assign({base:{}}, d.quest||{});
     state.ach = Object.assign({done:[],claimed:[]}, d.ach||{});
@@ -788,7 +939,7 @@ function resetGame(){
   state.tower=defaultTower();
   state.stats={}; state.quest={base:{}}; state.ach={done:[],claimed:[]}; state.meta=defaultMeta(); state.checkin={ym:'',days:[]};
   state.profile={name:'',titleId:'',frame:'auto'};
-  state.fest={joined:{},themes:[],theme:'default'}; applyFestTheme();
+  state.fest={joined:{},themes:[],theme:'default'}; state.mail={box:[],seen:[]}; applyFestTheme();
   screenNamePrompt(screenTitle);
 }
 function screenContinue(){
@@ -840,7 +991,7 @@ function screenSaveIO(back){
   if(typeof back === 'function') saveIOBack = back;
   clearLog();
   print('<span class="em">💾 存檔匯出 / 匯入</span>');
-  print('存檔只存在這個瀏覽器裡，換手機、換瀏覽器或清除瀏覽資料就會消失，建議定期匯出備份。');
+  print('存檔只存在「這個瀏覽器」裡：從 LINE、Safari、Chrome 各自打開，存檔都是分開的；換手機或清除瀏覽資料也會消失。想在不同地方接著玩，請在舊的地方匯出，再到新的地方匯入。');
   print('<div style="margin:10px 0 4px" class="sys">從檔案匯入：</div><input type="file" id="saveFile" accept=".json,.txt,application/json,text/plain" style="width:100%;color:var(--text);font-size:13px">');
   print('<div style="margin:10px 0 4px" class="sys">或把存檔代碼貼在這裡：</div><textarea id="saveBox" rows="4" spellcheck="false" style="width:100%;box-sizing:border-box;background:transparent;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px;font-size:12px;font-family:monospace"></textarea>');
   document.getElementById('saveFile').onchange = function(e){
@@ -1628,7 +1779,14 @@ function claimMilestone(pts){
 function hasClaimable(){
   return canCheckin() || QUESTS.some(q=>questProg(q)>=q.target) || MILESTONES.some(m=>achPoints()>=m.pts && !state.ach.claimed.includes(m.pts));
 }
-function refreshMenuDot(){ checkAch(); renderHeader(); festTick(); if(hasClaimable() || festClaimable()) dotEl.classList.add('on'); else dotEl.classList.remove('on'); }
+function refreshMenuDot(){
+  checkAch(); renderHeader(); festTick(); mailTick();
+  dotEl.classList.toggle('on', !!hasClaimable());                       // ☰ 選單：任務／成就／簽到可領
+  const ev = festClaimable(), ml = mailAttention();
+  document.getElementById('hubDot').classList.toggle('on', ev || ml);   // 🎉 右上角：活動任務可領、信箱有新信或附件
+  document.getElementById('hubEvDot').classList.toggle('on', ev);
+  document.getElementById('mailDot').classList.toggle('on', ml);
+}
 function profileHtml(){
   const p = state.profile, st = state.stats, lead = state.party[0];
   const done = state.ach.done, cur = curTitle();
@@ -1720,8 +1878,6 @@ function openMenu(tab){
   let h = '';
   if(menuTab==='profile'){
     h = profileHtml();
-  } else if(menuTab==='event'){
-    h = festHtml();
   } else if(menuTab==='checkin'){
     h = checkinHtml();
   } else if(menuTab==='quest'){
@@ -1747,15 +1903,39 @@ function openMenu(tab){
   document.getElementById('tabProfile').className = 'tab' + (menuTab==='profile'?' on':'');
   document.getElementById('tabQuest').className = 'tab' + (menuTab==='quest'?' on':'');
   document.getElementById('tabAch').className = 'tab' + (menuTab==='ach'?' on':'');
-  document.getElementById('tabEvent').className = 'tab' + (menuTab==='event'?' on':'');
   document.getElementById('tabCheckin').className = 'tab' + (menuTab==='checkin'?' on':'');
   modalEl.classList.add('open');
 }
+
+/* ---------- 內建瀏覽器提醒 ----------
+   LINE／Facebook／Instagram 等 App 內建的瀏覽器，和 Safari／Chrome 的存檔是各自獨立的（網頁無法跨瀏覽器共用存檔）。
+   偵測到時提醒玩家改用同一個瀏覽器玩，或用「存檔匯出／匯入」搬移進度。 */
+function inAppName(){
+  const ua = (navigator && navigator.userAgent) || '';
+  if(/\bLine\//i.test(ua)) return 'LINE';
+  if(/FBAN|FBAV|FB_IAB/.test(ua)) return 'Facebook';
+  if(/Instagram/i.test(ua)) return 'Instagram';
+  if(/MicroMessenger/i.test(ua)) return '微信';
+  return null;
+}
+function showInAppNotice(){
+  let name = null, dismissed = false;
+  try{ name = inAppName(); dismissed = localStorage.getItem('inapp_ok') === '1'; }catch(e){}
+  if(!name || dismissed || document.getElementById('inappBar')) return;
+  const d = document.createElement('div'); d.id = 'inappBar';
+  d.innerHTML = `<div>💡 你現在是用 <b>${name} 內建瀏覽器</b>開的。這裡的存檔和 Safari／Chrome <b>是分開的</b>！建議點右上角「⋯」→「用其他瀏覽器開啟」，之後都從同一個瀏覽器玩。想把這裡的進度搬過去，可以用「存檔匯出／匯入」。</div>`
+    + `<div class="ib"><button id="inappBackup">💾 備份／搬移存檔</button><button id="inappOk">知道了</button></div>`;
+  document.body.appendChild(d);
+  document.getElementById('inappOk').onclick = ()=>{ try{ localStorage.setItem('inapp_ok','1'); }catch(e){} d.remove(); };
+  document.getElementById('inappBackup').onclick = ()=>{ d.remove(); screenSaveIO(()=> state.party.length ? screenContinue() : screenCover()); };
+}
+try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}   // 請瀏覽器盡量不要自動清掉存檔
 
 /* ---------- BOOT ---------- */
 loadGame();
 applyFestTheme();
 screenCover();
+showInAppNotice();
 </script>
 <script>
 /* 按下去先陷 0.2 秒，再執行動作 */
