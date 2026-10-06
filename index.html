@@ -183,14 +183,14 @@ header{border-radius:24px 24px 0 0;}
 .opt.off, .opt.off:active, .bigclaim.off{ transform:none; box-shadow:0 2px 0 #07100b; }
 #opts{ gap:9px 7px; }
 /* ---- 立體按鍵 ---- */
-.opt,#menuBtn,#hubBtn,.mhead .tab{
+.opt,#menuBtn,.hbtn,.mhead .tab{
   background:linear-gradient(#27392f,#1a2a22);
   border:1px solid #3d6650;
   box-shadow:0 5px 0 #0a120e, 0 8px 10px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.12);
   transition:transform .08s, box-shadow .08s;
   -webkit-tap-highlight-color:transparent;
 }
-.opt:active,.opt.pressed,#menuBtn:active,#menuBtn.pressed,#hubBtn:active,#hubBtn.pressed,
+.opt:active,.opt.pressed,#menuBtn:active,#menuBtn.pressed,.hbtn:active,.hbtn.pressed,
 .mhead .tab:active,.mhead .tab.pressed{
   transform:translateY(4px);
   background:linear-gradient(#1a2a22,#1f3328);
@@ -340,10 +340,11 @@ button,input,textarea,select{font-family:inherit;}
 @media (prefers-reduced-motion:reduce){#festFx .bat,#festFx .gh{animation:none;}}
 /* ---- 右上角「活動／信箱」按鈕與視窗 ---- */
 #hdrright{display:flex;align-items:center;gap:8px;flex:none;}
-#hubBtn{position:relative;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-family:inherit;font-size:15px;cursor:pointer;line-height:1.2;}
-#hubDot,#hubEvDot,#mailDot{display:none;position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:var(--danger);}
-#hubDot.on,#hubEvDot.on,#mailDot.on{display:block;}
-#hubEvDot,#mailDot{top:3px;right:3px;}
+#hdrright{gap:6px;}
+.hbtn{position:relative;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-family:inherit;font-size:15px;cursor:pointer;line-height:1.2;}
+#evDot,#mailDot{display:none;position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:var(--danger);}
+#evDot.on,#mailDot.on{display:block;}
+#hub .htitle{flex:1;padding:8px 6px;font-size:14px;color:var(--accent);}
 .mhead .tab{position:relative;}
 #hub{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:30;align-items:center;justify-content:center;padding:14px;}
 #hub.open{display:flex;}
@@ -352,8 +353,8 @@ button,input,textarea,select{font-family:inherit;}
 .mailrow.unread{border-color:var(--accent);}
 .mailbtns{display:flex;gap:8px;margin-bottom:10px;}
 .mailbtns .claim{flex:1;}
-:root[data-fest="halloween"] #hubBtn{background:linear-gradient(#5b2d8a,#3a1a5c);border-color:#a75cff;box-shadow:0 5px 0 #1a0a2a,0 8px 10px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.18);}
-:root[data-fest="halloween"] #hubBtn:active,:root[data-fest="halloween"] #hubBtn.pressed{background:linear-gradient(#3a1a5c,#44206b);box-shadow:0 1px 0 #1a0a2a,0 2px 3px rgba(0,0,0,.4),inset 0 2px 5px rgba(0,0,0,.45);}
+:root[data-fest="halloween"] .hbtn{background:linear-gradient(#5b2d8a,#3a1a5c);border-color:#a75cff;box-shadow:0 5px 0 #1a0a2a,0 8px 10px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.18);}
+:root[data-fest="halloween"] .hbtn:active,:root[data-fest="halloween"] .hbtn.pressed{background:linear-gradient(#3a1a5c,#44206b);box-shadow:0 1px 0 #1a0a2a,0 2px 3px rgba(0,0,0,.4),inset 0 2px 5px rgba(0,0,0,.45);}
 /* ---- 內建瀏覽器提醒 ---- */
 #inappBar{position:fixed;left:8px;right:8px;bottom:10px;z-index:60;background:#24323a;color:#fff;border:2px solid #7fd0ff;border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.55;box-shadow:0 6px 18px rgba(0,0,0,.5);}
 #inappBar .ib{display:flex;gap:8px;margin-top:8px;}
@@ -364,7 +365,7 @@ button,input,textarea,select{font-family:inherit;}
 <div id="app">
   <header>
     <div id="hdrleft"></div>
-    <div id="hdrright"><button id="hubBtn" onclick="openHub()" aria-label="活動與信箱">🎉<i id="hubDot"></i></button><button id="menuBtn" onclick="openMenu()">☰ 選單<i id="menuDot"></i></button></div>
+    <div id="hdrright"><button id="evBtn" class="hbtn" onclick="openHub('event')" aria-label="活動">🎉<i id="evDot"></i></button><button id="mailBtn" class="hbtn" onclick="openHub('mail')" aria-label="信箱">✉️<i id="mailDot"></i></button><button id="menuBtn" onclick="openMenu()">☰ 選單<i id="menuDot"></i></button></div>
   </header>
   <div id="stage"></div>
   <div id="log"></div>
@@ -375,7 +376,7 @@ button,input,textarea,select{font-family:inherit;}
     <div class="mhead"><button class="tab" id="tabProfile" onclick="openMenu('profile')">👤 檔案</button><button class="tab" id="tabQuest" onclick="openMenu('quest')">📜 任務</button><button class="tab" id="tabAch" onclick="openMenu('ach')">🏆 成就</button><button class="tab" id="tabCheckin" onclick="openMenu('checkin')">📅 簽到</button><button class="x" onclick="closeMenu()">✕</button></div>
     <div id="mbody"></div></div></div>
   <div id="hub" onclick="if(event.target===this)closeHub()"><div class="mbox">
-    <div class="mhead"><button class="tab" id="hubTabEvent" onclick="openHub('event')">🎉 活動<i id="hubEvDot"></i></button><button class="tab" id="hubTabMail" onclick="openHub('mail')">✉️ 信箱<i id="mailDot"></i></button><button class="x" onclick="closeHub()">✕</button></div>
+    <div class="mhead"><div id="hubTitle" class="htitle"></div><button class="x" onclick="closeHub()">✕</button></div>
     <div id="hbody"></div></div></div>
   <div id="toast"></div>
 </div>
@@ -683,11 +684,10 @@ function mailHtml(){
   return h;
 }
 
-/* ---------- 右上角「活動／信箱」視窗 ---------- */
+/* ---------- 右上角「🎉 活動」「✉️ 信箱」視窗（各自獨立的按鈕，共用同一個視窗外框） ---------- */
 function renderHub(){
   hbodyEl.innerHTML = (hubTab === 'mail') ? mailHtml() : festHtml();
-  document.getElementById('hubTabEvent').className = 'tab' + (hubTab==='event'?' on':'');
-  document.getElementById('hubTabMail').className  = 'tab' + (hubTab==='mail'?' on':'');
+  document.getElementById('hubTitle').textContent = (hubTab==='mail') ? '✉️ 信箱' : '🎉 活動';
 }
 function openHub(tab){
   if(typeof tab === 'string'){ if(tab !== hubTab) hubMail = null; hubTab = tab; }
@@ -1810,10 +1810,8 @@ function hasClaimable(){
 function refreshMenuDot(){
   checkAch(); renderHeader(); festTick(); mailTick();
   dotEl.classList.toggle('on', !!hasClaimable());                       // ☰ 選單：任務／成就／簽到可領
-  const ev = festClaimable(), ml = mailAttention();
-  document.getElementById('hubDot').classList.toggle('on', ev || ml);   // 🎉 右上角：活動任務可領、信箱有新信或附件
-  document.getElementById('hubEvDot').classList.toggle('on', ev);
-  document.getElementById('mailDot').classList.toggle('on', ml);
+  document.getElementById('evDot').classList.toggle('on', !!festClaimable());    // 🎉 活動：有任務可領
+  document.getElementById('mailDot').classList.toggle('on', !!mailAttention());  // ✉️ 信箱：有未讀信或沒領的附件
 }
 function profileHtml(){
   const p = state.profile, st = state.stats, lead = state.party[0];
