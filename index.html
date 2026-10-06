@@ -575,6 +575,9 @@ const MAIL_DEFS = [
   {id:'mailbox_open', from:'冒險事務局', title:'信箱開通了',
    body:'從現在開始，活動消息和系統通知都會寄到這裡。\n\n有 📎 的信帶有附件，記得打開領取。',
    reward:{items:{greatball:3}}},
+  {id:'admin_title', from:'管理員', title:'🎖 專屬稱號「管理員」',
+   body:'感謝你一起遊玩這款遊戲！\n\n這是送給你的專屬稱號「管理員」。\n\n⏳ 請在收到信件後 3 天內領取，超過期限就無法領取囉。\n領取後到「👤 檔案」分頁的稱號區按「裝備」，稱號就會顯示在主頁左上角。',
+   claimDays:3, reward:{title:'admin'}},   // 領取期限：3 天（想改期限就改這個天數）
   {id:'gen4_open', from:'冒險事務局', title:'神奧地方現已開放',
    body:'第四世代（神奧地方）的寶可夢、道館與傳說寶可夢都已經開放，期待你去挑戰！',
    reward:{items:{ultraball:3}}}
@@ -591,8 +594,10 @@ function mailAdd(m){
   const ms = mailState();
   if(ms.seen.includes(m.id)) return false;
   ms.seen.push(m.id);
+  const now = festNow();
   ms.box.unshift({id:m.id, from:m.from||'系統', title:m.title, body:m.body||'', reward:m.reward||null,
-                  date:festNow().toISOString(), read:false, claimed:false});
+                  date:now.toISOString(), read:false, claimed:false,
+                  expires: m.claimDays ? new Date(now.getTime() + m.claimDays*86400000).toISOString() : null});   // 附件領取期限
   while(ms.box.length > 60){                     // 太多時，先清掉最舊的「已讀且附件已領」信件
     let k = -1; for(let i=ms.box.length-1;i>=0;i--){ const x = ms.box[i]; if(x.read && (!x.reward || x.claimed)){ k = i; break; } }
     if(k < 0) break; ms.box.splice(k,1);
@@ -607,7 +612,17 @@ function mailTick(){
   });
   if(added && state.party && state.party.length) saveGame();
 }
-const mailClaimable = m => !!m.reward && !m.claimed;
+const mailExpired = m => !!m.expires && festNow() > new Date(m.expires);
+const mailClaimable = m => !!m.reward && !m.claimed && !mailExpired(m);
+function mailLeft(m){   // 回傳「剩 N 天／N 小時」或「已過期」；沒有期限或已領取則回傳空字串
+  if(!m.expires || !m.reward || m.claimed) return '';
+  const ms = new Date(m.expires) - festNow();
+  if(ms <= 0) return '已過期，無法領取';
+  const h = Math.ceil(ms/3600000), d = Math.ceil(h/24);
+  if(d >= 730) return `剩約 ${Math.floor(d/365)} 年`;
+  if(d >= 60)  return `剩約 ${Math.floor(d/30)} 個月`;
+  return h >= 24 ? `剩 ${d} 天` : `剩 ${h} 小時`;
+}
 function mailAttention(){ return mailState().box.some(m=>!m.read || mailClaimable(m)); }
 const mailDate = iso => { const d = new Date(iso); return isNaN(d) ? '' : `${d.getMonth()+1}/${d.getDate()}`; };
 function mailOpen(id){
@@ -651,7 +666,7 @@ function mailHtml(){
     if(m){
       let h = `<div class="mh">${esc(m.title)}</div><div class="sys">寄件人：${esc(m.from)}　${mailDate(m.date)}</div>`;
       h += `<div class="qi"><div style="white-space:pre-wrap">${esc(m.body)}</div></div>`;
-      if(m.reward) h += `<div class="qi${mailClaimable(m)?' done':''}"><div>📎 附件：${esc(rewardText(m.reward))}</div><div class="qrow"><span>${m.claimed?'✅ 已領取':'尚未領取'}</span>${mailClaimable(m)?`<button class="claim" onclick="mailClaim('${m.id}')">領取附件</button>`:''}</div></div>`;
+      if(m.reward) h += `<div class="qi${mailClaimable(m)?' done':''}"><div>📎 附件：${esc(rewardText(m.reward))}${mailLeft(m)?`<small>⏳ 領取期限：${mailLeft(m)}</small>`:''}</div><div class="qrow"><span>${m.claimed?'✅ 已領取':mailExpired(m)?'⌛ 已過期':'尚未領取'}</span>${mailClaimable(m)?`<button class="claim" onclick="mailClaim('${m.id}')">領取附件</button>`:''}</div></div>`;
       h += `<div class="mailbtns"><button class="claim" onclick="mailBack()">← 返回信箱</button><button class="claim" onclick="mailDelete('${m.id}')">🗑 刪除</button></div>`;
       return h;
     }
@@ -662,7 +677,7 @@ function mailHtml(){
   if(ms.box.length){
     h += `<div class="mailbtns">${att?'<button class="claim" onclick="mailClaimAll()">全部領取</button>':''}<button class="claim" onclick="mailClean()">清除已讀</button></div>`;
     ms.box.forEach(m=>{
-      h += `<div class="qi mailrow${m.read?'':' unread'}" onclick="mailOpen('${m.id}')"><div>${m.read?'':'🔴 '}${mailClaimable(m)?'📎 ':''}${esc(m.title)}<small>${esc(m.from)}　${mailDate(m.date)}</small></div></div>`;
+      h += `<div class="qi mailrow${m.read?'':' unread'}" onclick="mailOpen('${m.id}')"><div>${m.read?'':'🔴 '}${mailClaimable(m)?'📎 ':''}${esc(m.title)}<small>${esc(m.from)}　${mailDate(m.date)}${mailLeft(m)?'　⏳ '+mailLeft(m):''}</small></div></div>`;
     });
   } else h += '<div class="qi"><div>信箱是空的<small>活動消息和系統通知會寄到這裡</small></div></div>';
   return h;
@@ -1701,9 +1716,10 @@ let menuTab = 'quest', toastTimer = null;
 function notify(msg){ toastEl.textContent = msg; toastEl.classList.add('on'); if(toastTimer) clearTimeout(toastTimer); toastTimer = setTimeout(()=>toastEl.classList.remove('on'), 2600); }
 function giveReward(r){
   if(r.money) state.money += r.money;
+  if(r.title) grantTitle(r.title);
   Object.keys(r.items||{}).forEach(k=>{ state.bag[k] = (state.bag[k]||0) + r.items[k]; });
 }
-function rewardText(r){ return [r.money?`💰 ${r.money}`:'', ...Object.keys(r.items||{}).map(k=>`${ITEMS[k].label} ×${r.items[k]}`)].filter(Boolean).join('、'); }
+function rewardText(r){ return [r.money?`💰 ${r.money}`:'', r.title&&EXTRA_TITLES[r.title]?`🎖 稱號「${EXTRA_TITLES[r.title]}」`:'', ...Object.keys(r.items||{}).map(k=>`${ITEMS[k].label} ×${r.items[k]}`)].filter(Boolean).join('、'); }
 function questProg(q){ return Math.max(0, (state.stats[q.key]||0) - (state.quest.base[q.id]||0)); }
 function claimQuest(id){
   const q = QUESTS.find(x=>x.id===id); if(!q || questProg(q) < q.target) return;
@@ -1722,7 +1738,19 @@ const TITLE_OF = {
   a_ci7:'勤奮的旅人', a_ci30:'簽到之王'
 };
 const DEFAULT_TITLE = '新手訓練家';
-function curTitle(){ const id = state.profile.titleId; return (id && state.ach.done.includes(id) && TITLE_OF[id]) || DEFAULT_TITLE; }
+// 額外稱號：不是靠成就解鎖，而是信件／活動贈送的（ID → 名稱）
+const EXTRA_TITLES = {admin:'管理員'};
+const hasExtraTitle = id => !!EXTRA_TITLES[id] && (state.profile.titles||[]).includes(id);
+function grantTitle(id){
+  if(!EXTRA_TITLES[id]) return;
+  const p = state.profile; p.titles = p.titles || [];
+  if(!p.titles.includes(id)) p.titles.push(id);
+}
+function curTitle(){
+  const id = state.profile.titleId;
+  if(id && hasExtraTitle(id)) return EXTRA_TITLES[id];
+  return (id && state.ach.done.includes(id) && TITLE_OF[id]) || DEFAULT_TITLE;
+}
 function renderHeader(){
   const n = state.profile && state.profile.name;
   const html = !n
@@ -1821,6 +1849,7 @@ function profileHtml(){
     return `<div class="qi${on?' done':''}"><div class="qrow"><span>${esc(name)}</span>${on?'<span>✅ 使用中</span>':`<button class="claim" onclick="equipTitle('${id}')">裝備</button>`}</div></div>`;
   };
   h += row('', DEFAULT_TITLE);
+  (p.titles||[]).filter(id=>EXTRA_TITLES[id]).forEach(id=>{ h += row(id, EXTRA_TITLES[id]); });
   const ids = Object.keys(TITLE_OF);
   ids.filter(id=>done.includes(id)).forEach(id=>{ h += row(id, TITLE_OF[id]); });
   ids.filter(id=>!done.includes(id)).forEach(id=>{
@@ -1836,7 +1865,7 @@ function setFrame(k){
   openMenu('profile'); notify('🎴 對戰邊框：' + (k==='auto' ? '依捕捉的球' : FRAME_NAMES[k]));
 }
 function equipTitle(id){
-  if(id!=='' && !state.ach.done.includes(id)) return;
+  if(id!=='' && !state.ach.done.includes(id) && !hasExtraTitle(id)) return;
   state.profile.titleId = id;
   if(state.party.length) saveGame();
   renderHeader(); openMenu('profile'); notify('🎖 已裝備稱號：'+curTitle());
