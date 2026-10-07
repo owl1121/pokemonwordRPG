@@ -125,7 +125,7 @@ function screenBattle(){
   let opts;
   if(p.moves.some(m=>m.pp>0)) opts = p.moves.map(mk);
   else { print('<span class="bad">所有招式的 PP 都用完了！只能使用「掙扎」（會受到反作用力）。</span>'); opts = [mk(STRUGGLE,-1)]; }
-  opts.push({label:'🎒 道具', cls:'q', action:screenItemSelect});
+  if(b.mode !== 'run') opts.push({label:'🎒 道具', cls:'q', action:screenItemSelect});   // 連戰試煉不能用道具
   if(state.party.filter(m=>m.hp>0).length>1) opts.push({label:'🔄 換上場', cls:'q', action:screenSwitch});
   if(b.mode==='wild'){
     opts.push({label:'🎯 捕捉', cls:'q', action:screenBallSelect});
@@ -134,6 +134,7 @@ function screenBattle(){
   if(b.mode==='legendary') print('<span class="sys">（神獸戰無法逃跑，也無法用精靈球——擊敗牠就能收服）</span>');
   else if(b.mode==='trainer' || b.mode==='gym') print('<span class="sys">（訓練家對戰不能逃跑，也不能捕捉）</span>');
   else if(b.mode==='tower') print('<span class="sys">（塔內不能捕捉也不能逃跑，輸了會被送出塔外）</span>');
+  else if(b.mode==='run') print('<span class="sys">（連戰試煉：不能用道具、不能逃跑、不能捕捉，全隊倒下就結束）</span>');
   setOptions(opts,'選擇招式');
 }
 
@@ -464,6 +465,7 @@ function warnIfWiped(){
   if(noAlive()) print('<span class="bad">你的隊伍已經沒有能戰鬥的寶可夢了！請先回補給站治療。</span>');
 }
 function winBattle(){
+  if(state.battle && state.battle.mode === 'run') return svWin();   // 連戰試煉有自己的結算
   const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
   const mode = b.mode;
   bump('wins'); if(mode==='tower'){ bump('floors'); if(b.boss) bump('bosses'); }
@@ -534,6 +536,7 @@ function winBattle(){
   runEvolutions(()=>screenField());
 }
 function loseBattle(){
+  if(state.battle && state.battle.mode === 'run') return svEnd();   // 連戰試煉：全隊倒下＝挑戰結束
   print('<span class="bad">你的隊伍全部失去戰鬥能力了……你被送回了補給站。</span>');
   state.party.forEach(m=>{ m.hp=Math.max(1, Math.floor(m.maxhp*0.5)); m.status=null; restorePP(m); });
   const mode = state.battle && state.battle.mode;
@@ -646,3 +649,184 @@ function battleIntro(kind){
   }
   frame();
 }
+
+
+/* =====================================================
+   🔥 連戰試煉（生存模式）
+   只能用「複製一份」的現有隊伍，一關一隻，打到全隊倒下為止。
+   每過一關：三選一強化（攻擊／防禦／速度／血量 +1~3%）或回血、復活；每 5 關有寶箱，越後面越豐厚。
+   進度不存檔：中途關掉頁面就當作結束（原本的隊伍完全不受影響，已拿到的獎勵也都保留）。
+   ===================================================== */
+let svRun = null;
+const SV_STATS = [
+  {k:'atk', name:'攻擊', icon:'⚔️'}, {k:'def', name:'防禦', icon:'🛡️'},
+  {k:'spd', name:'速度', icon:'💨'}, {k:'hp',  name:'血量上限', icon:'❤️'}
+];
+const SV_HEAL_PCT = 35, SV_REVIVE_PCT = 50;
+function svRoll3(){
+  const pool = SV_STATS.slice().sort(()=>Math.random()-0.5).slice(0,3);
+  const cards = pool.map(s=>{
+    const r = Math.random(), pct = r<0.60 ? 1 : r<0.90 ? 2 : 3;     // 60% +1%、30% +2%、10% +3%
+    return {kind:'stat', k:s.k, pct, label:`${s.icon} ${s.name} +${pct}%　${'★'.repeat(pct)}`};
+  });
+  if(Math.random() < 0.15){                                          // 15% 機率其中一張變成稀有的「全能強化」
+    cards[Math.floor(Math.random()*3)] = {kind:'all', pct:2, label:'🌟 全能強化：攻擊／防禦／速度／血量 各 +2%　✦'};
+  }
+  return cards;
+}
+function svPerkLine(){
+  const p = svRun.perks;
+  return SV_STATS.map(s=>`${s.icon}${s.name} +${p[s.k]}%`).join('　');
+}
+function svApply(){            // 依目前的強化重算整隊的數值（以複製當下的原始數值為基準）
+  const p = svRun.perks;
+  state.party.forEach(m=>{
+    const b0 = m._b; if(!b0) return;
+    m.atk = Math.round(b0.atk*(1+p.atk/100)); m.def = Math.round(b0.def*(1+p.def/100)); m.spd = Math.round(b0.spd*(1+p.spd/100));
+    const nmax = Math.round(b0.maxhp*(1+p.hp/100)), gain = nmax - m.maxhp;
+    m.maxhp = nmax; if(m.hp>0 && gain>0) m.hp = Math.min(nmax, m.hp + gain);
+  });
+}
+function svMilestone(s){       // 每 5 關的寶箱
+  const stone = ()=>STONE_KEYS[Math.floor(Math.random()*STONE_KEYS.length)];
+  const T = {
+    5:  {money:1000,  items:{superpotion:3, greatball:5}},
+    10: {money:2500,  items:{greatball:10, ether:5, maxpotion:2}},
+    15: {money:4000,  items:{ultraball:10, maxpotion:3}},
+    20: {money:6000,  items:{ultraball:15, maxpotion:5, ether:8}},
+    25: {money:9000,  items:{masterball:1}},
+    30: {money:13000, items:{masterball:1, ultraball:20, maxpotion:8}}
+  };
+  const r = T[s] ? {money:T[s].money, items:Object.assign({}, T[s].items)}
+                 : {money:s*500, items:Object.assign({ultraball:20, maxpotion:8}, s%10===0 ? {masterball:1} : {})};
+  if(s >= 15){ const k = stone(); r.items[k] = (r.items[k]||0) + (s>=25 ? 3 : 2); }   // 15 關起附贈進化石
+  return r;
+}
+function svGive(reward){        // 發獎勵並累計到本次結算
+  giveReward(reward);
+  const t = svRun.total;
+  t.money += reward.money||0;
+  Object.entries(reward.items||{}).forEach(([k,n])=>{ t.items[k] = (t.items[k]||0) + n; });
+}
+function svEnemy(s){
+  const avg = Math.round(state.party.reduce((a,m)=>a+m.level,0) / state.party.length);
+  const boss = s % 10 === 0;
+  let dex;
+  if(boss){ const pool = BOSSES.filter(i=>DEX[i][3] >= 3); dex = pool[Math.floor(Math.random()*pool.length)]; }
+  else dex = pickWildIndex(25);
+  const lv = Math.max(2, Math.min(MAX_LEVEL, Math.round(avg*0.85 + s*1.0)));
+  const e = makeMon(dex, lv, {shiny:false});
+  const hpS = 1 + 0.04*(s-1) + (boss ? 0.30 : 0), atkS = 1 + 0.02*(s-1) + (boss ? 0.25 : 0);
+  e.maxhp = Math.round(e.maxhp*hpS); e.hp = e.maxhp;
+  e.atk = Math.round(e.atk*atkS); e.def = Math.round(e.def*(1 + 0.012*(s-1) + (boss?0.1:0)));
+  e.spd = Math.round(e.spd*(1 + 0.01*(s-1)));
+  return e;
+}
+function screenSurvival(){
+  clearLog(); renderBar();
+  const best = state.stats.runBest || 0;
+  print('<span class="em">🔥 連戰試煉</span>');
+  print('只能使用你現在的隊伍（會複製一份，原本的隊伍和 HP 完全不受影響）。一關一隻對手，一直打到全隊倒下為止。');
+  print(`每過一關可以<b>三選一強化</b>（攻擊／防禦／速度／血量 +1~3%），或選擇<b>回血 ${SV_HEAL_PCT}%</b>、<b>復活</b>一隻；PP 每關自動補滿。`);
+  print('每 5 關有寶箱（越後面越豐厚，還會給進化石和大師球），每 10 關是魔王。不能用道具、逃跑和捕捉。');
+  print(best ? `<span class="good">個人最高紀錄：第 ${best} 關</span>` : '<span class="sys">還沒有挑戰紀錄</span>');
+  setOptions([
+    {label:`▶ 開始挑戰（隊伍 ${state.party.length} 隻）`, action:svStart},
+    {label:"返回", action:screenBattleMenu}
+  ]);
+}
+function svStart(){
+  if(!state.party.length) return screenSurvival();
+  const backup = state.party;
+  const team = JSON.parse(JSON.stringify(backup)).map(m=>{
+    m.hp = m.maxhp; m.status = null; m.atkMul = 1; m.defMul = 1; restorePP(m);
+    m._b = {maxhp:m.maxhp, atk:m.atk, def:m.def, spd:m.spd};
+    return m;
+  });
+  svRun = {backup, stage:0, cleared:0, perks:{atk:0,def:0,spd:0,hp:0}, total:{money:0, items:{}}};
+  state.party = team;
+  svNextStage();
+}
+function svNextStage(){
+  const r = svRun; r.stage++;
+  const s = r.stage, e = svEnemy(s), boss = s % 10 === 0;
+  clearBattleModifiers(); state.party.forEach(restorePP);
+  state.battle = {wild:e, foes:[], playerIdx:firstAlive(), mode:'run', title:`連戰試煉 第 ${s} 關`, stageNo:s, boss};
+  const kind = boss ? 'big' : 'wild';
+  introLead = introLeadFor(kind);
+  clearLog();
+  print(`<span class="${boss?'boss':'em'}">🔥 連戰試煉　第 ${s} 關${boss?'　💀 魔王關！':''}</span>`);
+  print(`${boss?'魔王 ':'對手 '}${nm(e)}（Lv.${e.level}）出現了！`);
+  screenBattle(); battleIntro(kind);
+}
+function svWin(){
+  const r = svRun, b = state.battle, s = b.stageNo;
+  print(`<span class="good">擊敗了 ${nm(b.wild)}！（第 ${s} 關通過）</span>`);
+  state.battle = null;
+  r.cleared = s;
+  state.stats.runBest = Math.max(state.stats.runBest||0, s);
+  const gold = 80 + s*20 + (b.boss ? 300 : 0);
+  svGive({money:gold}); print(`<span class="good">獲得了 💰 ${gold}</span>`);
+  if(s % 5 === 0){
+    const box = svMilestone(s);
+    svGive(box);
+    print(`<span class="boss">🎁 第 ${s} 關寶箱！獲得 ${esc(rewardText(box))}</span>`);
+  }
+  saveGame();                 // 獎勵先存起來，就算之後關掉頁面也不會丟
+  svPerkScreen();
+}
+function svPerkScreen(){
+  const r = svRun;
+  hr();
+  print(`<span class="em">選擇一項強化：</span>`);
+  print(`<span class="sys">目前累計　${svPerkLine()}</span>`);
+  const cards = svRoll3();
+  const opts = cards.map(c=>({label:c.label, action:()=>svPick(c)}));
+  opts.push({label:`💚 回血：全隊回復 ${SV_HEAL_PCT}% HP`, action:svHeal});
+  if(state.party.some(m=>m.hp<=0)) opts.push({label:`✨ 復活：復活一隻倒下的寶可夢（HP ${SV_REVIVE_PCT}%）`, action:svRevive});
+  setOptions(opts, '選擇強化');
+}
+function svPick(c){
+  const p = svRun.perks;
+  if(c.kind === 'all') SV_STATS.forEach(s=>{ p[s.k] += c.pct; }); else p[c.k] += c.pct;
+  svApply();
+  state.party.forEach(m=>{ m.status = null; });
+  svNextStageWithMsg(`<span class="good">獲得強化：${esc(c.label.replace(/　[★✦]+$/,''))}</span>`);
+}
+function svHeal(){
+  state.party.forEach(m=>{ if(m.hp>0) m.hp = Math.min(m.maxhp, m.hp + Math.ceil(m.maxhp*SV_HEAL_PCT/100)); });
+  svNextStageWithMsg(`<span class="good">💚 全隊回復了 ${SV_HEAL_PCT}% 的 HP！</span>`);
+}
+function svRevive(){
+  const dead = state.party.filter(m=>m.hp<=0).sort((a,b)=>b.level-a.level)[0];
+  if(!dead) return svHeal();
+  dead.hp = Math.max(1, Math.ceil(dead.maxhp*SV_REVIVE_PCT/100)); dead.status = null;
+  svNextStageWithMsg(`<span class="good">✨ ${nm(dead)} 復活了！（HP ${SV_REVIVE_PCT}%）</span>`);
+}
+function svNextStageWithMsg(msg){
+  const m0 = msg;
+  svNextStage();                 // 會清畫面，所以選擇的結果補印在新關卡的開頭
+  print(m0);
+}
+function svEnd(){
+  const r = svRun;
+  state.battle = null;
+  state.party = r.backup;        // 換回原本的隊伍（原本的隊伍完全沒被動過）
+  svRun = null;
+  saveGame();
+  clearLog(); renderBar();
+  const reached = r.cleared, best = state.stats.runBest || 0;
+  print('<span class="bad">全隊倒下了……連戰試煉結束。</span>');
+  print(`<span class="em">本次到達：第 ${reached} 關</span>${reached && reached >= best ? ' <span class="boss">🏆 新紀錄！</span>' : ''}`);
+  print(`<span class="sys">個人最高紀錄：第 ${best} 關</span>`);
+  if(r.perks && (r.perks.atk||r.perks.def||r.perks.spd||r.perks.hp)) print(`<span class="sys">最終強化　${svPerkLineOf(r.perks)}</span>`);
+  const t = r.total;
+  if(t.money || Object.keys(t.items).length){
+    print(`<span class="good">本次獲得：${esc(rewardText({money:t.money, items:t.items}))}</span>`);
+  } else print('<span class="sys">這次沒有拿到獎勵，下次再來！</span>');
+  setOptions([
+    {label:"🔥 再挑戰一次", action:screenSurvival},
+    {label:"返回對戰選單", action:screenBattleMenu}
+  ]);
+}
+function svPerkLineOf(p){ return SV_STATS.map(s=>`${s.icon}${s.name} +${p[s.k]}%`).join('　'); }
