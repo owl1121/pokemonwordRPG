@@ -900,7 +900,7 @@ const OLD_SAVE_KEY = 'pkmn_tower_save_v1';
 function saveGame(){
   try{
     const data = {
-      v:2, party:state.party, box:state.box,
+      v:2, party:(typeof svRun!=='undefined' && svRun) ? svRun.backup : state.party, box:state.box,   // 連戰試煉中存檔，存的是原本的隊伍
       seen:Array.from(state.seen), caught:Array.from(state.caught), shinyCaught:Array.from(state.shinyCaught),
       bag:state.bag, money:state.money, zone:state.zone, tower:state.tower,
       stats:state.stats, quest:state.quest, ach:state.ach, meta:state.meta, checkin:state.checkin, profile:state.profile, fest:state.fest, mail:state.mail
@@ -1186,6 +1186,7 @@ function screenBattleMenu(){
   setOptions([
     {label:`1. 🏛 道館（${state.meta.badges}/${GYMS.length}）`, action:screenGym},
     {label:"2. 🗼 寶可塔（無限之塔）", action:enterTower},
+    {label:`3. 🔥 連戰試煉${state.stats.runBest?`（最高 第 ${state.stats.runBest} 關）`:''}`, action:screenSurvival},
     {label:"返回", action:toField}
   ]);
 }
