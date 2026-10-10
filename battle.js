@@ -78,7 +78,7 @@ function renderStage(at, hit, power){   // hit：'foe' 或 'me'，該張卡片�
   const nmx = m => (m.shiny?'✨':'')+esc(m.name);
   const xp = p.level>=MAX_LEVEL ? 100 : Math.min(100, Math.round(100*p.exp/p.expNext));
   const html =
-    `<div class="card foe"><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${String(w.dex+1).padStart(4,'0')} · ${esc(typeStr(w))}${stChip(w)}${b.foes&&b.foes.length?` · 還有 ${b.foes.length} 隻`:''}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
+    `<div class="card foe"><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${dexNo(w.dex)} · ${esc(typeStr(w))}${stChip(w)}${b.foes&&b.foes.length?` · 還有 ${b.foes.length} 隻`:''}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
     `<div class="card me ${frameClass(p)}"><div class="r1"><span>${nmx(p)}</span><span>Lv.${p.level}</span></div><div class="r2">${esc(typeStr(p))} · 速度 ${p.spd}${stChip(p)}</div><div class="bar${pctHp(p)<30?' low':''}"><i style="width:${pctHp(p)}%"></i></div><div class="hpt">HP: ${p.hp}/${p.maxhp}</div><div class="xp"><i style="width:${xp}%"></i></div></div>`;
   const turnHtml = `<div>回合<br><b>${b.turn||1}</b></div><div>狀態<br><b>${b.phase||'選擇行動'}</b></div>`;
   const apply = ()=>{
@@ -685,6 +685,7 @@ function svApply(){            // 依目前的強化重算整隊的數值（以�
     m.atk = Math.round(b0.atk*(1+p.atk/100)); m.def = Math.round(b0.def*(1+p.def/100)); m.spd = Math.round(b0.spd*(1+p.spd/100));
     const nmax = Math.round(b0.maxhp*(1+p.hp/100)), gain = nmax - m.maxhp;
     m.maxhp = nmax; if(m.hp>0 && gain>0) m.hp = Math.min(nmax, m.hp + gain);
+    if(m.hp>m.maxhp) m.hp = m.maxhp;
   });
 }
 function svMilestone(s){       // 每 5 關的寶箱
@@ -748,6 +749,7 @@ function svStart(){
   svNextStage();
 }
 function svNextStage(){
+  if(firstAlive() < 0) return svEnd();   // 保險：全隊倒光就直接結算，避免後面讀到空的出戰寶可夢
   const r = svRun; r.stage++;
   const s = r.stage, e = svEnemy(s), boss = s % 10 === 0;
   clearBattleModifiers(); state.party.forEach(restorePP);
@@ -781,8 +783,9 @@ function svPerkScreen(){
   print(`<span class="em">選擇一項強化：</span>`);
   print(`<span class="sys">目前累計　${svPerkLine()}</span>`);
   const cards = svRoll3();
-  const opts = cards.map(c=>({label:c.label, action:()=>svPick(c)}));
-  opts.push({label:`💚 回血：全隊回復 ${SV_HEAL_PCT}% HP`, action:svHeal});
+  const allDead = firstAlive() < 0;       // 打贏的同時最後一隻也倒了（反作用力等）：只能選復活
+  const opts = allDead ? [] : cards.map(c=>({label:c.label, action:()=>svPick(c)}));
+  if(!allDead) opts.push({label:`💚 回血：全隊回復 ${SV_HEAL_PCT}% HP`, action:svHeal});
   if(state.party.some(m=>m.hp<=0)) opts.push({label:`✨ 復活：復活一隻倒下的寶可夢（HP ${SV_REVIVE_PCT}%）`, action:svRevive});
   setOptions(opts, '選擇強化');
 }
