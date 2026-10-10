@@ -768,7 +768,9 @@ const LEGENDARIES = [143,144,145,149,150, 242,243,244,248,249,250, 376,377,378,3
   479,480,481,482,483,484,485,486,487, 489,490,491,492,
   637,638,639,640,641,642,643,644,645, 493, 646,647,648,
   715,716,717, 718,719,720,
-  784,785,786,787, 790,791, 792,793,794,795,796,797,798, 799, 804,805, 800,801,806]; // 第七世代：四卡璞、索爾迦雷歐、露奈雅拉、7 隻究極異獸、奈克洛茲瑪、壘磊石、砰頭小丑／（幻之）瑪機雅娜、瑪夏多、捷拉奧拉。 第六世代：哲爾尼亞斯 伊裴爾塔爾 基格爾德／（幻之）蒂安希 胡帕 波爾凱尼恩。 第五世代：勾帕路翁 代拉基翁 畢力吉翁 龍捲雲 雷電雲 萊希拉姆 捷克羅姆 土地雲 酋雷姆／（幻之）比克提尼 凱路迪歐 美洛耶塔 蓋諾賽克特。 第三世代：雷吉洛克 雷吉艾斯 雷吉斯奇魯 拉帝亞斯 拉帝歐斯 蓋歐卡 固拉多 烈空坐 基拉祈 代歐奇希斯／第四世代：由克希 艾姆利多 亞克諾姆 帝牙盧卡 帕路奇亞 席多藍恩 雷吉奇卡斯 騎拉帝納 克雷色利亞 瑪納霏 達克萊伊 謝米 阿爾宙斯
+  784,785,786,787, 790,791, 792,793,794,795,796,797,798, 799, 804,805, 800,801,806,
+  887,888,889, 893,894,895,896,897, 904, 892,
+  932,933,934]; // 伽勒爾形態的三神鳥（伽勒爾急凍鳥／閃電鳥／火焰鳥）接在最後。// 第八世代：蒼響、藏瑪然特、無極汰那、雷吉艾勒奇、雷吉鐸拉戈、雪暴馬、靈幽馬、蕾冠王、眷戀雲／（幻之）薩戮德。 第七世代：四卡璞、索爾迦雷歐、露奈雅拉、7 隻究極異獸、奈克洛茲瑪、壘磊石、砰頭小丑／（幻之）瑪機雅娜、瑪夏多、捷拉奧拉。 第六世代：哲爾尼亞斯 伊裴爾塔爾 基格爾德／（幻之）蒂安希 胡帕 波爾凱尼恩。 第五世代：勾帕路翁 代拉基翁 畢力吉翁 龍捲雲 雷電雲 萊希拉姆 捷克羅姆 土地雲 酋雷姆／（幻之）比克提尼 凱路迪歐 美洛耶塔 蓋諾賽克特。 第三世代：雷吉洛克 雷吉艾斯 雷吉斯奇魯 拉帝亞斯 拉帝歐斯 蓋歐卡 固拉多 烈空坐 基拉祈 代歐奇希斯／第四世代：由克希 艾姆利多 亞克諾姆 帝牙盧卡 帕路奇亞 席多藍恩 雷吉奇卡斯 騎拉帝納 克雷色利亞 瑪納霏 達克萊伊 謝米 阿爾宙斯
 // // 急凍鳥 閃電鳥 火焰鳥 超夢 夢幻 雷公 炎帝 水君 洛奇亞 鳳王 時拉比
 const NONLEG = []; for(let i=0;i<DEX.length;i++){ if(!LEGENDARIES.includes(i)) NONLEG.push(i); }
 const BOSSES = NONLEG.filter(isFinalForm); // 最終進化型（含無進化的單一型態），全破後的無盡循環名單
@@ -777,11 +779,13 @@ const LEGENDARY_COST = [50,50,60,90,150, 80,80,80,120,120,200, 100,100,100,130,1
   110,110,110,160,160,170,190,230,150, 280,300,300,400,
   120,120,120,130,130,180,180,150,220, 200,280,300,350,
   240,240,300, 330,360,400,
-  200,200,200,200, 280,280, 260,260,260,260,260,260,260, 350, 260,260, 380,400,420];
+  200,200,200,200, 280,280, 260,260,260,260,260,260,260, 350, 260,260, 380,400,420,
+  300,300,380, 320,320,340,340,420, 360, 450,
+  360,360,360];
 // 幻之寶可夢（夢幻=第一世代、時拉比=第二世代）：需清空該世代的普通樓層＋第二輪小魔王（無等級限制）
-const MYTHIC_GEN = {4:1, 10:2, 19:3, 20:3, 30:4, 31:4, 32:4, 33:4, 43:5, 44:5, 45:5, 46:5, 50:6, 51:6, 52:6, 69:7, 70:7, 71:7}; // 神獸順序編號 -> 世代
+const MYTHIC_GEN = {4:1, 10:2, 19:3, 20:3, 30:4, 31:4, 32:4, 33:4, 43:5, 44:5, 45:5, 46:5, 50:6, 51:6, 52:6, 69:7, 70:7, 71:7, 81:8}; // 神獸順序編號 -> 世代
 const GEN_SPLIT = 151;
-const GEN_START = [0, 0, 151, 251, 386, 493, 649, 721, DEX.length]; // 依世代編號取得該世代的起點；GEN_START[gen+1] 為終點          // 圖鑑編號 0~150 為第一世代
+const GEN_START = [0, 0, 151, 251, 386, 493, 649, 721, 809, 905, DEX.length];   // 第 9 組＝地區型態（索引 905 之後） // 依世代編號取得該世代的起點；GEN_START[gen+1] 為終點          // 圖鑑編號 0~150 為第一世代
 function isMythicPtr(ptr){ return MYTHIC_GEN[ptr] !== undefined; }
 const ROUND2_MUL = 1.3, ROUND2_HP_MUL = 1.8; // 第二輪小魔王：能力 ×1.3、HP ×1.8，之後每多一輪再加強
 function genProgress(gen){
@@ -1081,7 +1085,7 @@ function screenCover(){
   print(`<div class="cover">
     <div class="pokeball" aria-hidden="true"><span></span></div>
     <div class="cover-title">寶可夢文字冒險</div>
-    <div class="cover-sub">關都・城都・豐緣・神奧・合眾・卡洛斯・阿羅拉地方 · 全國圖鑑第一～七世代</div>
+    <div class="cover-sub">關都・城都・豐緣・神奧・合眾・卡洛斯・阿羅拉・伽勒爾 · 全國圖鑑第一～八世代</div>
     <div class="cover-tagline">探索草叢、捕捉寶可夢、鍛鍊隊伍、挑戰無限之塔——<br>一場完全用文字寫成的寶可夢旅程。</div>
   </div>`);
   renderBar();
@@ -1095,7 +1099,7 @@ function screenCover(){
 function screenIntro(){
   clearLog();
   print('<span class="em">— 遊戲簡介 —</span>');
-  print('這是一款純文字的寶可夢養成、戰鬥、收集遊戲，收錄第一～七世代全 809 隻寶可夢（關都＋城都＋豐緣＋神奧＋合眾＋卡洛斯＋阿羅拉）。');
+  print('這是一款純文字的寶可夢養成、戰鬥、收集遊戲，收錄第一～八世代全 905 隻寶可夢（關都＋城都＋豐緣＋神奧＋合眾＋卡洛斯＋阿羅拉＋伽勒爾），另有阿羅拉、伽勒爾、洗翠、帕底亞共 57 種地區型態。');
   hr();
   print('<span class="intro-h">◆ 探索</span>　從 1 號道路出發，一路經過常磐森林、月見山……走到城都的白銀山，越後面等級越高，也越常遇到進化型。');
   print('<span class="intro-h">◆ 戰鬥</span>　選擇招式攻擊，或用道具治療、解除異常狀態；速度快的一方先出手。');
@@ -1107,7 +1111,7 @@ function screenIntro(){
   print('<span class="intro-h">◆ 訓練家與道館</span>　草叢中每 8～12 場戰鬥會遇到訓練家（贏了有獎金）；圖鑑每登錄 10 隻可開啟下一間道館，先打關都 8 間，再打城都 8 間。');
   print('<span class="intro-h">◆ 補給站</span>　用過之後要再打完 2 場戰鬥才能再用（隊伍全倒時例外）；探索時偶爾會撿到道具。招式有 PP，用完只能「掙扎」。右上角「☰ 選單」可領任務與成就獎勵。');
   hr();
-  print('<span class="sys">目標：抓齊全國圖鑑 809 隻、收服所有傳說寶可夢！進度會自動儲存在這台裝置的瀏覽器裡。</span>');
+  print('<span class="sys">目標：抓齊全國圖鑑 905 隻、收服所有傳說寶可夢！進度會自動儲存在這台裝置的瀏覽器裡。</span>');
   setOptions([{label:"← 返回封面", action:screenCover}]);
 }
 
@@ -1128,12 +1132,13 @@ function screenTitle(){
     {label:"第五世代　合眾地方（藤藤蛇／暖暖豬／水水獺）", action:()=>screenStarterPick(5)},
     {label:"第六世代　卡洛斯地方（哈力栗／火狐狸／呱呱泡蛙）", action:()=>screenStarterPick(6)},
     {label:"第七世代　阿羅拉地方（木木梟／火斑喵／球球海獅）", action:()=>screenStarterPick(7)},
+    {label:"第八世代　伽勒爾地方（敲音猴／炎兔兒／淚眼蜥）", action:()=>screenStarterPick(8)},
     {label:"← 返回封面", action:screenCover}
   ]);
 }
 function screenStarterPick(gen){
   clearLog();
-  print(`<span class="em">— ${gen===1 ? '關都地方' : gen===2 ? '城都地方' : gen===3 ? '豐緣地方' : gen===4 ? '神奧地方' : gen===5 ? '合眾地方' : gen===6 ? '卡洛斯地方' : '阿羅拉地方'} —</span>`);
+  print(`<span class="em">— ${gen===1 ? '關都地方' : gen===2 ? '城都地方' : gen===3 ? '豐緣地方' : gen===4 ? '神奧地方' : gen===5 ? '合眾地方' : gen===6 ? '卡洛斯地方' : gen===7 ? '阿羅拉地方' : '伽勒爾地方'} —</span>`);
   print('請選擇你的第一隻夥伴寶可夢：');
   renderBar();
   const list = gen===1 ? [
@@ -1161,10 +1166,14 @@ function screenStarterPick(gen){
     {label:"哈力栗（草）－草＋格鬥，防禦高的重裝型", action:()=>pickStarter(649)},
     {label:"火狐狸（火）－火＋超能力，華麗的特攻手", action:()=>pickStarter(652)},
     {label:"呱呱泡蛙（水）－水＋惡，速度快的刺客", action:()=>pickStarter(655)}
-  ] : [
+  ] : gen===7 ? [
     {label:"木木梟（草）－草＋幽靈，安靜的遠程狙擊手", action:()=>pickStarter(721)},
     {label:"火斑喵（火）－火＋惡，爆發力十足的格鬥家", action:()=>pickStarter(724)},
     {label:"球球海獅（水）－水＋妖精，優雅的歌姬", action:()=>pickStarter(727)}
+  ] : [
+    {label:"敲音猴（草）－節奏感超強，進化後力量爆發", action:()=>pickStarter(809)},
+    {label:"炎兔兒（火）－速度與腳力兼具的前鋒", action:()=>pickStarter(812)},
+    {label:"淚眼蜥（水）－擅長偷襲的狡猾隱者", action:()=>pickStarter(815)}
   ];
   list.push({label:"← 重新選擇世代", action:screenTitle});
   setOptions(list);
@@ -1390,13 +1399,13 @@ function screenTower(keepLog){
     const g = legendaryGate(t.legendaryPtr);
     const isMew = isMythicPtr(t.legendaryPtr);
     if(isMew){
-      print(`<span class="em">下一位是「幻之寶可夢」：#${String(ldex+1).padStart(3,'0')} ${esc(le[0])}</span>`);
+      print(`<span class="em">下一位是「幻之寶可夢」：#${dexNo(ldex)} ${esc(le[0])}</span>`);
       print(`${esc(le[0])}極為稀有，需要同時滿足：`);
       print(`　${g.coinsOk?'✅':'❌'} 硬幣 ≥ ${g.cost} 枚（目前 ${t.coins}）`);
       print(`　${g.floorsOk?'✅':'❌'} 第${g.gen}世代普通樓層全數通過（${g.gp.floorsDone}/${g.gp.floorsTotal}）`);
       print(`　${g.bossOk?'✅':'❌'} 第${g.gen}世代第二輪小魔王全數擊破（${g.gp.bossDone}/${g.gp.bossTotal}）`);
     } else {
-      print(`下一位神獸：#${String(ldex+1).padStart(3,'0')} ${esc(le[0])}　需要 ${g.cost} 枚硬幣`);
+      print(`下一位神獸：#${dexNo(ldex)} ${esc(le[0])}　需要 ${g.cost} 枚硬幣`);
     }
     opts.push({
       label: g.ok ? `🪙 花費 ${g.cost} 枚硬幣挑戰 ${le[0]}！` : (isMew ? `（${le[0]}：尚未達成全部條件）` : `（神獸：硬幣不足，還差 ${g.cost - t.coins} 枚）`),
@@ -1677,15 +1686,17 @@ function useStone(k, box, i){
   setOptions([{label:'← 返回背包', action:screenBag}, {label:'返回', action:toField}]);
 }
 let dexPage=0;
+// 圖鑑編號：地區型態顯示成基礎寶可夢的編號加 ◇（例：阿羅拉小拉達 = #019◇）
+const dexNo = i => { const b = (typeof FORM_BASE !== 'undefined') ? FORM_BASE[i] : undefined; return String((b !== undefined ? b : i) + 1).padStart(3,'0') + (b !== undefined ? '◇' : ''); };
 function screenDex(){
   clearLog();
-  print(`<span class="em">— 全國圖鑑（第一～七世代）—</span>　已捕捉 ${state.caught.size} / ${DEX.length}　✨ 色違 ${state.shinyCaught.size}`);
+  print(`<span class="em">— 全國圖鑑（第一～八世代＋地區型態）—</span>　已捕捉 ${state.caught.size} / ${DEX.length}　✨ 色違 ${state.shinyCaught.size}`);
   hr();
   const perPage=15;
   const start=dexPage*perPage;
   for(let i=start;i<Math.min(start+perPage,DEX.length);i++){
     const e=DEX[i];
-    const no=String(i+1).padStart(3,'0');
+    const no=dexNo(i);
     const shinyMark = state.shinyCaught.has(i) ? ' <span class="shiny">✨</span>' : '';
     if(state.caught.has(i)) print(`#${no} <span class="good">${esc(e[0])}</span>　${e[2]?e[1]+'／'+e[2]:e[1]}${shinyMark}`);
     else if(state.seen.has(i)) print(`#${no} <span class="sys">${esc(e[0])}（已見過，尚未捕捉）</span>`);
@@ -1741,7 +1752,7 @@ function screenGym(keepLog){
   if(!g) print(`<span class="good">恭喜！你已經集滿全部 ${GYMS.length} 枚徽章！</span>`);
   else {
     const need = (i+1)*10, ok = n >= need;
-    print(`下一間：${esc(g[0])}（${esc(g[2])}系）館主 ${esc(g[1])}${i>=48?'　<span class="sys">［第七世代］</span>':i>=40?'　<span class="sys">［第六世代］</span>':i>=32?'　<span class="sys">［第五世代］</span>':i>=24?'　<span class="sys">［第四世代］</span>':i>=16?'　<span class="sys">［第三世代］</span>':i>=8?'　<span class="sys">［第二世代］</span>':''}`);
+    print(`下一間：${esc(g[0])}（${esc(g[2])}系）館主 ${esc(g[1])}${i>=56?'　<span class="sys">［第八世代］</span>':i>=48?'　<span class="sys">［第七世代］</span>':i>=40?'　<span class="sys">［第六世代］</span>':i>=32?'　<span class="sys">［第五世代］</span>':i>=24?'　<span class="sys">［第四世代］</span>':i>=16?'　<span class="sys">［第三世代］</span>':i>=8?'　<span class="sys">［第二世代］</span>':''}`);
     print(`　${ok?'✅':'❌'} 圖鑑登錄 ≥ ${need} 隻（目前 ${n}）`);
     print(`<span class="sys">建議等級約 Lv.${10+i*4}；館主有 ${gymFoeCount(i)} 隻寶可夢，不能逃跑或捕捉。</span>`);
     opts.push(ok ? {label:`⚔ 挑戰 ${g[0]}`, action:startGym} : {label:`（圖鑑還差 ${need-n} 隻）`, action:()=>screenGym()});
@@ -1809,12 +1820,12 @@ function claimQuest(id){
 const TITLE_OF = {
   a_win1:'見習訓練家', a_win50:'老練訓練家', a_win300:'不敗傳說',
   a_cat10:'捕獲新星', a_cat50:'寶可夢獵人',
-  a_dex50:'圖鑑研究員', a_dex150:'圖鑑博士', a_dex251:'關都圖鑑博士', a_dexg2:'城都圖鑑博士', a_dexg3:'豐緣圖鑑博士', a_dexg4:'神奧圖鑑博士', a_dexg5:'合眾圖鑑博士', a_dexg6:'卡洛斯圖鑑博士', a_dexg7:'阿羅拉圖鑑博士', a_dex386:'寶可夢大師', a_dex493:'四世代圖鑑王', a_dex649:'五世代圖鑑王', a_dex721:'六世代圖鑑王', a_dex809:'全國圖鑑王',
+  a_dex50:'圖鑑研究員', a_dex150:'圖鑑博士', a_dex251:'關都圖鑑博士', a_dexg2:'城都圖鑑博士', a_dexg3:'豐緣圖鑑博士', a_dexg4:'神奧圖鑑博士', a_dexg5:'合眾圖鑑博士', a_dexg6:'卡洛斯圖鑑博士', a_dexg7:'阿羅拉圖鑑博士', a_dexg8:'伽勒爾圖鑑博士', a_dex386:'寶可夢大師', a_dex493:'四世代圖鑑王', a_dex649:'五世代圖鑑王', a_dex721:'六世代圖鑑王', a_dex809:'七世代圖鑑王', a_dex905:'全國圖鑑王', a_form57:'地區型態收藏家', a_dex962:'圖鑑大滿貫王',
   a_flr30:'塔之挑戰者', a_flr150:'攀塔勇者', a_top:'登頂者', a_boss10:'魔王剋星',
   a_evo10:'進化培育家', a_shiny:'閃亮的幸運兒',
   a_leg1:'傳說的見證者', a_legall:'傳說收集家', a_max:'極限突破者', a_r2:'二周目霸者',
   a_tr1:'初次交鋒', a_tr30:'訓練家殺手',
-  a_gym1:'徽章收集者', a_gym8:'關都霸主', a_gym16:'城都霸主', a_gym24:'豐緣霸主', a_gym32:'神奧霸主', a_gym40:'合眾霸主', a_gym48:'卡洛斯霸主', a_gym56:'阿羅拉霸主',
+  a_gym1:'徽章收集者', a_gym8:'關都霸主', a_gym16:'城都霸主', a_gym24:'豐緣霸主', a_gym32:'神奧霸主', a_gym40:'合眾霸主', a_gym48:'卡洛斯霸主', a_gym56:'阿羅拉霸主', a_gym64:'伽勒爾霸主',
   a_ci7:'勤奮的旅人', a_ci30:'簽到之王'
 };
 const DEFAULT_TITLE = '新手訓練家';
@@ -1834,7 +1845,7 @@ function curTitle(){
 function renderHeader(){
   const n = state.profile && state.profile.name;
   const html = !n
-    ? '<div class="title">◆ 寶可夢文字冒險</div><div class="sub">關都・城都・豐緣・神奧・合眾・卡洛斯・阿羅拉 · 全國圖鑑 809 隻</div>'
+    ? '<div class="title">◆ 寶可夢文字冒險</div><div class="sub">關都・城都・豐緣・神奧・合眾・卡洛斯・阿羅拉・伽勒爾 · 全國圖鑑 905 隻</div>'
     : `<button id="profBtn" onclick="openMenu('profile')"><span class="av">${esc(Array.from(n)[0])}</span><span class="pn"><b>${esc(n)}</b><i>${esc(curTitle())}</i></span></button>`;
   if(hdrLeft.dataset.h !== html){ hdrLeft.innerHTML = html; hdrLeft.dataset.h = html; }
 }
@@ -1860,7 +1871,11 @@ const ACH = [
   {id:'a_dex649', name:'五世代圖鑑完成', desc:'集滿第一～五世代，共 649 隻', pts:35, cur:()=>genCaught(1)+genCaught(2)+genCaught(3)+genCaught(4)+genCaught(5), target:649},
   {id:'a_dexg7',  name:'阿羅拉圖鑑完成', desc:'收集第七世代（阿羅拉）全部 88 隻', pts:12, cur:()=>genCaught(7), target:genSize(7)},
   {id:'a_dex721', name:'六世代圖鑑完成', desc:'集滿第一～六世代，共 721 隻', pts:40, cur:()=>genCaught(1)+genCaught(2)+genCaught(3)+genCaught(4)+genCaught(5)+genCaught(6), target:721},
-  {id:'a_dex809', name:'全國圖鑑完成', desc:`集滿七個世代，全部 ${DEX.length} 隻`, pts:45, cur:()=>state.caught.size, target:DEX.length},
+  {id:'a_dexg8',  name:'伽勒爾圖鑑完成', desc:'收集第八世代（伽勒爾＋洗翠）全部 96 隻', pts:14, cur:()=>genCaught(8), target:genSize(8)},
+  {id:'a_dex809', name:'七世代圖鑑完成', desc:'集滿第一～七世代，共 809 隻', pts:45, cur:()=>[1,2,3,4,5,6,7].reduce((a,g)=>a+genCaught(g),0), target:809},
+  {id:'a_dex905', name:'全國圖鑑完成', desc:'集滿第一～八世代，共 905 隻', pts:50, cur:()=>[1,2,3,4,5,6,7,8].reduce((a,g)=>a+genCaught(g),0), target:905},
+  {id:'a_form57', name:'地區型態圖鑑完成', desc:`收集全部 ${57} 種地區型態（阿羅拉、伽勒爾、洗翠、帕底亞）`, pts:25, cur:()=>genCaught(9), target:genSize(9)},
+  {id:'a_dex962', name:'圖鑑大滿貫', desc:`集滿全部 ${DEX.length} 隻（含地區型態）`, pts:60, cur:()=>state.caught.size, target:DEX.length},
   {id:'a_flr30',  name:'塔的挑戰者', desc:'在塔中通過 30 層',        pts:3,  cur:()=>state.stats.floors||0, target:30},
   {id:'a_flr150', name:'攀塔勇者',   desc:'在塔中通過 150 層',       pts:8,  cur:()=>state.stats.floors||0, target:150},
   {id:'a_top',    name:'登頂',       desc:'清空塔內全部普通樓層',    pts:12, cur:()=>Math.min(state.tower.floorPtr, NONLEG.length), target:NONLEG.length},
@@ -1880,7 +1895,8 @@ const ACH = [
   {id:'a_gym32',  name:'神奧制霸',   desc:'集滿第四世代（神奧）8 枚徽章', pts:18, cur:()=>state.meta.badges, target:32},
   {id:'a_gym40',  name:'合眾制霸',   desc:'集滿第五世代（合眾）8 枚徽章', pts:20, cur:()=>state.meta.badges, target:40},
   {id:'a_gym48',  name:'卡洛斯制霸', desc:'集滿第六世代（卡洛斯）8 枚徽章', pts:22, cur:()=>state.meta.badges, target:48},
-  {id:'a_gym56',  name:'阿羅拉制霸', desc:`通過第七世代（阿羅拉）8 場考驗，共 ${GYMS.length} 枚徽章`, pts:24, cur:()=>state.meta.badges, target:GYMS.length},
+  {id:'a_gym56',  name:'阿羅拉制霸', desc:'通過第七世代（阿羅拉）8 場考驗', pts:24, cur:()=>state.meta.badges, target:56},
+  {id:'a_gym64',  name:'伽勒爾制霸', desc:`集滿第八世代（伽勒爾）8 枚徽章，共 ${GYMS.length} 枚`, pts:26, cur:()=>state.meta.badges, target:GYMS.length},
   {id:'a_ci7',    name:'每日報到',   desc:'累計簽到 7 天',           pts:2,  cur:()=>state.stats.checkins||0, target:7},
   {id:'a_ci30',   name:'簽到達人',   desc:'累計簽到 30 天',          pts:5,  cur:()=>state.stats.checkins||0, target:30}
 ];
