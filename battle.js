@@ -280,7 +280,7 @@ function tryCatch(ballKey){
   const chance = ball.master ? 1 : Math.min(0.97, (1-hpRatio)*0.75 + 0.15 + ball.ball);
   print(`你對 ${nm(w)} 丟出了${ball.label}……`);
   if(Math.random() < chance){
-    w.status = null; w.atkMul = 1; w.defMul = 1; bump('catches'); battleDone();
+    unboostMon(w); w.status = null; w.atkMul = 1; w.defMul = 1; bump('catches'); battleDone();
     w.ball = BALL_TO_FRAME[ballKey] || 'poke';   // 記住被哪種球抓到（決定邊框）
     { if([w.t1,w.t2].some(x=>x==='幽靈'||x==='惡')) bump('ghostCatch');   // 節日活動任務用
       const fk = w.ball, was = frameUnlocked(fk); bump('cb_' + fk);
@@ -500,9 +500,11 @@ function winBattle(){
       t.endlessPtr++;
       if(t.endlessPtr >= BOSSES.length){ t.endlessPtr = 0; t.loop++; print(`<span class="boss">第 ${t.loop+1} 輪小魔王全數擊破！下一輪再度強化。</span>`); }
     } else {
-      gotCoin = t.floorPtr >= (t.coinPtr||0); // 只有第一次通過的樓層才有硬幣
-      if(gotCoin){ t.coins++; t.coinPtr = t.floorPtr+1; }
+      gotCoin = !isCleared(t.floorPtr);       // 只有第一次通過的樓層才有硬幣
+      if(gotCoin){ t.coins++; markCleared(t.floorPtr); }
       t.floorPtr++;
+      if(clearedCount() === NONLEG.length) t.floorPtr = NONLEG.length;                       // 全部通過 → 進入第二輪小魔王
+      else if(t.floorPtr >= NONLEG.length) t.floorPtr = segmentStart(firstUncleared());      // 跳著打到最後一層：回頭找還沒通過的
     }
     if(gotCoin) print(`<span class="good">🪙 ${b.boss?'小魔王擊破':'樓層突破'}！獲得 1 枚硬幣（目前 ${t.coins} 枚）</span>`);
     else print(`<span class="sys">${b.boss?'小魔王擊破':'樓層突破'}！這層已經領過硬幣了，不會重複獲得（目前 ${t.coins} 枚）</span>`);
@@ -510,7 +512,7 @@ function winBattle(){
       fullHeal();
       print('<span class="good">小魔王倒下時留下了一道光，你的隊伍全部回滿了！現在可以返回地面。</span>');
     }
-    if(!b.endless && t.floorPtr === NONLEG.length){
+    if(!b.endless && gotCoin && t.floorPtr === NONLEG.length){
       print(`<span class="boss">塔內 ${NONLEG.length} 層全數突破！接下來進入第二輪小魔王（HP、能力大幅強化）。</span>`);
     }
     warnIfWiped();
