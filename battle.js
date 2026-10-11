@@ -34,11 +34,14 @@ const SFX = (function(){
     o.type = type; o.frequency.setValueAtTime(f, t);
     if(f2) o.frequency.exponentialRampToValueAtTime(Math.max(20,f2), t+d);
     g.gain.setValueAtTime(0.0001, t);
-    if(hold){   // 持續音：很快升到音量、維持到音符結束前才收掉（不像一般音那樣馬上衰減）
-      g.gain.exponentialRampToValueAtTime(v, t+0.03); g.gain.setValueAtTime(v, Math.max(t+0.03, t+d-0.07));
+    let end = t + d;
+    if(hold){   // 延音：很快升到音量、維持整個音符長度，結束後再慢慢淡出（尾音和下一個音自然重疊）
+      const rel = 0.55;
+      g.gain.exponentialRampToValueAtTime(v, t+0.04); g.gain.setValueAtTime(v, Math.max(t+0.04, t+d));
+      end = t + d + rel;
     } else g.gain.exponentialRampToValueAtTime(v, t+0.008);
-    g.gain.exponentialRampToValueAtTime(0.0001, t+d);
-    o.connect(g); g.connect(dest||master); o.start(t); o.stop(t+d+0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, end);
+    o.connect(g); g.connect(dest||master); o.start(t); o.stop(end+0.03);
   }
   let nbuf = null;
   function noise(t, d, v, f1, f2, dest){
@@ -145,7 +148,7 @@ const SFX = (function(){
       const ch = S.chords[bar], iv = ch[1] === 'm' ? MIN : MAJ;
       const Q = S.q ? S.q[Math.floor(bar/8) % S.q.length] : S;
       const L = S.lead[k];
-      if(L){ osc(Q.wave, hz(L[0]), t, S.step*L[1]*(Q.sus?0.98:0.92), Q.leadVol, null, bgmGain, Q.sus); if(Q.lead2) osc(Q.lead2, hz(L[0]-12), t, S.step*L[1]*0.9, Q.leadVol*0.5, null, bgmGain); }
+      if(L){ osc(Q.wave, hz(L[0]), t, S.step*L[1]*(Q.sus?1:0.92), Q.leadVol, null, bgmGain, Q.sus); if(Q.lead2) osc(Q.lead2, hz(L[0]-12), t, S.step*L[1]*0.9, Q.leadVol*0.5, null, bgmGain); }
       if(Q.arpVol && pos % Q.arpEvery === 0){ const i = Q.arp[(pos/Q.arpEvery) % Q.arp.length]; osc(Q.arpWave, hz(ch[0] + Q.arpOct + iv[i%3] + (i>2?12:0)), t, S.step*Q.arpEvery*1.2, Q.arpVol, null, bgmGain); }
       if(pos % Q.bassEvery === 0){ const o = Q.bassPat[(pos/Q.bassEvery) % Q.bassPat.length]; osc(Q.bassWave, hz(ch[0] + o), t, S.step*Q.bassEvery*(Q.sus?0.98:0.95), Q.bassVol, null, bgmGain, Q.sus); }
       if(Q.pad && pos === 0) iv.forEach(x=>osc('triangle', hz(ch[0] + 12 + x), t, S.step*S.bs*0.98, Q.padVol, null, bgmGain, Q.sus));
