@@ -601,7 +601,7 @@ const MAIL_DEFS = [
    body:'第四世代（神奧地方）的寶可夢、道館與傳說寶可夢都已經開放，期待你去挑戰！',
    reward:{items:{ultraball:3}}},
   {id:'shiny_gift', from:'冒險事務局', title:'✨ 色違寶可夢大贈送',
-   body:'感謝你的遊玩！這是送給你的禮物：打開附件，會從全圖鑑（一般寶可夢、神獸、地區型態都有可能）隨機抽出一隻色違寶可夢送給你。\n\n抽到的寶可夢是 Lv.50，隊伍滿了會直接送到倉庫。',
+   body:'感謝你的遊玩！這是送給你的禮物：打開附件，會從全圖鑑（一般寶可夢、神獸、地區型態都有可能）隨機抽出一隻色違寶可夢送給你。\n\n抽到的寶可夢是 Lv.1，隊伍滿了會直接送到倉庫。',
    start:[2026,10,11], reward:{shiny:1}},
   {id:'gen9_open', from:'冒險事務局', title:'帕底亞地方現已開放',
    body:'第九世代（帕底亞地方）的 120 隻寶可夢、8 間新道館與 8 個新地點都已經開放，還有故勒頓、密勒頓等傳說寶可夢等你挑戰！',
@@ -1899,7 +1899,7 @@ function giveShinyDraw(n){
   }
   return got;
 }
-const SHINY_GIFT_LEVEL = 50;
+const SHINY_GIFT_LEVEL = 1;
 function giveReward(r){
   const out = [];
   if(r.money) state.money += r.money;
