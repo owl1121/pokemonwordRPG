@@ -127,17 +127,42 @@ function screenBattle(){
   else { print('<span class="bad">所有招式的 PP 都用完了！只能使用「掙扎」（會受到反作用力）。</span>'); opts = [mk(STRUGGLE,-1)]; }
   if(b.mode !== 'run') opts.push({label:'🎒 道具', cls:'q', action:screenItemSelect});   // 連戰試煉不能用道具
   if(state.party.filter(m=>m.hp>0).length>1) opts.push({label:'🔄 換上場', cls:'q', action:screenSwitch});
+  if(b.mode !== 'run' && !b.megaUsed && !p._mega && megaFormsFor(p).length) opts.push({label:'✨ Mega 進化', cls:'q', action:screenMegaEvolve});
   if(b.mode==='wild'){
     opts.push({label:'🎯 捕捉', cls:'q', action:screenBallSelect});
     opts.push({label:'🏃 逃跑', cls:'q', action:tryFlee});
   }
-  if(b.mode==='legendary') print('<span class="sys">（神獸戰無法逃跑，也無法用精靈球——擊敗牠就能收服）</span>');
+  if(b.mode==='mega') opts.push({label:'🏃 逃跑', cls:'q', action:tryFlee});
+  if(b.mode==='mega') print('<span class="sys">（Mega 對戰：不能捕捉，打贏就能拿到 Mega 碎片）</span>');
+  else if(b.mode==='legendary') print('<span class="sys">（神獸戰無法逃跑，也無法用精靈球——擊敗牠就能收服）</span>');
   else if(b.mode==='trainer' || b.mode==='gym') print('<span class="sys">（訓練家對戰不能逃跑，也不能捕捉）</span>');
   else if(b.mode==='tower') print('<span class="sys">（塔內不能捕捉也不能逃跑，輸了會被送出塔外）</span>');
   else if(b.mode==='run') print('<span class="sys">（連戰試煉：不能用道具、不能逃跑、不能捕捉，全隊倒下就結束）</span>');
   setOptions(opts,'選擇招式');
 }
 
+function screenMegaEvolve(){
+  const b = state.battle, p = state.party[b.playerIdx], forms = megaFormsFor(p);
+  if(b.megaUsed || p._mega || !forms.length) return screenBattle();
+  if(forms.length === 1) return doMegaEvolve(forms[0].id);
+  clearLog();
+  print(`<span class="em">✨ 要讓 ${nm(p)} 進化成哪一種 Mega？</span>`);
+  const opts = forms.map(m=>({label:`${m.name}（${typeStr(m)}）`, action:()=>doMegaEvolve(m.id)}));
+  opts.push({label:'← 返回', action:toBattle});
+  setOptions(opts, '選擇 Mega');
+}
+function doMegaEvolve(id){
+  const b = state.battle, p = state.party[b.playerIdx], m = MEGA_BY_ID[id];
+  if(!b || !p || !m || b.megaUsed || p._mega) return screenBattle();
+  const before = p.name;
+  megaEvolve(p, m); b.megaUsed = true;
+  clearLog();
+  print(`<span class="boss">✨ ${esc(before)} 的 Mega 進化石發出了光芒！</span>`);
+  print(`<span class="boss">${esc(before)} Mega 進化成了 ${esc(p.name)}！（${esc(typeStr(p))}　攻擊／防禦／速度大幅提升）</span>`);
+  stageKey = null;
+  screenBattle();
+  flushStage(); renderStage(0);   // 卡片馬上換成 Mega 的名字和屬性
+}
 function screenBallSelect(){
   const b = state.battle;
   clearLog(); renderBar();
@@ -482,6 +507,14 @@ function winBattle(){
   state.battle=null;
   battleDone();
 
+  if(mode==='mega'){
+    const ms = megaState(), id = w.megaId;
+    ms.shards[id] = (ms.shards[id]||0) + 1; bump('megaWins');
+    giveMoney(w.level * 15);
+    print(`<span class="boss">💎 獲得了【${esc(w.name)}】碎片 ×1（${ms.shards[id]}/${MEGA_NEED}）</span>`);
+    if(ms.shards[id] >= MEGA_NEED && !ms.stones[id]) print('<span class="good">碎片集滿了！到「📦 碎片與進化石」就能合成進化石。</span>');
+    warnIfWiped(); return runEvolutions(()=>screenMegaBattle(true));
+  }
   if(mode==='trainer'){
     giveMoney(b.reward); bump('trainers'); warnIfWiped(); return runEvolutions(()=>screenField());
   }
@@ -577,6 +610,7 @@ function introLabel(kind){
   const b = state.battle; if(!b || kind==='wild') return '';
   if(kind==='trainer') return `<div class="vs">VS</div><div class="sub">${esc(b.title||'')}</div>`;
   if(b.mode==='gym')       return `<div class="vs">🏛</div><div class="sub">${esc(b.title||'')}</div>`;
+  if(b.mode==='mega')      return `<div class="vs">💎</div><div class="sub">${esc(b.wild.name)}</div>`;
   if(b.mode==='legendary') return `<div class="vs">✦</div><div class="sub">傳說的 ${esc(monName(b.wild))}</div>`;
   return `<div class="vs">💀</div><div class="sub">小魔王 ${esc(monName(b.wild))}</div>`;
 }

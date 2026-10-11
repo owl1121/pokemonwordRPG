@@ -890,7 +890,7 @@ function defaultTower(){ return {rev:3, cl:'', floorPtr:0, coinPtr:0, coins:0, l
 let state = {
   screen:"title",
   party:[], box:[],
-  seen:new Set(), caught:new Set(), shinyCaught:new Set(),
+  seen:new Set(), caught:new Set(), shinyCaught:new Set(), mega:{shards:{}, stones:{}},
   bag:defaultBag(), money:START_MONEY,
   zone:1, battle:null,
   tower:defaultTower(),
@@ -967,7 +967,7 @@ function saveGame(){
   try{
     const data = {
       v:2, party:(typeof svRun!=='undefined' && svRun) ? svRun.backup : state.party, box:state.box,   // 連戰試煉中存檔，存的是原本的隊伍
-      seen:Array.from(state.seen), caught:Array.from(state.caught), shinyCaught:Array.from(state.shinyCaught),
+      seen:Array.from(state.seen), caught:Array.from(state.caught), shinyCaught:Array.from(state.shinyCaught), mega:state.mega,
       bag:state.bag, money:state.money, zone:state.zone, tower:state.tower,
       stats:state.stats, quest:state.quest, ach:state.ach, meta:state.meta, checkin:state.checkin, profile:state.profile, fest:state.fest, mail:state.mail
     };
@@ -982,6 +982,7 @@ function fixMon(m){
   fixed.moves.forEach((mv,i)=>{ if(mv.maxpp===undefined){ mv.maxpp = i===0?35 : i===3?10 : mv.recoil?15 : 25; mv.pp = mv.maxpp; } });
   if(fixed.level > MAX_LEVEL) fixed.level = MAX_LEVEL;
   if(fixed.level >= MAX_LEVEL) fixed.exp = 0;
+  if(fixed._mega) megaRevert(fixed);   // 存檔時剛好在 Mega 進化中：還原成原本的樣子
   return fixed;
 }
 function loadGame(){
@@ -995,6 +996,7 @@ function loadGame(){
     state.seen = new Set(d.seen||[]);
     state.caught = new Set(d.caught||[]);
     state.shinyCaught = new Set(d.shinyCaught||[]);
+    state.mega = {shards:Object.assign({}, d.mega&&d.mega.shards), stones:Object.assign({}, d.mega&&d.mega.stones)};
     state.bag = Object.assign(defaultBag(), d.bag||{});
     state.money = (typeof d.money === 'number') ? d.money : START_MONEY;
     state.zone = d.zone || 1;
@@ -1017,7 +1019,7 @@ function loadGame(){
 }
 function resetGame(){
   try{ localStorage.removeItem(SAVE_KEY); localStorage.removeItem(OLD_SAVE_KEY); }catch(e){}
-  state.party=[]; state.box=[]; state.seen=new Set(); state.caught=new Set(); state.shinyCaught=new Set();
+  state.party=[]; state.box=[]; state.seen=new Set(); state.caught=new Set(); state.shinyCaught=new Set(); state.mega={shards:{}, stones:{}};
   state.bag=defaultBag(); state.money=START_MONEY; state.zone=1; state.battle=null;
   state.tower=defaultTower();
   state.stats={}; state.quest={base:{}}; state.ach={done:[],claimed:[]}; state.meta=defaultMeta(); state.checkin={ym:'',days:[]};
@@ -1257,6 +1259,7 @@ function pickStarter(idx){
 
 /* ---------- FIELD / EXPLORE ---------- */
 function screenField(){
+  megaRevertAll();   // 保險：離開對戰後一定是原本的樣子
   state.screen="field";
   state.tower.inTower = false;
   saveGame();
@@ -1280,6 +1283,7 @@ function screenBattleMenu(){
     {label:`1. 🏛 道館（${state.meta.badges}/${GYMS.length}）`, action:screenGym},
     {label:"2. 🗼 寶可塔（無限之塔）", action:enterTower},
     {label:`3. 🔥 連戰試煉${state.stats.runBest?`（最高 第 ${state.stats.runBest} 關）`:''}`, action:screenSurvival},
+    {label:`4. 💎 Mega 對戰${megaTotalShards()?`（碎片 ${megaTotalShards()}）`:''}`, action:()=>screenMegaBattle()},
     {label:"返回", action:toField}
   ]);
 }
@@ -1399,6 +1403,7 @@ function screenShop(msg){
     return {label:`${it.label} $${it.price}`, half:true, html:`${esc(it.label)} $${total}<span class="sub">${esc(it.desc)}｜持有 ${state.bag[k]||0}</span>`, action:()=>buyItem(k)};
   });
   opts.push({label:`數量 ×${shopQty}`, half:true, action:()=>{ shopQty = shopQty===1?5:(shopQty===5?10:1); screenShop(); }});
+  opts.push({label:"💎 Mega 商店", half:true, action:()=>screenMegaShop(screenShop)});
   opts.push({label:"離開", half:true, action:toField});
   setOptions(opts);
 }
@@ -1412,6 +1417,163 @@ function buyItem(k){
   state.bag[k] = (state.bag[k]||0) + shopQty;
   saveGame();
   screenShop(`<span class="good">買了 ${it.label} ×${shopQty}，花費 💰 ${total}。</span>`);
+}
+
+
+/* ---------- MEGA 系統 ----------
+   Mega 對戰：每次隨機遇到一隻 Mega 寶可夢（Lv.50~70），打贏拿到那一隻的碎片。
+   集滿 10 片可合成進化石；有進化石的寶可夢在對戰中可以 Mega 進化一次（對戰結束就恢復原狀）。
+   Mega 商店：5 片任意碎片換 1 片指定碎片（碎片只能靠 Mega 對戰和商店取得）。 */
+const MEGA_BY_ID = {}; MEGAS.forEach(m=>{ MEGA_BY_ID[m.id] = m; });
+const MEGA_NEED = 10, MEGA_SWAP = 5, MEGA_LV_MIN = 50, MEGA_LV_MAX = 70;
+const MEGA_FOE_MUL = {hp:1.3, atk:1.35, def:1.3, spd:1.25}, MEGA_ME_MUL = {atk:1.35, def:1.3, spd:1.25};
+function megaState(){
+  if(!state.mega || typeof state.mega !== 'object') state.mega = {};
+  if(!state.mega.shards || typeof state.mega.shards !== 'object') state.mega.shards = {};
+  if(!state.mega.stones || typeof state.mega.stones !== 'object') state.mega.stones = {};
+  return state.mega;
+}
+const megaShards = id => megaState().shards[id] || 0;
+const megaTotalShards = () => Object.values(megaState().shards).reduce((a,b)=>a+(b||0), 0);
+const megaStoneCount = () => MEGAS.filter(m=>megaState().stones[m.id]).length;
+const megaEntry = m => [m.name, m.t1, m.t2, DEX[m.base][3]];
+function makeMegaFoe(m, lvl){
+  const f = makeMon(m.base, lvl, {shiny:false});
+  f.name = m.name; f.t1 = m.t1; f.t2 = m.t2; f.megaId = m.id;
+  f.maxhp = Math.round(f.maxhp*MEGA_FOE_MUL.hp); f.hp = f.maxhp;
+  f.atk = Math.round(f.atk*MEGA_FOE_MUL.atk); f.def = Math.round(f.def*MEGA_FOE_MUL.def); f.spd = Math.round(f.spd*MEGA_FOE_MUL.spd);
+  f.moves = buildMoves(megaEntry(m));
+  return f;
+}
+function megaFormsFor(p){ const st = megaState().stones; return MEGAS.filter(m=>m.base===p.dex && st[m.id]); }
+function megaEvolve(p, m){
+  p._mega = {id:m.id, moves:JSON.parse(JSON.stringify(p.moves))};
+  p.name = m.name; p.t1 = m.t1; p.t2 = m.t2;
+  p.atk = Math.round(p.atk*MEGA_ME_MUL.atk); p.def = Math.round(p.def*MEGA_ME_MUL.def); p.spd = Math.round(p.spd*MEGA_ME_MUL.spd);
+  p.moves = buildMoves(megaEntry(m));
+}
+function megaRevert(p){
+  if(!p || !p._mega) return;
+  const e = DEX[p.dex], st = statsFor(e, p.level), saved = p._mega.moves;
+  p.name = e[0]; p.t1 = e[1]; p.t2 = e[2]; p.atk = st.atk; p.def = st.def; p.spd = st.spd;
+  if(Array.isArray(saved) && saved.length === 4) p.moves = saved;
+  delete p._mega;
+}
+function megaRevertAll(){ (state.party||[]).forEach(megaRevert); (state.box||[]).forEach(megaRevert); }
+
+function screenMegaBattle(keepLog){
+  if(keepLog === true) hr(); else clearLog();
+  renderBar();
+  print('<span class="em">💎 Mega 對戰</span>');
+  print(`每次挑戰都會隨機遇到一隻 Mega 寶可夢（Lv.${MEGA_LV_MIN}～${MEGA_LV_MAX}），打贏就能拿到那一隻的 Mega 碎片。`);
+  print(`集滿 ${MEGA_NEED} 片可以合成進化石。有進化石的寶可夢，在對戰中可以 Mega 進化一次（對戰結束就恢復原狀）。`);
+  print(`<span class="sys">碎片 ${megaTotalShards()} 片　｜　進化石 ${megaStoneCount()} / ${MEGAS.length} 種</span>`);
+  setOptions([
+    {label:'▶ 開始 Mega 對戰', action:startMegaBattle},
+    {label:'📦 碎片與進化石', half:true, action:()=>screenMegaBag()},
+    {label:'💎 Mega 商店', half:true, action:()=>screenMegaShop(screenMegaBattle)},
+    {label:'返回', action:screenBattleMenu}
+  ]);
+}
+function startMegaBattle(){
+  if(noAlive()){ clearLog(); print('<span class="bad">你的隊伍已經沒有能戰鬥的寶可夢了，先去補給站治療吧。</span>'); return screenField(); }
+  const m = MEGAS[Math.floor(Math.random()*MEGAS.length)];
+  const lvl = MEGA_LV_MIN + Math.floor(Math.random()*(MEGA_LV_MAX - MEGA_LV_MIN + 1));
+  const wild = makeMegaFoe(m, lvl);
+  clearBattleModifiers();
+  state.battle = {wild, playerIdx:firstAlive(), mode:'mega', megaUsed:false};
+  introLead = introLeadFor('big');
+  clearLog();
+  print(`<span class="boss">💎 Mega 對戰！${esc(wild.name)}（Lv.${wild.level}）現身了！</span>`);
+  screenBattle(); battleIntro('big');
+}
+function screenMegaBag(msg){
+  clearLog(); renderBar();
+  const ms = megaState();
+  print('<span class="em">📦 Mega 碎片與進化石</span>');
+  if(msg) print(msg);
+  const owned = MEGAS.filter(m=>megaShards(m.id)>0 || ms.stones[m.id]);
+  if(!owned.length) print('<span class="sys">還沒有任何碎片，去打 Mega 對戰吧。</span>');
+  owned.forEach(m=>print(`${ms.stones[m.id]?'💠':'🔹'} ${esc(m.name)}　碎片 ${megaShards(m.id)}/${MEGA_NEED}${ms.stones[m.id]?'　（已有進化石）':''}`));
+  const opts = MEGAS.filter(m=>megaShards(m.id) >= MEGA_NEED && !ms.stones[m.id])
+    .map(m=>({label:`🔧 合成 ${m.name} 進化石（${MEGA_NEED} 片）`, action:()=>megaCraft(m.id)}));
+  opts.push({label:'返回', action:()=>screenMegaBattle()});
+  setOptions(opts);
+}
+function megaCraft(id){
+  const ms = megaState(), m = MEGA_BY_ID[id];
+  if(!m || ms.stones[id] || megaShards(id) < MEGA_NEED) return screenMegaBag();
+  ms.shards[id] -= MEGA_NEED; if(ms.shards[id] <= 0) delete ms.shards[id];
+  ms.stones[id] = true; bump('megaStones');
+  saveGame(); refreshMenuDot();
+  screenMegaBag(`<span class="good">💠 合成了【${esc(m.name)}】進化石！${esc(DEX[m.base][0])} 在對戰中可以 Mega 進化了。</span>`);
+}
+let megaShopBack = null, megaShopPage = 0, megaTarget = null, megaPay = {};
+function screenMegaShop(back, msg){
+  if(typeof back === 'function') megaShopBack = back;
+  clearLog(); renderBar();
+  print('<span class="em">💎 Mega 商店</span>');
+  print(`拿 ${MEGA_SWAP} 片任意 Mega 碎片，換 1 片你指定的 Mega 碎片。<span class="sys">（碎片只能靠 Mega 對戰和這裡取得）</span>`);
+  print(`目前持有碎片 ${megaTotalShards()} 片`);
+  if(msg) print(msg);
+  const PAGE = 8, pages = Math.ceil(MEGAS.length/PAGE);
+  megaShopPage = Math.max(0, Math.min(pages-1, megaShopPage));
+  print(`<span class="sys">選擇想換的碎片　第 ${megaShopPage+1} / ${pages} 頁</span>`);
+  const opts = MEGAS.slice(megaShopPage*PAGE, megaShopPage*PAGE + PAGE).map(m=>({
+    label:`${m.name}（${megaShards(m.id)}/${MEGA_NEED}${megaState().stones[m.id]?' 💠':''}）`, half:true, action:()=>{ megaTarget = m.id; megaPay = {}; screenMegaPay(); }
+  }));
+  if(megaShopPage > 0) opts.push({label:'◀ 上一頁', half:true, action:()=>{ megaShopPage--; screenMegaShop(); }});
+  if(megaShopPage < pages-1) opts.push({label:'下一頁 ▶', half:true, action:()=>{ megaShopPage++; screenMegaShop(); }});
+  opts.push({label:'返回', action:()=>(megaShopBack || screenMegaBattle)()});
+  setOptions(opts);
+}
+const megaPayCount = () => Object.values(megaPay).reduce((a,b)=>a+b, 0);
+function megaPayOwned(){      // 可以拿來付的碎片（不含想換的那一種）
+  return MEGAS.filter(m=>m.id!==megaTarget && megaShards(m.id) - (megaPay[m.id]||0) > 0);
+}
+function megaAutoPick(){      // 優先扣已經有進化石的，再從數量少的扣（損失最小）
+  const st = megaState().stones;
+  const list = MEGAS.filter(m=>m.id!==megaTarget && megaShards(m.id) > 0)
+    .sort((a,b)=>(st[b.id]?1:0)-(st[a.id]?1:0) || megaShards(a.id)-megaShards(b.id));
+  megaPay = {};
+  for(const m of list){
+    while(megaPayCount() < MEGA_SWAP && (megaPay[m.id]||0) < megaShards(m.id)) megaPay[m.id] = (megaPay[m.id]||0) + 1;
+    if(megaPayCount() >= MEGA_SWAP) break;
+  }
+}
+function screenMegaPay(msg){
+  const t = MEGA_BY_ID[megaTarget]; if(!t) return screenMegaShop();
+  clearLog(); renderBar();
+  print('<span class="em">💎 Mega 商店：兌換</span>');
+  print(`想換：<b>${esc(t.name)}</b> 碎片 ×1`);
+  const n = megaPayCount();
+  print(`選擇要付出的碎片（${n} / ${MEGA_SWAP}）：${MEGAS.filter(m=>megaPay[m.id]).map(m=>`${esc(m.name)}×${megaPay[m.id]}`).join('、') || '尚未選擇'}`);
+  if(msg) print(msg);
+  const owned = MEGAS.filter(m=>m.id!==megaTarget && megaShards(m.id) > 0);
+  const totalOther = owned.reduce((a,m)=>a+megaShards(m.id), 0);
+  if(totalOther < MEGA_SWAP) print(`<span class="bad">除了這一種以外，碎片不夠 ${MEGA_SWAP} 片。</span>`);
+  const opts = [];
+  if(n === MEGA_SWAP) opts.push({label:'✅ 確認兌換', action:megaSwapConfirm});
+  else opts.push({label:`（還要再選 ${MEGA_SWAP-n} 片）`, cls:'off', action:()=>screenMegaPay()});
+  opts.push({label:'⚙ 自動選擇', half:true, action:()=>{ megaAutoPick(); screenMegaPay(); }});
+  opts.push({label:'🗑 清除選擇', half:true, action:()=>{ megaPay = {}; screenMegaPay(); }});
+  owned.forEach(m=>{
+    const left = megaShards(m.id) - (megaPay[m.id]||0);
+    opts.push({label:`${m.name}（剩 ${left}）`, half:true, cls: (left>0 && n<MEGA_SWAP) ? '' : 'off',
+      action:()=>{ if(left>0 && megaPayCount()<MEGA_SWAP){ megaPay[m.id] = (megaPay[m.id]||0)+1; } screenMegaPay(); }});
+  });
+  opts.push({label:'返回', action:()=>screenMegaShop()});
+  setOptions(opts);
+}
+function megaSwapConfirm(){
+  const t = MEGA_BY_ID[megaTarget], ms = megaState();
+  if(!t || megaPayCount() !== MEGA_SWAP) return screenMegaPay();
+  for(const id of Object.keys(megaPay)) if(megaShards(id) < megaPay[id] || id===megaTarget) return screenMegaPay('<span class="bad">碎片數量有變，請重新選擇。</span>');
+  Object.keys(megaPay).forEach(id=>{ ms.shards[id] -= megaPay[id]; if(ms.shards[id] <= 0) delete ms.shards[id]; });
+  ms.shards[t.id] = (ms.shards[t.id]||0) + 1;
+  megaPay = {};
+  saveGame();
+  screenMegaShop(null, `<span class="good">兌換成功！獲得【${esc(t.name)}】碎片 ×1（${ms.shards[t.id]}/${MEGA_NEED}）</span>`);
 }
 
 /* ---------- TOWER SCREEN ---------- */
@@ -1790,7 +1952,7 @@ function screenDex(){
 }
 
 /* ---------- TRAINERS / GYMS / ROAD ITEMS ---------- */
-function battleDone(){ if(state.meta.cd > 0) state.meta.cd--; }
+function battleDone(){ megaRevertAll(); if(state.meta.cd > 0) state.meta.cd--; }
 function startMultiBattle(mode, foes, title, extra){
   foes.forEach(f=>state.seen.add(f.dex));
   const first = foes.shift();
@@ -1925,7 +2087,7 @@ const TITLE_OF = {
   a_tr1:'初次交鋒', a_tr30:'訓練家殺手',
   a_gym1:'徽章收集者', a_gym8:'關都霸主', a_gym16:'城都霸主', a_gym24:'豐緣霸主', a_gym32:'神奧霸主', a_gym40:'合眾霸主', a_gym48:'卡洛斯霸主', a_gym56:'阿羅拉霸主', a_gym64:'伽勒爾霸主', a_gym72:'帕底亞霸主',
   a_win1000:'千戰無敗', a_cat300:'捕獲傳奇', a_dex500:'圖鑑權威', a_dex750:'圖鑑宗師', a_shiny5:'閃亮收藏家', a_shiny20:'閃光獵人', a_flr1500:'塔之主人', a_boss200:'魔王獵手', a_run30:'連戰老手', a_run100:'連戰傳說', a_tr300:'訓練家終結者', a_evo200:'進化大師', a_leg50:'神獸統領', a_max6:'全員滿級', a_ci100:'百日報到', a_ci365:'一年之約',
-  a_ci7:'勤奮的旅人', a_ci30:'簽到之王'
+  a_stoneall:'Mega 大師', a_mega100:'Mega 狂熱者', a_ci7:'勤奮的旅人', a_ci30:'簽到之王'
 };
 const DEFAULT_TITLE = '新手訓練家';
 // 額外稱號：不是靠成就解鎖，而是信件／活動贈送的（ID → 名稱）
@@ -2027,7 +2189,13 @@ const ACH = [
   {id:'a_max6',   name:'全員滿級',   desc:'隊伍 6 隻都升到 Lv.100',  pts:10, cur:()=>state.party.filter(m=>m.level>=MAX_LEVEL).length, target:6},
   {id:'a_team6',  name:'滿編隊伍',   desc:'隊伍湊滿 6 隻',           pts:2,  cur:()=>state.party.length, target:6},
   {id:'a_ci100',  name:'百日報到',   desc:'累計簽到 100 天',         pts:12, cur:()=>state.stats.checkins||0, target:100},
-  {id:'a_ci365',  name:'一年之約',   desc:'累計簽到 365 天',         pts:30, cur:()=>state.stats.checkins||0, target:365}
+  {id:'a_ci365',  name:'一年之約',   desc:'累計簽到 365 天',         pts:30, cur:()=>state.stats.checkins||0, target:365},
+  {id:'a_mega1',  name:'初戰 Mega',   desc:'打贏 1 場 Mega 對戰',       pts:3,  cur:()=>state.stats.megaWins||0, target:1},
+  {id:'a_mega20', name:'Mega 獵人',   desc:'打贏 20 場 Mega 對戰',      pts:8,  cur:()=>state.stats.megaWins||0, target:20},
+  {id:'a_mega100',name:'Mega 狂熱者', desc:'打贏 100 場 Mega 對戰',     pts:16, cur:()=>state.stats.megaWins||0, target:100},
+  {id:'a_stone1', name:'初次合成',    desc:'合成 1 顆 Mega 進化石',     pts:6,  cur:()=>megaStoneCount(), target:1},
+  {id:'a_stone10',name:'進化石收藏家', desc:'合成 10 種 Mega 進化石',   pts:14, cur:()=>megaStoneCount(), target:10},
+  {id:'a_stoneall',name:'Mega 大師',  desc:`集滿全部 ${MEGAS.length} 種 Mega 進化石`, pts:40, cur:()=>megaStoneCount(), target:MEGAS.length}
 ];
 function achPoints(){ return ACH.filter(a=>state.ach.done.includes(a.id)).reduce((n,a)=>n+a.pts,0); }
 function checkAch(){
