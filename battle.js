@@ -78,7 +78,7 @@ const SFX = (function(){
   const SONGS = {
     field: { step:0.268, bs:8, sus:true, wave:'triangle', leadVol:0.2, lead2:null,
       arpWave:'sine', arpEvery:1, arp:[0], arpOct:12, arpVol:0,
-      bassWave:'sine', bassEvery:4, bassPat:[0,0], bassVol:0.2, drums:'soft', pad:true, padVol:0.06,
+      bassWave:'sine', bassEvery:4, bassPat:[0,0], bassVol:0.2, drums:'none', pad:true, padVol:0.06,
       chords:[[48,'M'],[43,'M'],[45,'m'],[40,'m'],[41,'M'],[48,'M'],[41,'M'],[43,'M'],
               [45,'m'],[41,'M'],[48,'M'],[43,'M'],[45,'m'],[50,'m'],[43,'M'],[43,'M'],
               [41,'M'],[40,'m'],[50,'m'],[48,'M'],[41,'M'],[43,'M'],[45,'m'],[43,'M'],
@@ -91,7 +91,7 @@ const SFX = (function(){
            [[81,2],[84,2],[89,4]],[[88,2],[86,2],[83,4]],[[84,2],[81,2],[76,2],[81,2]],[[83,4],[79,2],[null,2]],
            [[76,2],[79,2],[84,2],[79,2]],[[83,2],[79,2],[74,2],[79,2]],[[81,2],[76,2],[72,2],[76,2]],[[79,2],[76,2],[74,2],[76,2]],
            [[77,2],[81,2],[84,2],[81,2]],[[79,2],[76,2],[72,2],[76,2]],[[77,2],[74,2],[77,2],[81,2]],[[79,4],[74,2],[71,2]]],
-      secs:[{}, {}, {drums:'brush'}, {}] },
+      secs:[{}, {}, {drums:'none'}, {}] },
     battle: { step:0.12, bs:16, wave:'square', leadVol:0.08, lead2:'square',
       arpWave:'square', arpEvery:2, arp:[0,2,1,2], arpOct:24, arpVol:0.035,
       bassWave:'triangle', bassEvery:2, bassPat:[0,0,12,0], bassVol:0.2, drums:'rock',
