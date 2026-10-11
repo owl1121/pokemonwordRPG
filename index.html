@@ -600,6 +600,9 @@ const MAIL_DEFS = [
   {id:'gen4_open', from:'冒險事務局', title:'神奧地方現已開放',
    body:'第四世代（神奧地方）的寶可夢、道館與傳說寶可夢都已經開放，期待你去挑戰！',
    reward:{items:{ultraball:3}}},
+  {id:'shiny_gift', from:'冒險事務局', title:'✨ 色違寶可夢大贈送',
+   body:'感謝你的遊玩！這是送給你的禮物：打開附件，會從全圖鑑（一般寶可夢、神獸、地區型態都有可能）隨機抽出一隻色違寶可夢送給你。\n\n抽到的寶可夢是 Lv.50，隊伍滿了會直接送到倉庫。',
+   start:[2026,10,11], reward:{shiny:1}},
   {id:'gen9_open', from:'冒險事務局', title:'帕底亞地方現已開放',
    body:'第九世代（帕底亞地方）的 120 隻寶可夢、8 間新道館與 8 個新地點都已經開放，還有故勒頓、密勒頓等傳說寶可夢等你挑戰！',
    reward:{items:{ultraball:3, maxpotion:2}}}
@@ -656,16 +659,18 @@ function mailOpen(id){
 function mailBack(){ hubMail = null; renderHub(); }
 function mailClaim(id){
   const m = mailState().box.find(x=>x.id===id); if(!m || !mailClaimable(m)) return;
-  m.claimed = true; m.read = true; giveReward(m.reward);
+  m.claimed = true; m.read = true; const got = giveReward(m.reward);
+  if(got.length) m.got = got.join('、');
   if(state.party.length) saveGame();
-  notify('✉️ 領取附件：' + rewardText(m.reward)); renderHub(); refreshMenuDot();
+  notify('✉️ 領取附件：' + rewardText(m.reward) + (got.length ? '　抽到了 ' + got.join('、') + '！' : '')); renderHub(); refreshMenuDot();
 }
 function mailClaimAll(){
   const list = mailState().box.filter(mailClaimable);
   if(!list.length) return;
-  list.forEach(m=>{ m.claimed = true; m.read = true; giveReward(m.reward); });
+  const gots = [];
+  list.forEach(m=>{ m.claimed = true; m.read = true; const got = giveReward(m.reward); if(got.length){ m.got = got.join('、'); gots.push(...got); } });
   if(state.party.length) saveGame();
-  notify(`✉️ 一次領取了 ${list.length} 封信的附件`); renderHub(); refreshMenuDot();
+  notify(`✉️ 一次領取了 ${list.length} 封信的附件` + (gots.length ? '　抽到了 ' + gots.join('、') + '！' : '')); renderHub(); refreshMenuDot();
 }
 function mailDelete(id){
   const ms = mailState(), m = ms.box.find(x=>x.id===id); if(!m) return;
@@ -688,7 +693,7 @@ function mailHtml(){
     if(m){
       let h = `<div class="mh">${esc(m.title)}</div><div class="sys">寄件人：${esc(m.from)}　${mailDate(m.date)}</div>`;
       h += `<div class="qi"><div style="white-space:pre-wrap">${esc(m.body)}</div></div>`;
-      if(m.reward) h += `<div class="qi${mailClaimable(m)?' done':''}"><div>📎 附件：${esc(rewardText(m.reward))}${mailLeft(m)?`<small>⏳ 領取期限：${mailLeft(m)}</small>`:''}</div><div class="qrow"><span>${m.claimed?'✅ 已領取':mailExpired(m)?'⌛ 已過期':'尚未領取'}</span>${mailClaimable(m)?`<button class="claim" onclick="mailClaim('${m.id}')">領取附件</button>`:''}</div></div>`;
+      if(m.reward) h += `<div class="qi${mailClaimable(m)?' done':''}"><div>📎 附件：${esc(rewardText(m.reward))}${mailLeft(m)?`<small>⏳ 領取期限：${mailLeft(m)}</small>`:''}${m.got?`<small>🎁 抽到了：${esc(m.got)}</small>`:''}</div><div class="qrow"><span>${m.claimed?'✅ 已領取':mailExpired(m)?'⌛ 已過期':'尚未領取'}</span>${mailClaimable(m)?`<button class="claim" onclick="mailClaim('${m.id}')">領取附件</button>`:''}</div></div>`;
       h += `<div class="mailbtns"><button class="claim" onclick="mailBack()">← 返回信箱</button><button class="claim" onclick="mailDelete('${m.id}')">🗑 刪除</button></div>`;
       return h;
     }
@@ -1881,12 +1886,29 @@ function bump(k, n){ state.stats[k] = (state.stats[k]||0) + (n||1); }
 const modalEl = document.getElementById('modal'), mbodyEl = document.getElementById('mbody'), toastEl = document.getElementById('toast'), dotEl = document.getElementById('menuDot');
 let menuTab = 'quest', toastTimer = null;
 function notify(msg){ toastEl.textContent = msg; toastEl.classList.add('on'); if(toastTimer) clearTimeout(toastTimer); toastTimer = setTimeout(()=>toastEl.classList.remove('on'), 2600); }
+// 色違抽獎：從整本圖鑑（含神獸、地區型態）隨機抽，每隻機率相同。回傳抽到的名字
+function giveShinyDraw(n){
+  const got = [];
+  for(let i=0;i<n;i++){
+    const idx = Math.floor(Math.random()*DEX.length);
+    const m = makeMon(idx, SHINY_GIFT_LEVEL, {shiny:true});
+    m.ball = 'poke';
+    state.caught.add(idx); state.seen.add(idx); state.shinyCaught.add(idx);
+    if(state.party.length < 6) state.party.push(m); else state.box.push(m);
+    got.push(`✨${m.name}${state.party.includes(m) ? '' : '（已送倉庫）'}`);
+  }
+  return got;
+}
+const SHINY_GIFT_LEVEL = 50;
 function giveReward(r){
+  const out = [];
   if(r.money) state.money += r.money;
   if(r.title) grantTitle(r.title);
   Object.keys(r.items||{}).forEach(k=>{ state.bag[k] = (state.bag[k]||0) + r.items[k]; });
+  if(r.shiny) out.push(...giveShinyDraw(r.shiny));
+  return out;
 }
-function rewardText(r){ return [r.money?`💰 ${r.money}`:'', r.title&&EXTRA_TITLES[r.title]?`🎖 稱號「${EXTRA_TITLES[r.title]}」`:'', ...Object.keys(r.items||{}).map(k=>`${ITEMS[k].label} ×${r.items[k]}`)].filter(Boolean).join('、'); }
+function rewardText(r){ return [r.shiny?`✨ 隨機色違寶可夢 ×${r.shiny}`:'', r.money?`💰 ${r.money}`:'', r.title&&EXTRA_TITLES[r.title]?`🎖 稱號「${EXTRA_TITLES[r.title]}」`:'', ...Object.keys(r.items||{}).map(k=>`${ITEMS[k].label} ×${r.items[k]}`)].filter(Boolean).join('、'); }
 function questProg(q){ return Math.max(0, (state.stats[q.key]||0) - (state.quest.base[q.id]||0)); }
 function claimQuest(id){
   const q = QUESTS.find(x=>x.id===id); if(!q || questProg(q) < q.target) return;
