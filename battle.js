@@ -74,11 +74,20 @@ const SFX = (function(){
       arpWave:'triangle', arpEvery:1, arp:[0,1,2,1,0,1,2,1], arpOct:12, arpVol:0.07,
       bassWave:'sine', bassEvery:4, bassPat:[0,0], bassVol:0.2, drums:'soft',
       chords:[[48,'M'],[43,'M'],[45,'m'],[40,'m'],[41,'M'],[48,'M'],[41,'M'],[43,'M'],
-              [45,'m'],[41,'M'],[48,'M'],[43,'M'],[45,'m'],[50,'m'],[43,'M'],[43,'M']],
+              [45,'m'],[41,'M'],[48,'M'],[43,'M'],[45,'m'],[50,'m'],[43,'M'],[43,'M'],
+              [41,'M'],[40,'m'],[50,'m'],[48,'M'],[41,'M'],[43,'M'],[45,'m'],[43,'M'],
+              [48,'M'],[43,'M'],[45,'m'],[40,'m'],[41,'M'],[48,'M'],[41,'M'],[43,'M']],
       mel:[[[76,2],[79,2],[84,2],[79,2]],[[83,2],[79,2],[74,2],[79,2]],[[81,2],[76,2],[72,2],[76,2]],[[79,3],[76,1],[74,2],[76,2]],
            [[77,2],[81,2],[84,2],[81,2]],[[79,2],[76,2],[72,2],[76,2]],[[77,2],[74,2],[77,2],[81,2]],[[79,4],[74,2],[71,2]],
            [[84,2],[81,1],[84,1],[88,2],[84,2]],[[81,2],[77,2],[81,2],[84,2]],[[88,3],[84,1],[79,2],[84,2]],[[86,2],[83,2],[79,2],[83,2]],
-           [[84,2],[88,2],[91,2],[88,2]],[[86,2],[81,2],[77,2],[81,2]],[[83,2],[79,2],[74,2],[79,2]],[[79,2],[83,2],[86,2],[null,2]]] },
+           [[84,2],[88,2],[91,2],[88,2]],[[86,2],[81,2],[77,2],[81,2]],[[83,2],[79,2],[74,2],[79,2]],[[79,2],[83,2],[86,2],[null,2]],
+           [[81,4],[84,2],[81,2]],[[79,4],[83,2],[79,2]],[[77,2],[81,2],[86,4]],[[84,4],[79,2],[76,2]],
+           [[81,2],[84,2],[89,4]],[[88,2],[86,2],[83,4]],[[84,2],[81,2],[76,2],[81,2]],[[83,4],[79,2],[null,2]],
+           [[76,2],[79,2],[84,2],[79,2]],[[83,2],[79,2],[74,2],[79,2]],[[81,2],[76,2],[72,2],[76,2]],[[79,3],[76,1],[74,2],[76,2]],
+           [[77,2],[81,2],[84,2],[81,2]],[[79,2],[76,2],[72,2],[76,2]],[[77,2],[74,2],[77,2],[81,2]],[[79,4],[74,2],[71,2]]],
+      secs:[{}, {arp:[0,1,2,1,2,1,2,1], bassPat:[0,12], drums:'soft'},
+            {wave:'triangle', lead2:'sine', leadVol:0.13, arp:[0,2,1,2], arpEvery:2, arpWave:'sine', arpVol:0.09, bassEvery:8, bassPat:[0], drums:'brush'},
+            {wave:'square', leadVol:0.08, lead2:'triangle', arp:[0,1,2,1,0,1,2,1], arpEvery:1, arpVol:0.08, bassEvery:2, bassPat:[0,0,12,7], drums:'soft2'}] },
     battle: { step:0.12, bs:16, wave:'square', leadVol:0.08, lead2:'square',
       arpWave:'square', arpEvery:2, arp:[0,2,1,2], arpOct:24, arpVol:0.035,
       bassWave:'triangle', bassEvery:2, bassPat:[0,0,12,0], bassVol:0.2, drums:'rock',
@@ -104,6 +113,7 @@ const SFX = (function(){
   };
   Object.values(SONGS).forEach(S=>{      // 把旋律攤平成「第幾步開始哪個音」
     S.lead = {}; S.total = S.bs * S.mel.length;
+    if(S.secs) S.q = S.secs.map(o=>Object.assign({}, S, o));
     S.mel.forEach((bar,b)=>{ let p = b*S.bs; bar.forEach(([m,l])=>{ if(m!=null) S.lead[p] = [m,l]; p += l; }); });
   });
   function drums(kind, pos, t, bs, v){
@@ -111,6 +121,12 @@ const SFX = (function(){
     if(kind === 'soft'){
       if(pos % 4 === 0) osc('sine',130,t,0.12,0.14,45,d);
       if(pos % 2 === 1) noise(t,0.03,0.035,8000,null,d);
+    } else if(kind === 'brush'){
+      if(pos % 2 === 1) noise(t,0.05,0.03,6000,null,d);
+    } else if(kind === 'soft2'){
+      if(pos === 0 || pos === 4) osc('sine',140,t,0.12,0.2,45,d);
+      if(pos === 2 || pos === 6){ noise(t,0.08,0.08,3000,1500,d); }
+      noise(t,0.025,0.03,9000,null,d);
     } else if(kind === 'rock'){
       if(pos === 0 || pos === 8 || pos === 10) osc('sine',150,t,0.14,0.28,45,d);
       if(pos === 4 || pos === 12){ noise(t,0.12,0.22,2200,900,d); osc('triangle',220,t,0.08,0.1,120,d); }
@@ -126,12 +142,13 @@ const SFX = (function(){
     while(nextT < ctx.currentTime + 0.35){
       const t = Math.max(nextT, ctx.currentTime), k = step % S.total, bar = Math.floor(k / S.bs), pos = k % S.bs;
       const ch = S.chords[bar], iv = ch[1] === 'm' ? MIN : MAJ;
+      const Q = S.q ? S.q[Math.floor(bar/8) % S.q.length] : S;
       const L = S.lead[k];
-      if(L){ osc(S.wave, hz(L[0]), t, S.step*L[1]*0.92, S.leadVol, null, bgmGain); if(S.lead2) osc(S.lead2, hz(L[0]-12), t, S.step*L[1]*0.9, S.leadVol*0.5, null, bgmGain); }
-      if(pos % S.arpEvery === 0){ const i = S.arp[(pos/S.arpEvery) % S.arp.length]; osc(S.arpWave, hz(ch[0] + S.arpOct + iv[i%3] + (i>2?12:0)), t, S.step*S.arpEvery*1.2, S.arpVol, null, bgmGain); }
-      if(pos % S.bassEvery === 0){ const o = S.bassPat[(pos/S.bassEvery) % S.bassPat.length]; osc(S.bassWave, hz(ch[0] + o), t, S.step*S.bassEvery*0.95, S.bassVol, null, bgmGain); }
+      if(L){ osc(Q.wave, hz(L[0]), t, S.step*L[1]*0.92, Q.leadVol, null, bgmGain); if(Q.lead2) osc(Q.lead2, hz(L[0]-12), t, S.step*L[1]*0.9, Q.leadVol*0.5, null, bgmGain); }
+      if(pos % Q.arpEvery === 0){ const i = Q.arp[(pos/Q.arpEvery) % Q.arp.length]; osc(Q.arpWave, hz(ch[0] + Q.arpOct + iv[i%3] + (i>2?12:0)), t, S.step*Q.arpEvery*1.2, Q.arpVol, null, bgmGain); }
+      if(pos % Q.bassEvery === 0){ const o = Q.bassPat[(pos/Q.bassEvery) % Q.bassPat.length]; osc(Q.bassWave, hz(ch[0] + o), t, S.step*Q.bassEvery*0.95, Q.bassVol, null, bgmGain); }
       if(S.pad && pos === 0) iv.forEach(x=>osc('triangle', hz(ch[0] + 12 + x), t, S.step*S.bs*0.98, S.padVol, null, bgmGain));
-      drums(S.drums, pos, t);
+      drums(Q.drums, pos, t);
       nextT += S.step; step++;
     }
   }
