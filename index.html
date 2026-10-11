@@ -2,8 +2,16 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>寶可夢文字冒險</title>
+<style>html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;}</style>
+<script>
+// 禁止縮放（iOS Safari 會無視 user-scalable=no，要另外擋）
+['gesturestart','gesturechange','gestureend'].forEach(function(e){document.addEventListener(e,function(ev){ev.preventDefault();},{passive:false});});
+document.addEventListener('touchmove',function(ev){if(ev.touches&&ev.touches.length>1)ev.preventDefault();},{passive:false});
+var _lt=0;document.addEventListener('touchend',function(ev){var n=Date.now();if(n-_lt<300)ev.preventDefault();_lt=n;},{passive:false});
+document.addEventListener('wheel',function(ev){if(ev.ctrlKey)ev.preventDefault();},{passive:false});
+</script>
 <!-- 寶可夢風格像素字型：俐方體11號 Cubic 11（繁體中文點陣體，SIL OFL 授權，可免費商用） -->
 <link rel="preconnect" href="https://fontsapi.zeoseven.com" crossorigin>
 <link rel="stylesheet" href="https://fontsapi.zeoseven.com/101/main/result.css">
