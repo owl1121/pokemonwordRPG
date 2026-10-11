@@ -29,11 +29,14 @@ const SFX = (function(){
     return ctx;
   }
   const hz = m => 440 * Math.pow(2, (m-69)/12);
-  function osc(type, f, t, d, v, f2, dest){
+  function osc(type, f, t, d, v, f2, dest, hold){
     const c = ctx, o = c.createOscillator(), g = c.createGain();
     o.type = type; o.frequency.setValueAtTime(f, t);
     if(f2) o.frequency.exponentialRampToValueAtTime(Math.max(20,f2), t+d);
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t+0.008);
+    g.gain.setValueAtTime(0.0001, t);
+    if(hold){   // 持續音：很快升到音量、維持到音符結束前才收掉（不像一般音那樣馬上衰減）
+      g.gain.exponentialRampToValueAtTime(v, t+0.03); g.gain.setValueAtTime(v, Math.max(t+0.03, t+d-0.07));
+    } else g.gain.exponentialRampToValueAtTime(v, t+0.008);
     g.gain.exponentialRampToValueAtTime(0.0001, t+d);
     o.connect(g); g.connect(dest||master); o.start(t); o.stop(t+d+0.03);
   }
@@ -70,9 +73,9 @@ const SFX = (function(){
      旋律 [音高MIDI, 長度（步）]，null＝休止；和弦 [低音根音, 'M'大調/'m'小調] */
   const MAJ = [0,4,7], MIN = [0,3,7];
   const SONGS = {
-    field: { step:0.268, bs:8, wave:'square', leadVol:0.09, lead2:'triangle',
-      arpWave:'triangle', arpEvery:1, arp:[0,1,2,1,0,1,2,1], arpOct:12, arpVol:0.07,
-      bassWave:'sine', bassEvery:4, bassPat:[0,0], bassVol:0.2, drums:'soft',
+    field: { step:0.268, bs:8, sus:true, wave:'triangle', leadVol:0.2, lead2:null,
+      arpWave:'sine', arpEvery:1, arp:[0], arpOct:12, arpVol:0,
+      bassWave:'sine', bassEvery:4, bassPat:[0,0], bassVol:0.2, drums:'soft', pad:true, padVol:0.06,
       chords:[[48,'M'],[43,'M'],[45,'m'],[40,'m'],[41,'M'],[48,'M'],[41,'M'],[43,'M'],
               [45,'m'],[41,'M'],[48,'M'],[43,'M'],[45,'m'],[50,'m'],[43,'M'],[43,'M'],
               [41,'M'],[40,'m'],[50,'m'],[48,'M'],[41,'M'],[43,'M'],[45,'m'],[43,'M'],
@@ -85,9 +88,7 @@ const SFX = (function(){
            [[81,2],[84,2],[89,4]],[[88,2],[86,2],[83,4]],[[84,2],[81,2],[76,2],[81,2]],[[83,4],[79,2],[null,2]],
            [[76,2],[79,2],[84,2],[79,2]],[[83,2],[79,2],[74,2],[79,2]],[[81,2],[76,2],[72,2],[76,2]],[[79,2],[76,2],[74,2],[76,2]],
            [[77,2],[81,2],[84,2],[81,2]],[[79,2],[76,2],[72,2],[76,2]],[[77,2],[74,2],[77,2],[81,2]],[[79,4],[74,2],[71,2]]],
-      secs:[{}, {bassPat:[0,7], drums:'soft'},
-            {wave:'triangle', lead2:'sine', leadVol:0.13, arp:[0,2,1,2], arpEvery:2, arpWave:'sine', arpVol:0.09, bassEvery:8, bassPat:[0], drums:'brush'},
-            {wave:'square', leadVol:0.08, lead2:'triangle', arp:[0,1,2,1,0,1,2,1], arpEvery:1, arpVol:0.08, bassEvery:4, bassPat:[0,7], drums:'soft'}] },
+      secs:[{}, {}, {drums:'brush'}, {}] },
     battle: { step:0.12, bs:16, wave:'square', leadVol:0.08, lead2:'square',
       arpWave:'square', arpEvery:2, arp:[0,2,1,2], arpOct:24, arpVol:0.035,
       bassWave:'triangle', bassEvery:2, bassPat:[0,0,12,0], bassVol:0.2, drums:'rock',
@@ -144,10 +145,10 @@ const SFX = (function(){
       const ch = S.chords[bar], iv = ch[1] === 'm' ? MIN : MAJ;
       const Q = S.q ? S.q[Math.floor(bar/8) % S.q.length] : S;
       const L = S.lead[k];
-      if(L){ osc(Q.wave, hz(L[0]), t, S.step*L[1]*0.92, Q.leadVol, null, bgmGain); if(Q.lead2) osc(Q.lead2, hz(L[0]-12), t, S.step*L[1]*0.9, Q.leadVol*0.5, null, bgmGain); }
-      if(pos % Q.arpEvery === 0){ const i = Q.arp[(pos/Q.arpEvery) % Q.arp.length]; osc(Q.arpWave, hz(ch[0] + Q.arpOct + iv[i%3] + (i>2?12:0)), t, S.step*Q.arpEvery*1.2, Q.arpVol, null, bgmGain); }
-      if(pos % Q.bassEvery === 0){ const o = Q.bassPat[(pos/Q.bassEvery) % Q.bassPat.length]; osc(Q.bassWave, hz(ch[0] + o), t, S.step*Q.bassEvery*0.95, Q.bassVol, null, bgmGain); }
-      if(S.pad && pos === 0) iv.forEach(x=>osc('triangle', hz(ch[0] + 12 + x), t, S.step*S.bs*0.98, S.padVol, null, bgmGain));
+      if(L){ osc(Q.wave, hz(L[0]), t, S.step*L[1]*(Q.sus?0.98:0.92), Q.leadVol, null, bgmGain, Q.sus); if(Q.lead2) osc(Q.lead2, hz(L[0]-12), t, S.step*L[1]*0.9, Q.leadVol*0.5, null, bgmGain); }
+      if(Q.arpVol && pos % Q.arpEvery === 0){ const i = Q.arp[(pos/Q.arpEvery) % Q.arp.length]; osc(Q.arpWave, hz(ch[0] + Q.arpOct + iv[i%3] + (i>2?12:0)), t, S.step*Q.arpEvery*1.2, Q.arpVol, null, bgmGain); }
+      if(pos % Q.bassEvery === 0){ const o = Q.bassPat[(pos/Q.bassEvery) % Q.bassPat.length]; osc(Q.bassWave, hz(ch[0] + o), t, S.step*Q.bassEvery*(Q.sus?0.98:0.95), Q.bassVol, null, bgmGain, Q.sus); }
+      if(Q.pad && pos === 0) iv.forEach(x=>osc('triangle', hz(ch[0] + 12 + x), t, S.step*S.bs*0.98, Q.padVol, null, bgmGain, Q.sus));
       drums(Q.drums, pos, t);
       nextT += S.step; step++;
     }
