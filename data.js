@@ -989,7 +989,16 @@ const MILESTONES = [
 {pts:1010, reward:{items:{masterball:2, maxpotion:90, ultraball:90}}},
 {pts:1080, reward:{money:30000, items:{maxpotion:100, ultraball:100}}},
 {pts:1155, reward:{items:{masterball:3, maxpotion:120, ultraball:120}}},
-{pts:1240, reward:{money:40000, items:{maxpotion:150, ultraball:150}}}
+{pts:1240, reward:{money:40000, items:{maxpotion:150, ultraball:150}}},
+{pts:1380, reward:{money:50000, items:{maxpotion:160, ultraball:160}}},
+{pts:1520, reward:{money:60000, items:{maxpotion:170, ultraball:170}}},
+{pts:1660, reward:{money:70000, items:{maxpotion:180, ultraball:180}}},
+{pts:1800, reward:{money:80000, items:{masterball:1, maxpotion:190, ultraball:190}}},
+{pts:1950, reward:{money:90000, items:{maxpotion:200, ultraball:200}}},
+{pts:2100, reward:{money:100000, items:{maxpotion:220, ultraball:220}}},
+{pts:2250, reward:{money:120000, items:{masterball:1, maxpotion:240, ultraball:240}}},
+{pts:2400, reward:{money:150000, items:{maxpotion:260, ultraball:260}}},
+{pts:2516, reward:{money:200000, items:{masterball:2, maxpotion:300, ultraball:300}}}
 ];
 
 /* ---------- Mega 進化 ---------- */

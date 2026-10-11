@@ -2087,7 +2087,7 @@ const TITLE_OF = {
   a_tr1:'初次交鋒', a_tr30:'訓練家殺手',
   a_gym1:'徽章收集者', a_gym8:'關都霸主', a_gym16:'城都霸主', a_gym24:'豐緣霸主', a_gym32:'神奧霸主', a_gym40:'合眾霸主', a_gym48:'卡洛斯霸主', a_gym56:'阿羅拉霸主', a_gym64:'伽勒爾霸主', a_gym72:'帕底亞霸主',
   a_win1000:'千戰無敗', a_cat300:'捕獲傳奇', a_dex500:'圖鑑權威', a_dex750:'圖鑑宗師', a_shiny5:'閃亮收藏家', a_shiny20:'閃光獵人', a_flr1500:'塔之主人', a_boss200:'魔王獵手', a_run30:'連戰老手', a_run100:'連戰傳說', a_tr300:'訓練家終結者', a_evo200:'進化大師', a_leg50:'神獸統領', a_max6:'全員滿級', a_ci100:'百日報到', a_ci365:'一年之約',
-  a_stoneall:'Mega 大師', a_mega100:'Mega 狂熱者', a_ci7:'勤奮的旅人', a_ci30:'簽到之王'
+  a_all:'成就大滿貫', a_win10000:'萬戰無敵', a_cat1500:'捕獲之神', a_flr6000:'塔之傳說', a_boss1500:'魔王的夢魘', a_r11:'十一周目霸者', a_run250:'連戰神話', a_shiny100:'閃光傳說', a_dex1050:'圖鑑將盡', a_mega1000:'Mega 傳說', a_stone60:'進化石帝王', a_rich10m:'千萬富翁', a_lv100:'滿級軍團', a_stoneall:'Mega 大師', a_mega100:'Mega 狂熱者', a_ci7:'勤奮的旅人', a_ci30:'簽到之王'
 };
 const DEFAULT_TITLE = '新手訓練家';
 // 額外稱號：不是靠成就解鎖，而是信件／活動贈送的（ID → 名稱）
@@ -2195,8 +2195,39 @@ const ACH = [
   {id:'a_mega100',name:'Mega 狂熱者', desc:'打贏 100 場 Mega 對戰',     pts:16, cur:()=>state.stats.megaWins||0, target:100},
   {id:'a_stone1', name:'初次合成',    desc:'合成 1 顆 Mega 進化石',     pts:6,  cur:()=>megaStoneCount(), target:1},
   {id:'a_stone10',name:'進化石收藏家', desc:'合成 10 種 Mega 進化石',   pts:14, cur:()=>megaStoneCount(), target:10},
-  {id:'a_stoneall',name:'Mega 大師',  desc:`集滿全部 ${MEGAS.length} 種 Mega 進化石`, pts:40, cur:()=>megaStoneCount(), target:MEGAS.length}
+  {id:'a_stoneall',name:'Mega 大師',  desc:`集滿全部 ${MEGAS.length} 種 Mega 進化石`, pts:40, cur:()=>megaStoneCount(), target:MEGAS.length},
+  {id:'a_win3000', name:'戰鬥機器',     desc:'贏得 3000 場戰鬥',          pts:20, cur:()=>state.stats.wins||0, target:3000},
+  {id:'a_win10000',name:'萬戰無敵',     desc:'贏得 10000 場戰鬥',         pts:45, cur:()=>state.stats.wins||0, target:10000},
+  {id:'a_cat600',  name:'捕獲之王',     desc:'捕捉 600 隻寶可夢',         pts:22, cur:()=>state.stats.catches||0, target:600},
+  {id:'a_cat1500', name:'捕獲之神',     desc:'捕捉 1500 隻寶可夢',        pts:45, cur:()=>state.stats.catches||0, target:1500},
+  {id:'a_tr1000',  name:'訓練家公敵',   desc:'擊敗 1000 位訓練家',        pts:24, cur:()=>state.stats.trainers||0, target:1000},
+  {id:'a_flr3000', name:'塔之探險家',   desc:'在塔中通過 3000 層',        pts:35, cur:()=>state.stats.floors||0, target:3000},
+  {id:'a_flr6000', name:'塔之傳說',     desc:'在塔中通過 6000 層',        pts:65, cur:()=>state.stats.floors||0, target:6000},
+  {id:'a_boss500', name:'魔王殺手',     desc:'擊破 500 隻小魔王',         pts:32, cur:()=>state.stats.bosses||0, target:500},
+  {id:'a_boss1500',name:'魔王的夢魘',   desc:'擊破 1500 隻小魔王',        pts:60, cur:()=>state.stats.bosses||0, target:1500},
+  {id:'a_r4',      name:'四周目霸者',   desc:'打完第四輪全部小魔王',      pts:30, cur:()=>state.tower.loop, target:3},
+  {id:'a_r11',     name:'十一周目霸者', desc:'打完第十一輪全部小魔王',    pts:65, cur:()=>state.tower.loop, target:10},
+  {id:'a_run150',  name:'連戰極限',     desc:'連戰試煉打到第 150 關',     pts:40, cur:()=>state.stats.runBest||0, target:150},
+  {id:'a_run250',  name:'連戰神話',     desc:'連戰試煉打到第 250 關',     pts:75, cur:()=>state.stats.runBest||0, target:250},
+  {id:'a_shiny50', name:'閃光大師',     desc:'收集 50 種色違寶可夢',      pts:45, cur:()=>state.shinyCaught.size, target:50},
+  {id:'a_shiny100',name:'閃光傳說',     desc:'收集 100 種色違寶可夢',     pts:75, cur:()=>state.shinyCaught.size, target:100},
+  {id:'a_dex900',  name:'圖鑑至尊',     desc:'圖鑑收集 900 隻',           pts:30, cur:()=>state.caught.size, target:900},
+  {id:'a_dex1050', name:'圖鑑將盡',     desc:'圖鑑收集 1050 隻',          pts:50, cur:()=>state.caught.size, target:1050},
+  {id:'a_leg80',   name:'神獸君臨',     desc:'收服 80 隻傳說寶可夢',      pts:30, cur:()=>state.tower.legendaryPtr, target:80},
+  {id:'a_evo500',  name:'進化之神',     desc:'讓寶可夢進化 500 次',       pts:32, cur:()=>state.stats.evolves||0, target:500},
+  {id:'a_mega300', name:'Mega 霸者',    desc:'打贏 300 場 Mega 對戰',     pts:32, cur:()=>state.stats.megaWins||0, target:300},
+  {id:'a_mega1000',name:'Mega 傳說',    desc:'打贏 1000 場 Mega 對戰',    pts:65, cur:()=>state.stats.megaWins||0, target:1000},
+  {id:'a_stone30', name:'進化石大亨',   desc:'合成 30 種 Mega 進化石',    pts:26, cur:()=>megaStoneCount(), target:30},
+  {id:'a_stone60', name:'進化石帝王',   desc:'合成 60 種 Mega 進化石',    pts:42, cur:()=>megaStoneCount(), target:60},
+  {id:'a_zone',    name:'旅程終點',     desc:'抵達地圖最後一站',          pts:20, cur:()=>state.zone, target:MAP_NAMES.length},
+  {id:'a_rich1m',  name:'百萬富翁',     desc:'身上持有 💰 1,000,000',     pts:22, cur:()=>state.money, target:1000000},
+  {id:'a_rich10m', name:'千萬富翁',     desc:'身上持有 💰 10,000,000',    pts:42, cur:()=>state.money, target:10000000},
+  {id:'a_lv30',    name:'精銳部隊',     desc:'擁有 30 隻 Lv.100 的寶可夢', pts:28, cur:()=>[...state.party,...state.box].filter(m=>m.level>=MAX_LEVEL).length, target:30},
+  {id:'a_lv100',   name:'滿級軍團',     desc:'擁有 100 隻 Lv.100 的寶可夢', pts:55, cur:()=>[...state.party,...state.box].filter(m=>m.level>=MAX_LEVEL).length, target:100},
+  {id:'a_own200',  name:'寶可夢牧場',   desc:'隊伍＋倉庫共擁有 200 隻',   pts:22, cur:()=>state.party.length+state.box.length, target:200}
 ];
+// 終極成就：完成其他所有成就
+ACH.push({id:'a_all', name:'成就大滿貫', desc:'完成其他全部成就', pts:100, cur:()=>state.ach.done.filter(id=>id!=='a_all').length, target:ACH.length});
 function achPoints(){ return ACH.filter(a=>state.ach.done.includes(a.id)).reduce((n,a)=>n+a.pts,0); }
 function checkAch(){
   ACH.forEach(a=>{ if(!state.ach.done.includes(a.id) && a.cur() >= a.target){ state.ach.done.push(a.id); notify(`🏆 成就解鎖：${a.name}（+${a.pts} 點）${TITLE_OF[a.id]?'，解鎖稱號「'+TITLE_OF[a.id]+'」':''}`); } });
