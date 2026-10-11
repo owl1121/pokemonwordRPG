@@ -1924,6 +1924,7 @@ const TITLE_OF = {
   a_leg1:'傳說的見證者', a_legall:'傳說收集家', a_max:'極限突破者', a_r2:'二周目霸者',
   a_tr1:'初次交鋒', a_tr30:'訓練家殺手',
   a_gym1:'徽章收集者', a_gym8:'關都霸主', a_gym16:'城都霸主', a_gym24:'豐緣霸主', a_gym32:'神奧霸主', a_gym40:'合眾霸主', a_gym48:'卡洛斯霸主', a_gym56:'阿羅拉霸主', a_gym64:'伽勒爾霸主', a_gym72:'帕底亞霸主',
+  a_win1000:'千戰無敗', a_cat300:'捕獲傳奇', a_dex500:'圖鑑權威', a_dex750:'圖鑑宗師', a_shiny5:'閃亮收藏家', a_shiny20:'閃光獵人', a_flr1500:'塔之主人', a_boss200:'魔王獵手', a_run30:'連戰老手', a_run100:'連戰傳說', a_tr300:'訓練家終結者', a_evo200:'進化大師', a_leg50:'神獸統領', a_max6:'全員滿級', a_ci100:'百日報到', a_ci365:'一年之約',
   a_ci7:'勤奮的旅人', a_ci30:'簽到之王'
 };
 const DEFAULT_TITLE = '新手訓練家';
@@ -1999,7 +2000,34 @@ const ACH = [
   {id:'a_gym64',  name:'伽勒爾制霸', desc:'集滿第八世代（伽勒爾）8 枚徽章', pts:26, cur:()=>state.meta.badges, target:64},
   {id:'a_gym72',  name:'帕底亞制霸', desc:`集滿第九世代（帕底亞）8 枚徽章，共 ${GYMS.length} 枚`, pts:28, cur:()=>state.meta.badges, target:GYMS.length},
   {id:'a_ci7',    name:'每日報到',   desc:'累計簽到 7 天',           pts:2,  cur:()=>state.stats.checkins||0, target:7},
-  {id:'a_ci30',   name:'簽到達人',   desc:'累計簽到 30 天',          pts:5,  cur:()=>state.stats.checkins||0, target:30}
+  {id:'a_ci30',   name:'簽到達人',   desc:'累計簽到 30 天',          pts:5,  cur:()=>state.stats.checkins||0, target:30},
+  {id:'a_win100', name:'百戰老手',   desc:'贏得 100 場戰鬥',         pts:4,  cur:()=>state.stats.wins||0, target:100},
+  {id:'a_win1000',name:'千戰不敗',   desc:'贏得 1000 場戰鬥',        pts:12, cur:()=>state.stats.wins||0, target:1000},
+  {id:'a_cat100', name:'捕獲專家',   desc:'捕捉 100 隻寶可夢',       pts:8,  cur:()=>state.stats.catches||0, target:100},
+  {id:'a_cat300', name:'捕獲傳奇',   desc:'捕捉 300 隻寶可夢',       pts:14, cur:()=>state.stats.catches||0, target:300},
+  {id:'a_dex300', name:'圖鑑達人',   desc:'圖鑑收集 300 隻',         pts:10, cur:()=>state.caught.size, target:300},
+  {id:'a_dex500', name:'圖鑑權威',   desc:'圖鑑收集 500 隻',         pts:14, cur:()=>state.caught.size, target:500},
+  {id:'a_dex750', name:'圖鑑宗師',   desc:'圖鑑收集 750 隻',         pts:20, cur:()=>state.caught.size, target:750},
+  {id:'a_shiny5', name:'閃亮收藏家', desc:'收集 5 種色違寶可夢',     pts:14, cur:()=>state.shinyCaught.size, target:5},
+  {id:'a_shiny20',name:'閃光獵人',   desc:'收集 20 種色違寶可夢',    pts:28, cur:()=>state.shinyCaught.size, target:20},
+  {id:'a_flr500', name:'塔中常客',   desc:'在塔中通過 500 層',       pts:14, cur:()=>state.stats.floors||0, target:500},
+  {id:'a_flr1500',name:'塔之主人',   desc:'在塔中通過 1500 層',      pts:24, cur:()=>state.stats.floors||0, target:1500},
+  {id:'a_boss50', name:'小魔王終結者', desc:'擊破 50 隻小魔王',      pts:10, cur:()=>state.stats.bosses||0, target:50},
+  {id:'a_boss200',name:'魔王獵手',   desc:'擊破 200 隻小魔王',       pts:20, cur:()=>state.stats.bosses||0, target:200},
+  {id:'a_run10',  name:'連戰新手',   desc:'連戰試煉打到第 10 關',    pts:4,  cur:()=>state.stats.runBest||0, target:10},
+  {id:'a_run30',  name:'連戰老手',   desc:'連戰試煉打到第 30 關',    pts:9,  cur:()=>state.stats.runBest||0, target:30},
+  {id:'a_run60',  name:'連戰勇者',   desc:'連戰試煉打到第 60 關',    pts:16, cur:()=>state.stats.runBest||0, target:60},
+  {id:'a_run100', name:'連戰傳說',   desc:'連戰試煉打到第 100 關',   pts:28, cur:()=>state.stats.runBest||0, target:100},
+  {id:'a_tr100',  name:'訓練家剋星', desc:'擊敗 100 位訓練家',       pts:8,  cur:()=>state.stats.trainers||0, target:100},
+  {id:'a_tr300',  name:'訓練家終結者', desc:'擊敗 300 位訓練家',     pts:14, cur:()=>state.stats.trainers||0, target:300},
+  {id:'a_evo50',  name:'進化專家',   desc:'讓寶可夢進化 50 次',      pts:8,  cur:()=>state.stats.evolves||0, target:50},
+  {id:'a_evo200', name:'進化大師',   desc:'讓寶可夢進化 200 次',     pts:16, cur:()=>state.stats.evolves||0, target:200},
+  {id:'a_leg10',  name:'神獸馴服者', desc:'收服 10 隻傳說寶可夢',    pts:8,  cur:()=>state.tower.legendaryPtr, target:10},
+  {id:'a_leg50',  name:'神獸統領',   desc:'收服 50 隻傳說寶可夢',    pts:16, cur:()=>state.tower.legendaryPtr, target:50},
+  {id:'a_max6',   name:'全員滿級',   desc:'隊伍 6 隻都升到 Lv.100',  pts:10, cur:()=>state.party.filter(m=>m.level>=MAX_LEVEL).length, target:6},
+  {id:'a_team6',  name:'滿編隊伍',   desc:'隊伍湊滿 6 隻',           pts:2,  cur:()=>state.party.length, target:6},
+  {id:'a_ci100',  name:'百日報到',   desc:'累計簽到 100 天',         pts:12, cur:()=>state.stats.checkins||0, target:100},
+  {id:'a_ci365',  name:'一年之約',   desc:'累計簽到 365 天',         pts:30, cur:()=>state.stats.checkins||0, target:365}
 ];
 function achPoints(){ return ACH.filter(a=>state.ach.done.includes(a.id)).reduce((n,a)=>n+a.pts,0); }
 function checkAch(){
