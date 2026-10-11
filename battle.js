@@ -29,14 +29,22 @@ const SFX = (function(){
     return ctx;
   }
   const hz = m => 440 * Math.pow(2, (m-69)/12);
+  const waves = {};
+  function W(name){   // 脈衝波：p25＝25% 佔空比、p125＝12.5%（掌機寶可夢那種尖尖的音色）
+    if(waves[name]) return waves[name];
+    const d = name === 'p125' ? 0.125 : 0.25, N = 32, re = new Float32Array(N), im = new Float32Array(N);
+    for(let n=1;n<N;n++) re[n] = 2/(n*Math.PI)*Math.sin(n*Math.PI*d);
+    return waves[name] = ctx.createPeriodicWave(re, im);
+  }
   function osc(type, f, t, d, v, f2, dest, hold){
     const c = ctx, o = c.createOscillator(), g = c.createGain();
-    o.type = type; o.frequency.setValueAtTime(f, t);
+    if(type === 'p25' || type === 'p125') o.setPeriodicWave(W(type)); else o.type = type;
+    o.frequency.setValueAtTime(f, t);
     if(f2) o.frequency.exponentialRampToValueAtTime(Math.max(20,f2), t+d);
     g.gain.setValueAtTime(0.0001, t);
     let end = t + d;
     if(hold){   // 延音：很快升到音量、維持整個音符長度，結束後再慢慢淡出（尾音和下一個音自然重疊）
-      const rel = 0.55;
+      const rel = hold === true ? 0.55 : hold;
       g.gain.exponentialRampToValueAtTime(v, t+0.04); g.gain.setValueAtTime(v, Math.max(t+0.04, t+d));
       end = t + d + rel;
     } else g.gain.exponentialRampToValueAtTime(v, t+0.008);
@@ -52,33 +60,34 @@ const SFX = (function(){
     const g = c.createGain(); g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(0.0001,t+d);
     s.connect(fl); fl.connect(g); g.connect(dest||master); s.start(t); s.stop(t+d+0.03);
   }
-  const arp = (notes, step, type, v, t, len) => notes.forEach((m,i)=>osc(type, hz(m), t+i*step, len||step*1.6, v));
+  // 短旋律：[[音高MIDI, 起始秒, 長度秒], ...]，每個音都是持續音，沒有多餘的裝飾
+  const jingle = (list, wave, vol, t, rel) => list.forEach(([m,o,l])=>osc(wave, hz(m), t+o, l, vol, null, null, rel||0.12));
   const DEF = {
-    click:  t=>osc('square', 880, t, 0.05, 0.12, 1320),
-    blip:   t=>osc('triangle', 660, t, 0.08, 0.15),
-    hit:    t=>{ noise(t,0.12,0.7,1800,300); osc('square',220,t,0.12,0.25,70); },
-    strong: t=>{ noise(t,0.2,0.9,2400,200); osc('square',300,t,0.2,0.3,50); osc('sawtooth',90,t,0.25,0.3,40); osc('triangle',1200,t+0.02,0.12,0.15,2400); },
-    weak:   t=>{ noise(t,0.1,0.25,900,300); osc('triangle',200,t,0.12,0.2,120); },
-    miss:   t=>{ noise(t,0.18,0.18,3000,800); osc('sine',300,t,0.15,0.1,150); },
-    hurt:   t=>{ noise(t,0.14,0.6,1200,250); osc('sawtooth',160,t,0.18,0.25,60); },
-    faint:  t=>{ osc('square',440,t,0.5,0.22,60); osc('triangle',220,t+0.05,0.55,0.2,40); },
-    win:    t=>arp([60,64,67,72,67,72,76],0.1,'square',0.18,t,0.18),
-    lose:   t=>arp([64,62,60,57,52],0.18,'triangle',0.28,t,0.3),
-    levelup:t=>arp([60,64,67,72,76,79],0.07,'square',0.15,t,0.12),
-    evolve: t=>{ osc('sine',200,t,1.2,0.25,1600); osc('triangle',400,t,1.2,0.15,3200); arp([72,76,79,84],0.1,'square',0.15,t+1.25,0.4); },
-    mega:   t=>{ osc('sawtooth',120,t,1.4,0.18,1400); osc('sine',300,t,1.4,0.2,2800); noise(t,1.4,0.2,500,6000); arp([67,71,74,79,83],0.09,'square',0.16,t+1.35,0.5); },
-    throw:  t=>{ noise(t,0.35,0.25,400,2500); osc('sine',500,t,0.3,0.1,900); },
-    catchok:t=>{ arp([72,76,79,84],0.1,'square',0.16,t,0.2); arp([79,84,88],0.12,'triangle',0.18,t+0.5,0.5); },
-    catchfail:t=>{ osc('square',600,t,0.1,0.18,300); osc('square',400,t+0.12,0.15,0.18,150); },
-    reward: t=>{ osc('square',988,t,0.08,0.15); osc('square',1319,t+0.08,0.3,0.15); }
+    click:  t=>osc('p25', 1046, t, 0.05, 0.1),
+    blip:   t=>osc('p25', 784, t, 0.07, 0.12),
+    hit:    t=>{ noise(t,0.1,1.6,1500,300); osc('square',200,t,0.1,0.3,60); },
+    strong: t=>{ noise(t,0.2,2.2,2400,200); osc('square',300,t,0.2,0.4,50); },
+    weak:   t=>{ noise(t,0.1,0.6,900,300); osc('triangle',200,t,0.12,0.3,120); },
+    miss:   t=>{ noise(t,0.16,0.4,3000,800); },
+    hurt:   t=>{ noise(t,0.14,1.4,1200,250); osc('square',160,t,0.16,0.3,60); },
+    faint:  t=>osc('p25',440,t,0.8,0.16,110,null,0.2),
+    win:    t=>jingle([[67,0,0.14],[72,0.14,0.14],[76,0.28,0.14],[79,0.42,0.7]],'p25',0.14,t,0.3),
+    lose:   t=>jingle([[64,0,0.2],[62,0.2,0.2],[60,0.4,0.2],[57,0.6,0.7]],'p25',0.14,t,0.3),
+    levelup:t=>jingle([[72,0,0.12],[76,0.12,0.12],[79,0.24,0.12],[84,0.36,0.6]],'p25',0.14,t,0.3),
+    evolve: t=>{ osc('p25',262,t,1.4,0.16,1047,null,0.05); jingle([[72,1.4,1],[76,1.4,1],[79,1.4,1]],'p25',0.1,t,0.5); },
+    mega:   t=>{ osc('p25',196,t,1.5,0.16,1568,null,0.05); osc('triangle',98,t,1.5,0.2,392,null,0.05); jingle([[67,1.5,1.1],[71,1.5,1.1],[74,1.5,1.1],[79,1.5,1.1]],'p25',0.09,t,0.5); },
+    throw:  t=>{ noise(t,0.35,0.5,400,2500); },
+    catchok:t=>jingle([[72,0,0.12],[79,0.12,0.12],[84,0.24,0.7]],'p25',0.14,t,0.3),
+    catchfail:t=>jingle([[60,0,0.12],[55,0.14,0.3]],'p25',0.14,t,0.1),
+    reward: t=>jingle([[79,0,0.08],[84,0.08,0.4]],'p25',0.12,t,0.2)
   };
   /* 背景音樂：每首 16 小節（A 段＋B 段循環），有主旋律、和弦伴奏、低音和鼓。
      旋律 [音高MIDI, 長度（步）]，null＝休止；和弦 [低音根音, 'M'大調/'m'小調] */
   const MAJ = [0,4,7], MIN = [0,3,7];
   const SONGS = {
-    field: { step:0.268, bs:8, sus:true, wave:'triangle', leadVol:0.2, lead2:null,
+    field: { step:0.268, bs:8, sus:true, rel:0.55, wave:'p25', leadVol:0.13, lead2:null,
       arpWave:'sine', arpEvery:1, arp:[0], arpOct:12, arpVol:0,
-      bassWave:'sine', bassEvery:4, bassPat:[0,0], bassVol:0.2, drums:'none', pad:true, padVol:0.06,
+      bassWave:'triangle', bassEvery:4, bassPat:[0,0], bassVol:0.22, drums:'none', pad:true, padVol:0.05,
       chords:[[48,'M'],[43,'M'],[45,'m'],[40,'m'],[41,'M'],[48,'M'],[41,'M'],[43,'M'],
               [45,'m'],[41,'M'],[48,'M'],[43,'M'],[45,'m'],[50,'m'],[43,'M'],[43,'M'],
               [41,'M'],[40,'m'],[50,'m'],[48,'M'],[41,'M'],[43,'M'],[45,'m'],[43,'M'],
@@ -92,9 +101,9 @@ const SFX = (function(){
            [[76,2],[79,2],[84,2],[79,2]],[[83,2],[79,2],[74,2],[79,2]],[[81,2],[76,2],[72,2],[76,2]],[[79,2],[76,2],[74,2],[76,2]],
            [[77,2],[81,2],[84,2],[81,2]],[[79,2],[76,2],[72,2],[76,2]],[[77,2],[74,2],[77,2],[81,2]],[[79,4],[74,2],[71,2]]],
       secs:[{}, {}, {drums:'none'}, {}] },
-    battle: { step:0.12, bs:16, wave:'square', leadVol:0.08, lead2:'square',
-      arpWave:'square', arpEvery:2, arp:[0,2,1,2], arpOct:24, arpVol:0.035,
-      bassWave:'triangle', bassEvery:2, bassPat:[0,0,12,0], bassVol:0.2, drums:'rock',
+    battle: { step:0.12, bs:16, sus:true, rel:0.1, wave:'p25', leadVol:0.1, lead2:null,
+      arpWave:'square', arpEvery:2, arp:[0], arpOct:24, arpVol:0,
+      bassWave:'triangle', bassEvery:2, bassPat:[0,0,12,0], bassVol:0.22, drums:'rock', pad:true, padVol:0.035,
       chords:[[45,'m'],[45,'m'],[41,'M'],[43,'M'],[45,'m'],[45,'m'],[41,'M'],[40,'M'],
               [50,'m'],[50,'m'],[45,'m'],[45,'m'],[41,'M'],[43,'M'],[40,'M'],[40,'M']],
       mel:[[[81,2],[84,2],[88,4],[84,2],[81,2],[84,4]],[[81,2],[84,2],[88,2],[91,2],[88,4],[84,2],[81,2]],
@@ -105,9 +114,9 @@ const SFX = (function(){
            [[84,4],[81,2],[84,2],[88,4],[84,2],[81,2]],[[81,2],[84,2],[88,2],[84,2],[81,4],[null,4]],
            [[89,4],[84,2],[89,2],[93,4],[89,2],[84,2]],[[91,4],[86,2],[91,2],[95,4],[91,2],[86,2]],
            [[88,2],[83,2],[80,2],[83,2],[88,2],[92,2],[88,2],[83,2]],[[88,8],[null,4],[83,2],[80,2]]] },
-    tower: { step:0.24, bs:8, wave:'triangle', leadVol:0.16, lead2:'sine',
-      arpWave:'sine', arpEvery:2, arp:[0,2,1,2], arpOct:12, arpVol:0.1,
-      bassWave:'sine', bassEvery:8, bassPat:[0], bassVol:0.26, drums:'heart', pad:true, padVol:0.07,
+    tower: { step:0.24, bs:8, sus:true, rel:0.6, wave:'p25', leadVol:0.1, lead2:null,
+      arpWave:'sine', arpEvery:2, arp:[0], arpOct:12, arpVol:0,
+      bassWave:'sine', bassEvery:8, bassPat:[0], bassVol:0.26, drums:'none', pad:true, padVol:0.06,
       chords:[[50,'m'],[46,'M'],[48,'M'],[45,'M'],[50,'m'],[43,'m'],[45,'M'],[50,'m'],
               [46,'M'],[48,'M'],[50,'m'],[45,'M'],[46,'M'],[48,'M'],[45,'M'],[45,'M']],
       mel:[[[74,3],[77,1],[81,2],[null,2]],[[82,3],[81,1],[77,2],[null,2]],[[79,2],[84,2],[79,2],[76,2]],[[85,2],[81,2],[76,2],[null,2]],
@@ -134,7 +143,6 @@ const SFX = (function(){
     } else if(kind === 'rock'){
       if(pos === 0 || pos === 8 || pos === 10) osc('sine',150,t,0.14,0.28,45,d);
       if(pos === 4 || pos === 12){ noise(t,0.12,0.22,2200,900,d); osc('triangle',220,t,0.08,0.1,120,d); }
-      if(pos % 2 === 0) noise(t,0.035,0.06,8000,null,d);
     } else if(kind === 'heart'){
       if(pos === 0 || pos === 3) osc('sine',90,t,0.25,pos?0.12:0.22,35,d);
     }
@@ -148,10 +156,10 @@ const SFX = (function(){
       const ch = S.chords[bar], iv = ch[1] === 'm' ? MIN : MAJ;
       const Q = S.q ? S.q[Math.floor(bar/8) % S.q.length] : S;
       const L = S.lead[k];
-      if(L){ osc(Q.wave, hz(L[0]), t, S.step*L[1]*(Q.sus?1:0.92), Q.leadVol, null, bgmGain, Q.sus); if(Q.lead2) osc(Q.lead2, hz(L[0]-12), t, S.step*L[1]*0.9, Q.leadVol*0.5, null, bgmGain); }
+      if(L){ osc(Q.wave, hz(L[0]), t, S.step*L[1]*(Q.sus?1:0.92), Q.leadVol, null, bgmGain, Q.sus && (Q.rel||0.55)); if(Q.lead2) osc(Q.lead2, hz(L[0]-12), t, S.step*L[1]*0.9, Q.leadVol*0.5, null, bgmGain); }
       if(Q.arpVol && pos % Q.arpEvery === 0){ const i = Q.arp[(pos/Q.arpEvery) % Q.arp.length]; osc(Q.arpWave, hz(ch[0] + Q.arpOct + iv[i%3] + (i>2?12:0)), t, S.step*Q.arpEvery*1.2, Q.arpVol, null, bgmGain); }
-      if(pos % Q.bassEvery === 0){ const o = Q.bassPat[(pos/Q.bassEvery) % Q.bassPat.length]; osc(Q.bassWave, hz(ch[0] + o), t, S.step*Q.bassEvery*(Q.sus?0.98:0.95), Q.bassVol, null, bgmGain, Q.sus); }
-      if(Q.pad && pos === 0) iv.forEach(x=>osc('triangle', hz(ch[0] + 12 + x), t, S.step*S.bs*0.98, Q.padVol, null, bgmGain, Q.sus));
+      if(pos % Q.bassEvery === 0){ const o = Q.bassPat[(pos/Q.bassEvery) % Q.bassPat.length]; osc(Q.bassWave, hz(ch[0] + o), t, S.step*Q.bassEvery*(Q.sus?0.98:0.95), Q.bassVol, null, bgmGain, Q.sus && (Q.rel||0.55)); }
+      if(Q.pad && pos === 0) iv.forEach(x=>osc('triangle', hz(ch[0] + 12 + x), t, S.step*S.bs*0.98, Q.padVol, null, bgmGain, Q.sus && (Q.rel||0.55)));
       drums(Q.drums, pos, t);
       nextT += S.step; step++;
     }
