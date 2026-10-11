@@ -130,7 +130,7 @@ const SFX = (function(){
     S.mel.forEach((bar,b)=>{ let p = b*S.bs; bar.forEach(([m,l])=>{ if(m!=null) S.lead[p] = [m,l]; p += l; }); });
   });
   function drums(kind, pos, t, bs, v){
-    const d = bgmGain;
+    const d = bus;
     if(kind === 'soft'){
       if(pos % 4 === 0) osc('sine',130,t,0.12,0.16,45,d);
       if(pos % 4 === 2) noise(t,0.04,0.05,7000,null,d);
@@ -147,7 +147,11 @@ const SFX = (function(){
       if(pos === 0 || pos === 3) osc('sine',90,t,0.25,pos?0.12:0.22,35,d);
     }
   }
-  let scene = null, timer = null, step = 0, nextT = 0;
+  let scene = null, timer = null, step = 0, nextT = 0, bus = null;
+  function newBus(){   // 每個場景一條獨立音軌，換場景時整條淡出並切掉，已排程的音符也不會繼續響
+    if(bus){ const old = bus, t = ctx.currentTime; try{ old.gain.cancelScheduledValues(t); old.gain.setValueAtTime(old.gain.value, t); old.gain.linearRampToValueAtTime(0, t+0.08); }catch(e){} setTimeout(()=>{ try{ old.disconnect(); }catch(e){} }, 150); }
+    bus = ctx.createGain(); bus.gain.value = 1; bus.connect(bgmGain);
+  }
   function tick(){
     if(!ctx || !on || !scene) return;
     const S = SONGS[scene]; if(!S) return;
@@ -156,10 +160,10 @@ const SFX = (function(){
       const ch = S.chords[bar], iv = ch[1] === 'm' ? MIN : MAJ;
       const Q = S.q ? S.q[Math.floor(bar/8) % S.q.length] : S;
       const L = S.lead[k];
-      if(L){ osc(Q.wave, hz(L[0]), t, S.step*L[1]*(Q.sus?1:0.92), Q.leadVol, null, bgmGain, Q.sus && (Q.rel||0.55)); if(Q.lead2) osc(Q.lead2, hz(L[0]-12), t, S.step*L[1]*0.9, Q.leadVol*0.5, null, bgmGain); }
-      if(Q.arpVol && pos % Q.arpEvery === 0){ const i = Q.arp[(pos/Q.arpEvery) % Q.arp.length]; osc(Q.arpWave, hz(ch[0] + Q.arpOct + iv[i%3] + (i>2?12:0)), t, S.step*Q.arpEvery*1.2, Q.arpVol, null, bgmGain); }
-      if(pos % Q.bassEvery === 0){ const o = Q.bassPat[(pos/Q.bassEvery) % Q.bassPat.length]; osc(Q.bassWave, hz(ch[0] + o), t, S.step*Q.bassEvery*(Q.sus?0.98:0.95), Q.bassVol, null, bgmGain, Q.sus && (Q.rel||0.55)); }
-      if(Q.pad && pos === 0) iv.forEach(x=>osc('triangle', hz(ch[0] + 12 + x), t, S.step*S.bs*0.98, Q.padVol, null, bgmGain, Q.sus && (Q.rel||0.55)));
+      if(L){ osc(Q.wave, hz(L[0]), t, S.step*L[1]*(Q.sus?1:0.92), Q.leadVol, null, bus, Q.sus && (Q.rel||0.55)); if(Q.lead2) osc(Q.lead2, hz(L[0]-12), t, S.step*L[1]*0.9, Q.leadVol*0.5, null, bus); }
+      if(Q.arpVol && pos % Q.arpEvery === 0){ const i = Q.arp[(pos/Q.arpEvery) % Q.arp.length]; osc(Q.arpWave, hz(ch[0] + Q.arpOct + iv[i%3] + (i>2?12:0)), t, S.step*Q.arpEvery*1.2, Q.arpVol, null, bus); }
+      if(pos % Q.bassEvery === 0){ const o = Q.bassPat[(pos/Q.bassEvery) % Q.bassPat.length]; osc(Q.bassWave, hz(ch[0] + o), t, S.step*Q.bassEvery*(Q.sus?0.98:0.95), Q.bassVol, null, bus, Q.sus && (Q.rel||0.55)); }
+      if(Q.pad && pos === 0) iv.forEach(x=>osc('triangle', hz(ch[0] + 12 + x), t, S.step*S.bs*0.98, Q.padVol, null, bus, Q.sus && (Q.rel||0.55)));
       drums(Q.drums, pos, t);
       nextT += S.step; step++;
     }
@@ -172,7 +176,8 @@ const SFX = (function(){
   }
   function setScene(s){
     if(s === scene) return;
-    scene = s; step = 0; nextT = ctx ? ctx.currentTime + 0.05 : 0;
+    scene = s; step = 0; nextT = ctx ? ctx.currentTime + 0.12 : 0;
+    if(ctx) newBus();
     const nm = 'bgm_' + s;
     if(files[nm]){ playFileBgm(nm); return; }
     if(bgmEl){ bgmEl.pause(); bgmEl = null; }
