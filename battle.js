@@ -7,6 +7,144 @@
         只在被呼叫時才用到，所以可以先載入。
    ===================================================== */
 
+/* =====================================================
+   音效：預設用 WebAudio 即時合成（不需要音檔）。
+   想換成自己的音效：把檔案放進 sounds/ 資料夾，再建立 sounds/list.js：
+     window.SFX_FILES = ['hit.mp3','bgm_battle.mp3'];
+   檔名（不含副檔名）對應下面的音效名稱，有放的用你的，沒放的用合成。
+   音效名稱：click hit strong weak miss hurt faint win lose levelup evolve mega
+             throw catchok catchfail reward blip
+   背景音樂：bgm_field bgm_battle bgm_tower
+   ===================================================== */
+const SFX = (function(){
+  let ctx = null, master = null, bgmGain = null, on = true, files = {}, bgmEl = null;
+  try{ on = localStorage.getItem('pkmn_sfx') !== 'off'; }catch(e){}
+  function ac(){
+    if(ctx) return ctx;
+    const C = window.AudioContext || window.webkitAudioContext; if(!C) return null;
+    try{
+      ctx = new C(); master = ctx.createGain(); master.gain.value = on ? 0.5 : 0; master.connect(ctx.destination);
+      bgmGain = ctx.createGain(); bgmGain.gain.value = 0.32; bgmGain.connect(master);
+    }catch(e){ ctx = null; }
+    return ctx;
+  }
+  const hz = m => 440 * Math.pow(2, (m-69)/12);
+  function osc(type, f, t, d, v, f2, dest){
+    const c = ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    if(f2) o.frequency.exponentialRampToValueAtTime(Math.max(20,f2), t+d);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+d);
+    o.connect(g); g.connect(dest||master); o.start(t); o.stop(t+d+0.03);
+  }
+  let nbuf = null;
+  function noise(t, d, v, f1, f2, dest){
+    const c = ctx;
+    if(!nbuf){ nbuf = c.createBuffer(1, c.sampleRate, c.sampleRate); const a = nbuf.getChannelData(0); for(let i=0;i<a.length;i++) a[i]=Math.random()*2-1; }
+    const s = c.createBufferSource(); s.buffer = nbuf; s.loop = true;
+    const fl = c.createBiquadFilter(); fl.type='bandpass'; fl.frequency.setValueAtTime(f1,t); if(f2) fl.frequency.exponentialRampToValueAtTime(f2,t+d);
+    const g = c.createGain(); g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+    s.connect(fl); fl.connect(g); g.connect(dest||master); s.start(t); s.stop(t+d+0.03);
+  }
+  const arp = (notes, step, type, v, t, len) => notes.forEach((m,i)=>osc(type, hz(m), t+i*step, len||step*1.6, v));
+  const DEF = {
+    click:  t=>osc('square', 880, t, 0.05, 0.12, 1320),
+    blip:   t=>osc('triangle', 660, t, 0.08, 0.15),
+    hit:    t=>{ noise(t,0.12,0.7,1800,300); osc('square',220,t,0.12,0.25,70); },
+    strong: t=>{ noise(t,0.2,0.9,2400,200); osc('square',300,t,0.2,0.3,50); osc('sawtooth',90,t,0.25,0.3,40); osc('triangle',1200,t+0.02,0.12,0.15,2400); },
+    weak:   t=>{ noise(t,0.1,0.25,900,300); osc('triangle',200,t,0.12,0.2,120); },
+    miss:   t=>{ noise(t,0.18,0.18,3000,800); osc('sine',300,t,0.15,0.1,150); },
+    hurt:   t=>{ noise(t,0.14,0.6,1200,250); osc('sawtooth',160,t,0.18,0.25,60); },
+    faint:  t=>{ osc('square',440,t,0.5,0.22,60); osc('triangle',220,t+0.05,0.55,0.2,40); },
+    win:    t=>arp([60,64,67,72,67,72,76],0.1,'square',0.18,t,0.18),
+    lose:   t=>arp([64,62,60,57,52],0.18,'triangle',0.28,t,0.3),
+    levelup:t=>arp([60,64,67,72,76,79],0.07,'square',0.15,t,0.12),
+    evolve: t=>{ osc('sine',200,t,1.2,0.25,1600); osc('triangle',400,t,1.2,0.15,3200); arp([72,76,79,84],0.1,'square',0.15,t+1.25,0.4); },
+    mega:   t=>{ osc('sawtooth',120,t,1.4,0.18,1400); osc('sine',300,t,1.4,0.2,2800); noise(t,1.4,0.2,500,6000); arp([67,71,74,79,83],0.09,'square',0.16,t+1.35,0.5); },
+    throw:  t=>{ noise(t,0.35,0.25,400,2500); osc('sine',500,t,0.3,0.1,900); },
+    catchok:t=>{ arp([72,76,79,84],0.1,'square',0.16,t,0.2); arp([79,84,88],0.12,'triangle',0.18,t+0.5,0.5); },
+    catchfail:t=>{ osc('square',600,t,0.1,0.18,300); osc('square',400,t+0.12,0.15,0.18,150); },
+    reward: t=>{ osc('square',988,t,0.08,0.15); osc('square',1319,t+0.08,0.3,0.15); }
+  };
+  const SONGS = {   // 簡單的背景循環：steps 為音符序列（MIDI 號碼，null＝休止）
+    field:  {step:0.26, wave:'triangle', mel:[72,null,76,null,79,null,76,null,74,null,77,null,81,null,77,null,72,null,76,null,79,null,84,null,83,null,79,null,76,null,null,null],
+             bass:[36,36,41,41,36,36,43,43], bassEvery:4, bassWave:'sine', vol:0.22},
+    battle: {step:0.14, wave:'square', chords:[[57,60,64],[53,57,60],[55,59,62],[52,56,59]], pat:[0,1,2,1,2,1,2,1], hat:true, bassWave:'triangle', vol:0.09},
+    tower:  {step:0.22, wave:'triangle', chords:[[50,53,57],[46,50,53],[48,52,55],[45,49,52]], pat:[0,2,1,2,0,2,1,2], bassWave:'sine', vol:0.2}
+  };
+  let scene = null, timer = null, step = 0, nextT = 0;
+  function tick(){
+    if(!ctx || !on || !scene) return;
+    const S = SONGS[scene]; if(!S) return;
+    while(nextT < ctx.currentTime + 0.35){
+      const t = Math.max(nextT, ctx.currentTime);
+      if(S.mel){
+        const n = S.mel[step % S.mel.length]; if(n!=null) osc(S.wave, hz(n), t, S.step*1.7, S.vol, null, bgmGain);
+        if(step % S.bassEvery === 0){ const b = S.bass[(step/S.bassEvery) % S.bass.length]; osc(S.bassWave, hz(b), t, S.step*3.5, S.vol*1.4, null, bgmGain); }
+      } else {
+        const ch = S.chords[Math.floor(step/8) % S.chords.length], k = step % 8;
+        osc(S.wave, hz(ch[S.pat[k]] + 12), t, S.step*1.5, S.vol, null, bgmGain);
+        if(k % 2 === 0) osc(S.bassWave, hz(ch[0]-12), t, S.step*2.5, S.vol*2, null, bgmGain);
+        if(S.hat && k % 2 === 1) noise(t, 0.04, 0.07, 7000, null, bgmGain);
+      }
+      nextT += S.step; step++;
+    }
+  }
+  function playFileBgm(name){
+    if(bgmEl){ bgmEl.pause(); bgmEl = null; }
+    if(!name || !on) return;
+    bgmEl = new Audio('sounds/' + files[name]); bgmEl.loop = true; bgmEl.volume = 0.4;
+    bgmEl.play().catch(()=>{});
+  }
+  function setScene(s){
+    if(s === scene) return;
+    scene = s; step = 0; nextT = ctx ? ctx.currentTime + 0.05 : 0;
+    const nm = 'bgm_' + s;
+    if(files[nm]){ playFileBgm(nm); return; }
+    if(bgmEl){ bgmEl.pause(); bgmEl = null; }
+  }
+  function play(name, delay){
+    if(!on) return;
+    if(delay > 0) return void setTimeout(()=>play(name), delay);
+    try{
+      if(files[name]){ const a = new Audio('sounds/' + files[name]); a.volume = 0.7; a.play().catch(()=>{}); return; }
+      if(!ac()) return; if(ctx.state === 'suspended') ctx.resume();
+      const f = DEF[name]; if(f) f(ctx.currentTime + 0.01);
+    }catch(e){}
+  }
+  function setOn(v){
+    on = !!v;
+    try{ localStorage.setItem('pkmn_sfx', on ? 'on' : 'off'); }catch(e){}
+    if(master) master.gain.value = on ? 0.5 : 0;
+    if(!on && bgmEl) bgmEl.pause();
+    if(on){ const s = scene; scene = null; if(ac() && ctx.state==='suspended') ctx.resume(); setScene(s); }
+    const b = document.getElementById('sfxBtn'); if(b) b.textContent = on ? '🔊' : '🔇';
+  }
+  function init(){
+    if(window.SFX_FILES) window.SFX_FILES.forEach(f=>{ files[f.replace(/\.[^.]+$/,'')] = f; });
+    const unlock = ()=>{ if(ac() && ctx.state==='suspended') ctx.resume(); };
+    document.addEventListener('pointerdown', unlock, true);
+    document.addEventListener('click', e=>{
+      const b = e.target.closest && e.target.closest('button');
+      if(b && !b._go && b.id !== 'sfxBtn') play('click');
+    }, true);
+    timer = setInterval(()=>{
+      try{
+        if(!on) return;
+        let s = null;
+        if(typeof state !== 'undefined' && state && state.party && state.party.length){
+          s = state.battle ? (state.battle.mode === 'tower' ? 'tower' : 'battle') : 'field';
+        }
+        if(s && !files['bgm_'+s] && !ac()) return;   // 還沒互動過，瀏覽器不允許出聲
+        if(ctx && ctx.state !== 'running') return;
+        setScene(s); tick();
+      }catch(e){}
+    }, 80);
+    setOn(on);
+  }
+  return {init, play, setOn, isOn:()=>on};
+})();
+
 /* ---------- 屬性相剋 ---------- */
 function eff(atkType, defTypes){
   let m = 1;

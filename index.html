@@ -381,7 +381,7 @@ button,input,textarea,select{font-family:inherit;}
 <div id="app">
   <header>
     <div id="hdrleft"></div>
-    <div id="hdrright"><button id="evBtn" class="hbtn" onclick="openHub('event')" aria-label="活動">🎉<i id="evDot"></i></button><button id="mailBtn" class="hbtn" onclick="openHub('mail')" aria-label="信箱">✉️<i id="mailDot"></i></button><button id="menuBtn" onclick="openMenu()">☰ 選單<i id="menuDot"></i></button></div>
+    <div id="hdrright"><button id="sfxBtn" class="hbtn" onclick="SFX.setOn(!SFX.isOn())" aria-label="音效開關">🔊</button><button id="evBtn" class="hbtn" onclick="openHub('event')" aria-label="活動">🎉<i id="evDot"></i></button><button id="mailBtn" class="hbtn" onclick="openHub('mail')" aria-label="信箱">✉️<i id="mailDot"></i></button><button id="menuBtn" onclick="openMenu()">☰ 選單<i id="menuDot"></i></button></div>
   </header>
   <div id="stage"></div>
   <div id="log"></div>
@@ -398,6 +398,7 @@ button,input,textarea,select{font-family:inherit;}
 </div>
 
 <script src="data.js"></script>
+<script src="sounds/list.js" onerror="this.remove()"></script>
 <script src="battle.js"></script>
 <script>
 /* =====================================================
@@ -2396,6 +2397,32 @@ loadGame();
 applyFestTheme();
 screenCover();
 showInAppNotice();
+</script>
+<script>
+/* 音效掛勾：不改原本流程，只在關鍵函式外面包一層 */
+(function(){
+  function wrap(name, fn){ const o = window[name]; if(typeof o !== 'function') return; window[name] = function(){ return fn(o, this, arguments); }; }
+  wrap('doAttack', (o,t,a)=>{
+    const [att, def, mv] = a, hp0 = def.hp, d0 = curDelay ? curDelay() : 0, toMe = !(state.battle && def === state.battle.wild);
+    const r = o.apply(t, a);
+    let nm = 'miss';
+    if(def.hp < hp0){ const m = moveEff(mv, def); nm = toMe ? 'hurt' : (m >= 2 ? 'strong' : (m < 1 ? 'weak' : 'hit')); if(toMe && m >= 2) nm = 'strong'; }
+    SFX.play(nm, d0 || 0); return r;
+  });
+  wrap('tryCatch', (o,t,a)=>{
+    const n0 = state.party.length + state.box.length;
+    SFX.play('throw'); const r = o.apply(t, a);
+    SFX.play(state.party.length + state.box.length > n0 ? 'catchok' : 'catchfail', 450); return r;
+  });
+  wrap('grantExp', (o,t,a)=>{ const p = a[0], l0 = p.level; const r = o.apply(t, a); if(p.level > l0) SFX.play('levelup', 250); return r; });
+  wrap('evolveTo', (o,t,a)=>{ SFX.play('evolve'); return o.apply(t, a); });
+  wrap('doMegaEvolve', (o,t,a)=>{ const r = o.apply(t, a); SFX.play('mega'); return r; });
+  wrap('afterFaintCheck', (o,t,a)=>{ const r = o.apply(t, a); if(a[0].hp <= 0) SFX.play('faint', 200); return r; });
+  wrap('winBattle', (o,t,a)=>{ SFX.play('win', 350); return o.apply(t, a); });
+  wrap('loseBattle', (o,t,a)=>{ SFX.play('lose', 300); return o.apply(t, a); });
+  wrap('notify', (o,t,a)=>{ SFX.play(/[🏆🎁🎴]|領取|解鎖|成就|獲得/.test(String(a[0])) ? 'reward' : 'blip'); return o.apply(t, a); });
+  SFX.init();
+})();
 </script>
 <script>
 /* 按下去先陷 0.2 秒，再執行動作 */
