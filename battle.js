@@ -24,7 +24,7 @@ const SFX = (function(){
     const C = window.AudioContext || window.webkitAudioContext; if(!C) return null;
     try{
       ctx = new C(); master = ctx.createGain(); master.gain.value = on ? 0.5 : 0; master.connect(ctx.destination);
-      bgmGain = ctx.createGain(); bgmGain.gain.value = 0.32; bgmGain.connect(master);
+      bgmGain = ctx.createGain(); bgmGain.gain.value = 0.55; bgmGain.connect(master);
     }catch(e){ ctx = null; }
     return ctx;
   }
@@ -66,27 +66,72 @@ const SFX = (function(){
     catchfail:t=>{ osc('square',600,t,0.1,0.18,300); osc('square',400,t+0.12,0.15,0.18,150); },
     reward: t=>{ osc('square',988,t,0.08,0.15); osc('square',1319,t+0.08,0.3,0.15); }
   };
-  const SONGS = {   // 簡單的背景循環：steps 為音符序列（MIDI 號碼，null＝休止）
-    field:  {step:0.26, wave:'triangle', mel:[72,null,76,null,79,null,76,null,74,null,77,null,81,null,77,null,72,null,76,null,79,null,84,null,83,null,79,null,76,null,null,null],
-             bass:[36,36,41,41,36,36,43,43], bassEvery:4, bassWave:'sine', vol:0.22},
-    battle: {step:0.14, wave:'square', chords:[[57,60,64],[53,57,60],[55,59,62],[52,56,59]], pat:[0,1,2,1,2,1,2,1], hat:true, bassWave:'triangle', vol:0.09},
-    tower:  {step:0.22, wave:'triangle', chords:[[50,53,57],[46,50,53],[48,52,55],[45,49,52]], pat:[0,2,1,2,0,2,1,2], bassWave:'sine', vol:0.2}
+  /* 背景音樂：每首 16 小節（A 段＋B 段循環），有主旋律、和弦伴奏、低音和鼓。
+     旋律 [音高MIDI, 長度（步）]，null＝休止；和弦 [低音根音, 'M'大調/'m'小調] */
+  const MAJ = [0,4,7], MIN = [0,3,7];
+  const SONGS = {
+    field: { step:0.268, bs:8, wave:'square', leadVol:0.09, lead2:'triangle',
+      arpWave:'triangle', arpEvery:1, arp:[0,1,2,1,0,1,2,1], arpOct:12, arpVol:0.07,
+      bassWave:'sine', bassEvery:4, bassPat:[0,0], bassVol:0.2, drums:'soft',
+      chords:[[48,'M'],[43,'M'],[45,'m'],[40,'m'],[41,'M'],[48,'M'],[41,'M'],[43,'M'],
+              [45,'m'],[41,'M'],[48,'M'],[43,'M'],[45,'m'],[50,'m'],[43,'M'],[43,'M']],
+      mel:[[[76,2],[79,2],[84,2],[79,2]],[[83,2],[79,2],[74,2],[79,2]],[[81,2],[76,2],[72,2],[76,2]],[[79,3],[76,1],[74,2],[76,2]],
+           [[77,2],[81,2],[84,2],[81,2]],[[79,2],[76,2],[72,2],[76,2]],[[77,2],[74,2],[77,2],[81,2]],[[79,4],[74,2],[71,2]],
+           [[84,2],[81,1],[84,1],[88,2],[84,2]],[[81,2],[77,2],[81,2],[84,2]],[[88,3],[84,1],[79,2],[84,2]],[[86,2],[83,2],[79,2],[83,2]],
+           [[84,2],[88,2],[91,2],[88,2]],[[86,2],[81,2],[77,2],[81,2]],[[83,2],[79,2],[74,2],[79,2]],[[79,2],[83,2],[86,2],[null,2]]] },
+    battle: { step:0.12, bs:16, wave:'square', leadVol:0.08, lead2:'square',
+      arpWave:'square', arpEvery:2, arp:[0,2,1,2], arpOct:24, arpVol:0.035,
+      bassWave:'triangle', bassEvery:2, bassPat:[0,0,12,0], bassVol:0.2, drums:'rock',
+      chords:[[45,'m'],[45,'m'],[41,'M'],[43,'M'],[45,'m'],[45,'m'],[41,'M'],[40,'M'],
+              [50,'m'],[50,'m'],[45,'m'],[45,'m'],[41,'M'],[43,'M'],[40,'M'],[40,'M']],
+      mel:[[[81,2],[84,2],[88,4],[84,2],[81,2],[84,4]],[[81,2],[84,2],[88,2],[91,2],[88,4],[84,2],[81,2]],
+           [[84,2],[81,2],[77,4],[81,2],[84,2],[88,4]],[[86,2],[83,2],[79,4],[83,2],[86,2],[91,2],[86,2]],
+           [[88,4],[84,2],[81,2],[84,4],[81,2],[76,2]],[[81,2],[84,2],[88,2],[93,2],[91,2],[88,2],[84,2],[81,2]],
+           [[84,4],[88,2],[84,2],[81,4],[77,4]],[[83,2],[80,2],[76,2],[80,2],[83,2],[88,2],[86,2],[83,2]],
+           [[86,4],[89,2],[86,2],[81,4],[77,2],[81,2]],[[86,2],[89,2],[93,4],[89,2],[86,2],[89,4]],
+           [[84,4],[81,2],[84,2],[88,4],[84,2],[81,2]],[[81,2],[84,2],[88,2],[84,2],[81,4],[null,4]],
+           [[89,4],[84,2],[89,2],[93,4],[89,2],[84,2]],[[91,4],[86,2],[91,2],[95,4],[91,2],[86,2]],
+           [[88,2],[83,2],[80,2],[83,2],[88,2],[92,2],[88,2],[83,2]],[[88,8],[null,4],[83,2],[80,2]]] },
+    tower: { step:0.24, bs:8, wave:'triangle', leadVol:0.16, lead2:'sine',
+      arpWave:'sine', arpEvery:2, arp:[0,2,1,2], arpOct:12, arpVol:0.1,
+      bassWave:'sine', bassEvery:8, bassPat:[0], bassVol:0.26, drums:'heart', pad:true, padVol:0.07,
+      chords:[[50,'m'],[46,'M'],[48,'M'],[45,'M'],[50,'m'],[43,'m'],[45,'M'],[50,'m'],
+              [46,'M'],[48,'M'],[50,'m'],[45,'M'],[46,'M'],[48,'M'],[45,'M'],[45,'M']],
+      mel:[[[74,3],[77,1],[81,2],[null,2]],[[82,3],[81,1],[77,2],[null,2]],[[79,2],[84,2],[79,2],[76,2]],[[85,2],[81,2],[76,2],[null,2]],
+           [[77,2],[81,2],[86,3],[null,1]],[[79,2],[82,2],[86,2],[82,2]],[[85,4],[81,2],[76,2]],[[74,6],[null,2]],
+           [[86,2],[82,2],[77,2],[82,2]],[[84,2],[79,2],[76,2],[79,2]],[[81,3],[86,1],[89,2],[86,2]],[[88,2],[85,2],[81,2],[85,2]],
+           [[89,2],[86,2],[82,2],[86,2]],[[88,2],[84,2],[79,2],[84,2]],[[85,2],[88,2],[93,2],[88,2]],[[85,4],[null,4]]] }
   };
+  Object.values(SONGS).forEach(S=>{      // 把旋律攤平成「第幾步開始哪個音」
+    S.lead = {}; S.total = S.bs * S.mel.length;
+    S.mel.forEach((bar,b)=>{ let p = b*S.bs; bar.forEach(([m,l])=>{ if(m!=null) S.lead[p] = [m,l]; p += l; }); });
+  });
+  function drums(kind, pos, t, bs, v){
+    const d = bgmGain;
+    if(kind === 'soft'){
+      if(pos % 4 === 0) osc('sine',130,t,0.12,0.14,45,d);
+      if(pos % 2 === 1) noise(t,0.03,0.035,8000,null,d);
+    } else if(kind === 'rock'){
+      if(pos === 0 || pos === 8 || pos === 10) osc('sine',150,t,0.14,0.28,45,d);
+      if(pos === 4 || pos === 12){ noise(t,0.12,0.22,2200,900,d); osc('triangle',220,t,0.08,0.1,120,d); }
+      if(pos % 2 === 0) noise(t,0.035,0.06,8000,null,d);
+    } else if(kind === 'heart'){
+      if(pos === 0 || pos === 3) osc('sine',90,t,0.25,pos?0.12:0.22,35,d);
+    }
+  }
   let scene = null, timer = null, step = 0, nextT = 0;
   function tick(){
     if(!ctx || !on || !scene) return;
     const S = SONGS[scene]; if(!S) return;
     while(nextT < ctx.currentTime + 0.35){
-      const t = Math.max(nextT, ctx.currentTime);
-      if(S.mel){
-        const n = S.mel[step % S.mel.length]; if(n!=null) osc(S.wave, hz(n), t, S.step*1.7, S.vol, null, bgmGain);
-        if(step % S.bassEvery === 0){ const b = S.bass[(step/S.bassEvery) % S.bass.length]; osc(S.bassWave, hz(b), t, S.step*3.5, S.vol*1.4, null, bgmGain); }
-      } else {
-        const ch = S.chords[Math.floor(step/8) % S.chords.length], k = step % 8;
-        osc(S.wave, hz(ch[S.pat[k]] + 12), t, S.step*1.5, S.vol, null, bgmGain);
-        if(k % 2 === 0) osc(S.bassWave, hz(ch[0]-12), t, S.step*2.5, S.vol*2, null, bgmGain);
-        if(S.hat && k % 2 === 1) noise(t, 0.04, 0.07, 7000, null, bgmGain);
-      }
+      const t = Math.max(nextT, ctx.currentTime), k = step % S.total, bar = Math.floor(k / S.bs), pos = k % S.bs;
+      const ch = S.chords[bar], iv = ch[1] === 'm' ? MIN : MAJ;
+      const L = S.lead[k];
+      if(L){ osc(S.wave, hz(L[0]), t, S.step*L[1]*0.92, S.leadVol, null, bgmGain); if(S.lead2) osc(S.lead2, hz(L[0]-12), t, S.step*L[1]*0.9, S.leadVol*0.5, null, bgmGain); }
+      if(pos % S.arpEvery === 0){ const i = S.arp[(pos/S.arpEvery) % S.arp.length]; osc(S.arpWave, hz(ch[0] + S.arpOct + iv[i%3] + (i>2?12:0)), t, S.step*S.arpEvery*1.2, S.arpVol, null, bgmGain); }
+      if(pos % S.bassEvery === 0){ const o = S.bassPat[(pos/S.bassEvery) % S.bassPat.length]; osc(S.bassWave, hz(ch[0] + o), t, S.step*S.bassEvery*0.95, S.bassVol, null, bgmGain); }
+      if(S.pad && pos === 0) iv.forEach(x=>osc('triangle', hz(ch[0] + 12 + x), t, S.step*S.bs*0.98, S.padVol, null, bgmGain));
+      drums(S.drums, pos, t);
       nextT += S.step; step++;
     }
   }
