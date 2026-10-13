@@ -290,12 +290,17 @@ function frameKey(m){
   return (m && FRAME_NAMES[m.ball] && frameUnlocked(m.ball)) ? m.ball : 'poke';
 }
 function frameClass(m){ return 'fr-' + frameKey(m); }
+// 訓練家／館主的隊伍進度：✖ 已倒下、● 還能戰鬥（含目前場上那隻）
+function teamDots(b, w){
+  const f = (b.foeFainted||[]).length, left = (b.foes?b.foes.length:0) + (w.hp>0?1:0);
+  return (f+left>1) ? ` · 對手 ${'✖'.repeat(f)}${'●'.repeat(left)}` : '';
+}
 function renderStage(at, hit, power){   // hit：'foe' 或 'me'，該張卡片會左右晃一下；power：'strong'／'weak'
   const b=state.battle, p=state.party[b.playerIdx], w=b.wild;
   const nmx = m => (m.shiny?'✨':'')+esc(m.name);
   const xp = p.level>=MAX_LEVEL ? 100 : Math.min(100, Math.round(100*p.exp/p.expNext));
   const html =
-    `<div class="card foe"><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${dexNo(w.dex)} · ${esc(typeStr(w))}${stChip(w)}${b.foes&&b.foes.length?` · 還有 ${b.foes.length} 隻`:''}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
+    `<div class="card foe"><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${dexNo(w.dex)} · ${esc(typeStr(w))}${stChip(w)}${teamDots(b,w)}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
     `<div class="card me ${frameClass(p)}"><div class="r1"><span>${nmx(p)}</span><span>Lv.${p.level}</span></div><div class="r2">${esc(typeStr(p))} · 速度 ${p.spd}${stChip(p)}</div><div class="bar${pctHp(p)<30?' low':''}"><i style="width:${pctHp(p)}%"></i></div><div class="hpt">HP: ${p.hp}/${p.maxhp}</div><div class="xp"><i style="width:${xp}%"></i></div></div>`;
   const turnHtml = `<div>回合<br><b>${b.turn||1}</b></div><div>狀態<br><b>${b.phase||'選擇行動'}</b></div>`;
   const apply = ()=>{
@@ -609,6 +614,47 @@ function doSwitch(idx){
   if(enemyTurn()) return;
   endOfTurn();
 }
+/* ---------- 訓練家／館主：打倒一隻後，先宣告對方下一隻，再問玩家要不要換寶可夢 ---------- */
+// 詢問期間 b.wild 仍是剛倒下的那隻（卡片留著、血條是空的），b.foes[0] 才是對方即將派出的
+function askShiftBeforeFoe(nx){
+  const b = state.battle;
+  hr();
+  print(`<span class="em">${esc(b.title)} 要派出 ${nm(nx)}（Lv.${nx.level}）！</span>`);
+  const canSwitch = state.party.some((m,i)=> i!==b.playerIdx && m.hp>0);
+  if(!canSwitch) return sendNextFoe(nx, true);   // 隊上沒有別隻能換，就不用問了
+  print('要不要換寶可夢？');
+  setOptions([
+    {label:'🔄 換寶可夢', action:()=>screenSwitchBeforeFoe(nx)},
+    {label:'⚔️ 不換，直接開打', action:()=>sendNextFoe(nx)}
+  ], '要換寶可夢嗎？');
+}
+function screenSwitchBeforeFoe(nx){
+  const b = state.battle;
+  clearLog();
+  print('<span class="em">選擇要換上場的寶可夢：</span>');
+  const opts = state.party.map((m,i)=>{
+    const tag = i===b.playerIdx ? '（目前上場）' : (m.hp<=0 ? '（已無法戰鬥）' : `HP ${m.hp}/${m.maxhp}`);
+    const usable = i!==b.playerIdx && m.hp>0;
+    return { label:`${monName(m)} Lv.${m.level} ${tag}`, half:true, action: usable ? ()=>doSwitchBeforeFoe(i, nx) : ()=>screenSwitchBeforeFoe(nx) };
+  });
+  opts.push({label:'取消，返回', action:()=>{ clearLog(); askShiftBeforeFoe(nx); }});
+  setOptions(opts,'選擇寶可夢');
+}
+function doSwitchBeforeFoe(idx, nx){
+  const b = state.battle;
+  const old = state.party[b.playerIdx];
+  b.playerIdx = idx;
+  clearLog();
+  print(`收回了 ${nm(old)}，換上 ${nm(state.party[idx])}！`);   // 這是我方的免費換人，對方不會趁機攻擊
+  sendNextFoe(nx, true);
+}
+function sendNextFoe(nx, keepLog){
+  const b = state.battle;
+  if(!keepLog) clearLog();
+  b.foes.shift(); b.wild = nx;
+  print(`<span class="em">${esc(b.title)} 派出了 ${nm(nx)}（Lv.${nx.level}）！</span>`);
+  screenBattle();
+}
 /* ---------- 進化：先詢問玩家，同意後才進化 ---------- */
 const evoSkip = new WeakMap();   // 玩家選了「不進化」：同一等級不再詢問（重新整理頁面後會再問一次）
 let evoQueue = [];
@@ -716,10 +762,17 @@ function winBattle(){
   if(p.hp>0) grantExp(p, w.level, expMul, '獲得');
   shareExp(p, w.level, expMul);
   if(b.foes && b.foes.length){
-    const nx = b.foes.shift(); b.wild = nx;
-    print(`<span class="em">${esc(b.title)} 派出了 ${nm(nx)}（Lv.${nx.level}）！</span>`);
+    (b.foeFainted = b.foeFainted || []).push(w);   // 倒下的那隻留在對手隊伍裡（卡片上顯示已倒下）
+    const nx = b.foes[0];
     const cur = state.party[b.playerIdx];
-    return runEvolutions(()=> cur.hp<=0 ? afterFaintCheck(cur) : screenBattle());
+    return runEvolutions(()=>{
+      if(cur.hp<=0){   // 我方也同時倒下：先選我方下一隻，對手直接派出下一隻
+        b.foes.shift(); b.wild = nx;
+        print(`<span class="em">${esc(b.title)} 派出了 ${nm(nx)}（Lv.${nx.level}）！</span>`);
+        return afterFaintCheck(cur);
+      }
+      askShiftBeforeFoe(nx);
+    });
   }
   state.battle=null;
   battleDone();
