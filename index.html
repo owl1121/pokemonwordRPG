@@ -779,6 +779,7 @@ function statsFor(entry, level){
   const spd = Math.floor(base*0.75 + level*1.3);
   return {hp,atk,def,spd};
 }
+let gotSeq = 0;   // 獲得序號：每隻寶可夢誕生時蓋一個，倉庫「獲得順序」排序用（舊存檔在 loadGame 補）
 function makeMon(dexIndex, level, opts){
   opts = opts || {};
   level = Math.max(1, Math.min(MAX_LEVEL, level));
@@ -789,7 +790,7 @@ function makeMon(dexIndex, level, opts){
     dex: dexIndex, name:e[0], t1:e[1], t2:e[2], tier:e[3],
     level, hp:st.hp, maxhp:st.hp, atk:st.atk, def:st.def, spd:st.spd,
     exp:0, expNext: 18 + level*9, moves: buildMoves(e),
-    status:null, atkMul:1, defMul:1, shiny
+    status:null, atkMul:1, defMul:1, shiny, got:++gotSeq
   };
 }
 // 等級封頂 Lv.100 之後，用數值倍率拉開難度：地圖第 25 區起、道館第 23 間起逐步增強
@@ -1002,6 +1003,9 @@ function loadGame(){
     const d = JSON.parse(raw);
     state.party = Array.isArray(d.party) ? d.party.map(fixMon) : [];
     state.box = Array.isArray(d.box) ? d.box.map(fixMon) : [];
+    gotSeq = 0;   // 補上獲得序號：新存檔沿用，舊存檔的寶可夢依現有順序（先隊伍、後倉庫）排
+    [...state.party, ...state.box].forEach(m=>{ if(m && m.got > gotSeq) gotSeq = m.got; });
+    [...state.party, ...state.box].forEach(m=>{ if(m && m.got === undefined) m.got = ++gotSeq; });
     state.seen = new Set(d.seen||[]);
     state.caught = new Set(d.caught||[]);
     state.shinyCaught = new Set(d.shinyCaught||[]);
@@ -1029,6 +1033,7 @@ function loadGame(){
 function resetGame(){
   try{ localStorage.removeItem(SAVE_KEY); localStorage.removeItem(OLD_SAVE_KEY); }catch(e){}
   state.party=[]; state.box=[]; state.seen=new Set(); state.caught=new Set(); state.shinyCaught=new Set(); state.mega={shards:{}, stones:{}};
+  gotSeq = 0;
   state.bag=defaultBag(); state.money=START_MONEY; state.zone=1; state.battle=null;
   state.tower=defaultTower();
   state.stats={}; state.quest={base:{}}; state.ach={done:[],claimed:[]}; state.meta=defaultMeta(); state.checkin={ym:'',days:[]};
@@ -1786,26 +1791,68 @@ function releaseToBox(idx, back){
   saveGame();
   screenParty(back, `<span class="sys">${nm(m)} 被送去了倉庫，隨時可以再拉回隊伍。</span>`);
 }
+/* ---------- 排序與篩選：倉庫、藥品／石頭選目標共用同一組設定；圖鑑另有自己的一組 ---------- */
+const GEN_LABEL = {1:'第一世代',2:'第二世代',3:'第三世代',4:'第四世代',5:'第五世代',6:'第六世代',7:'第七世代',8:'第八世代',9:'地區型態',10:'第九世代'};   // 數字是 towerGenOf 的分組（9＝地區型態、10＝第九世代）
+const GEN_ORDER = [1,2,3,4,5,6,7,8,10,9];
+const SORT_LABEL = {got:'獲得順序', dex:'圖鑑編號', lv:'等級（高→低）', hp:'HP（低→高）'};
+const dexBase = i => { const b = FORM_BASE[i]; return (b !== undefined) ? b : (i >= 962 ? i - 57 : i); };   // 地區型態用基礎寶可夢的編號
+const gotOf = m => (m.got === undefined ? 1e12 : m.got);
+const monCmp = {
+  got:(a,b)=> gotOf(a) - gotOf(b),
+  dex:(a,b)=> dexBase(a.dex) - dexBase(b.dex) || (FORM_BASE[a.dex] !== undefined) - (FORM_BASE[b.dex] !== undefined) || a.dex - b.dex || gotOf(a) - gotOf(b),
+  lv: (a,b)=> b.level - a.level || dexBase(a.dex) - dexBase(b.dex) || gotOf(a) - gotOf(b),
+  hp: (a,b)=> a.hp/a.maxhp - b.hp/b.maxhp || gotOf(a) - gotOf(b)
+};
+const mview = {sort:'got', type:'', gen:0};
+const mviewIsDefault = () => mview.sort === 'got' && !mview.type && !mview.gen;
+function viewMons(list){   // list：[{m, ...}]，回傳篩選＋排序後的新陣列
+  const r = list.filter(x=> (!mview.type || x.m.t1 === mview.type || x.m.t2 === mview.type) && (!mview.gen || towerGenOf(x.m.dex) === mview.gen));
+  const c = monCmp[mview.sort] || monCmp.got;
+  return r.sort((a,b)=>c(a.m, b.m));
+}
+function screenPickFilter(title, options, cur, onPick, back){   // options：[[值, 名稱], ...]
+  clearLog();
+  print(`<span class="em">— ${title} —</span>`);
+  const opts = options.map(([val,label])=>({ label:(val === cur ? '✔ ' : '') + label, half:true, action:()=>onPick(val) }));
+  opts.push({label:'取消', action:back});
+  setOptions(opts);
+}
+const TYPE_OPTIONS = () => [['','全部'], ...Object.keys(TYPE_COLOR).map(t=>[t,t])];
+const GEN_OPTIONS = () => [[0,'全部'], ...GEN_ORDER.map(g=>[g, GEN_LABEL[g]])];
+function mviewControls(rerender, resetPage){   // 回傳 4 顆按鈕：排序、屬性、世代、重設
+  const sorts = ['got','dex','lv','hp'];
+  return [
+    {label:`排序：${SORT_LABEL[mview.sort]}`, half:true, action:()=>{ mview.sort = sorts[(sorts.indexOf(mview.sort)+1) % sorts.length]; resetPage(); rerender(); }},
+    {label:`屬性：${mview.type || '全部'}`, half:true, action:()=>screenPickFilter('選擇屬性', TYPE_OPTIONS(), mview.type, v=>{ mview.type = v; resetPage(); rerender(); }, rerender)},
+    {label:`世代：${mview.gen ? GEN_LABEL[mview.gen] : '全部'}`, half:true, action:()=>screenPickFilter('選擇世代', GEN_OPTIONS(), mview.gen, v=>{ mview.gen = v; resetPage(); rerender(); }, rerender)},
+    {label:'↺ 重設', half:true, cls:mviewIsDefault() ? 'off' : '', action:()=>{ mview.sort = 'got'; mview.type = ''; mview.gen = 0; resetPage(); rerender(); }}
+  ];
+}
+const mviewNote = () => mviewIsDefault() ? '' : `　<span class="sys">（${SORT_LABEL[mview.sort]}${mview.type ? '・' + mview.type : ''}${mview.gen ? '・' + GEN_LABEL[mview.gen] : ''}）</span>`;
+
 /* ---------- 倉庫：一頁 8 隻，點寶可夢就加入隊伍（隊伍滿了才需要選擇換下誰） ---------- */
 let boxPage = 0;
 const BOX_PER_PAGE = 8;
 function screenBox(back, msg){
-  const pages = Math.max(1, Math.ceil(state.box.length / BOX_PER_PAGE));
+  const view = viewMons(state.box.map((m,i)=>({m,i})));   // i＝它在 state.box 裡真正的位置
+  const pages = Math.max(1, Math.ceil(view.length / BOX_PER_PAGE));
   boxPage = Math.min(Math.max(0, boxPage), pages-1);
   clearLog();
-  print(`<span class="em">— 倉庫 —</span>　共 ${state.box.length} 隻${pages>1 ? `　第 ${boxPage+1} / ${pages} 頁` : ''}`);
+  print(`<span class="em">— 倉庫 —</span>　共 ${state.box.length} 隻${view.length !== state.box.length ? `（符合 ${view.length} 隻）` : ''}${pages>1 ? `　第 ${boxPage+1} / ${pages} 頁` : ''}${mviewNote()}`);
   if(typeof msg === 'string') print(msg);
   print(`隊伍 ${state.party.length}/6：${state.party.map(m=>nm(m)).join('、')}`);
   if(state.box.length===0) print('<span class="sys">（空，抓到超過 6 隻時才會送來這裡）</span>');
+  else if(view.length===0) print('<span class="sys">（沒有符合篩選條件的寶可夢）</span>');
   else print(`<span class="sys">${state.party.length<6 ? '點寶可夢就會加入隊伍。' : '隊伍已滿，點寶可夢後再選擇要換下誰。'}</span>`);
   const start = boxPage * BOX_PER_PAGE;
-  const opts = state.box.slice(start, start + BOX_PER_PAGE).map((m,k)=>({
-    label:`${monName(m)}　Lv.${m.level}`, half:true, action:()=>boxPick(start+k, back)
+  const opts = view.slice(start, start + BOX_PER_PAGE).map(({m,i})=>({
+    label:`${monName(m)}　Lv.${m.level}`, half:true, action:()=>boxPick(i, back)
   }));
   if(pages>1){
     opts.push({label:"◀ 上一頁", half:true, cls:boxPage===0?'off':'', action:()=>{ if(boxPage>0){ boxPage--; screenBox(back); } }});
     opts.push({label:"下一頁 ▶", half:true, cls:boxPage>=pages-1?'off':'', action:()=>{ if(boxPage<pages-1){ boxPage++; screenBox(back); } }});
   }
+  opts.push(...mviewControls(()=>screenBox(back), ()=>{ boxPage = 0; }));
   opts.push({label:"返回隊伍", action:()=>screenParty(back)});
   setOptions(opts);
 }
@@ -1879,13 +1926,13 @@ let healPage = 0;
 function screenHealTarget(k, msg){
   const it = ITEMS[k];
   if(!(state.bag[k] > 0)) return screenHealItems('<span class="sys">這種藥用完了。</span>');
-  const all = [...state.party.map((m,i)=>({m,i,box:false})), ...state.box.map((m,i)=>({m,i,box:true}))].filter(({m})=>needsItem(m,it));
+  const all = viewMons([...state.party.map((m,i)=>({m,i,box:false})), ...state.box.map((m,i)=>({m,i,box:true}))].filter(({m})=>needsItem(m,it)));
   const per = 8, pages = Math.max(1, Math.ceil(all.length / per));
   healPage = Math.min(Math.max(0, healPage), pages-1);
   clearLog();
-  print(`<span class="em">— ${esc(it.label)}（剩 ${state.bag[k]}）—</span>${pages>1?`　第 ${healPage+1} / ${pages} 頁`:''}`);
+  print(`<span class="em">— ${esc(it.label)}（剩 ${state.bag[k]}）—</span>${pages>1?`　第 ${healPage+1} / ${pages} 頁`:''}${mviewNote()}`);
   if(typeof msg === 'string') print(msg);
-  if(!all.length) print('<span class="sys">隊伍和倉庫裡沒有需要使用的寶可夢。</span>');
+  if(!all.length) print(`<span class="sys">${mviewIsDefault() ? '隊伍和倉庫裡沒有需要使用的寶可夢。' : '沒有符合篩選條件、需要使用的寶可夢。'}</span>`);
   else print('要用在誰身上？（📦 = 在倉庫）');
   const stat = m => it.pp ? 'PP 未滿' : it.heal ? `HP ${m.hp}/${m.maxhp}` : '異常狀態';
   const opts = all.slice(healPage*per, healPage*per + per).map(({m,i,box})=>({
@@ -1895,6 +1942,7 @@ function screenHealTarget(k, msg){
     opts.push({label:'◀ 上一頁', half:true, cls:healPage===0?'off':'', action:()=>{ if(healPage>0){ healPage--; screenHealTarget(k); } }});
     opts.push({label:'下一頁 ▶', half:true, cls:healPage>=pages-1?'off':'', action:()=>{ if(healPage<pages-1){ healPage++; screenHealTarget(k); } }});
   }
+  opts.push(...mviewControls(()=>screenHealTarget(k), ()=>{ healPage = 0; }));
   opts.push({label:'← 換一種藥', action:()=>screenHealItems()});
   setOptions(opts);
 }
@@ -1915,13 +1963,18 @@ function screenStoneUse(k, msg){
   print(`<span class="em">— 使用${esc(it.label)} —</span>`);
   if(msg) print(msg);
   const opts = [];
-  [...state.party.map((m,i)=>({m,i,box:false})), ...state.box.map((m,i)=>({m,i,box:true}))].forEach(({m,i,box})=>{
+  const cand = [...state.party.map((m,i)=>({m,i,box:false})), ...state.box.map((m,i)=>({m,i,box:true}))].filter(({m})=>{
     const to = STONE_EVO[m.dex] && STONE_EVO[m.dex][k];
-    if(to===undefined) return;
+    return to !== undefined;
+  });
+  viewMons(cand).forEach(({m,i,box})=>{
+    const to = STONE_EVO[m.dex][k];
     opts.push({label:`${box?'📦 ':''}${monName(m)} Lv.${m.level} → ${DEX[to][0]}`, action:()=>useStone(k, box, i)});
   });
-  if(!opts.length) print('<span class="sys">隊伍和倉庫裡沒有能用這顆石頭進化的寶可夢。</span>');
-  else print('要讓哪一隻進化？（📦 = 在倉庫）');
+  if(!cand.length) print('<span class="sys">隊伍和倉庫裡沒有能用這顆石頭進化的寶可夢。</span>');
+  else if(!opts.length) print('<span class="sys">沒有符合篩選條件的寶可夢。</span>');
+  else print(`要讓哪一隻進化？（📦 = 在倉庫）${mviewNote()}`);
+  if(cand.length) opts.push(...mviewControls(()=>screenStoneUse(k), ()=>{}));
   opts.push({label:'← 返回背包', action:screenBag});
   setOptions(opts);
 }
@@ -1939,13 +1992,48 @@ function useStone(k, box, i){
 let dexPage=0;
 // 圖鑑編號：地區型態顯示成基礎寶可夢的編號加 ◇（例：阿羅拉小拉達 = #019◇）
 const dexNo = i => { const b = (typeof FORM_BASE !== 'undefined') ? FORM_BASE[i] : undefined; const base = (b !== undefined) ? b : (i >= 962 ? i - 57 : i); return String(base + 1).padStart(3,'0') + (b !== undefined ? '◇' : ''); };   // 索引 962 起是第九世代，索引 − 56 = 圖鑑編號
+/* 圖鑑的排序與篩選：圖鑑記的是「種類」，所以「等級」用隊伍＋倉庫裡該種的最高等級；沒持有的排最後 */
+const dview = {sort:'dex', st:'', type:'', gen:0};
+const DSORT_LABEL = {dex:'圖鑑編號', got:'獲得順序', lv:'等級（高→低）'};
+const DST_LABEL = {'':'全部', caught:'已捕捉', seen:'只見過', unseen:'未見過'};
+const dviewIsDefault = () => dview.sort === 'dex' && !dview.st && !dview.type && !dview.gen;
+function dexViewList(){
+  const caughtArr = Array.from(state.caught), seenArr = Array.from(state.seen);
+  const caughtRank = new Map(caughtArr.map((d,k)=>[d,k])), seenRank = new Map(seenArr.map((d,k)=>[d,k]));
+  const maxLv = new Map();
+  [...state.party, ...state.box].forEach(m=>{ if(!(maxLv.get(m.dex) >= m.level)) maxLv.set(m.dex, m.level); });
+  const stOf = i => state.caught.has(i) ? 'caught' : state.seen.has(i) ? 'seen' : 'unseen';
+  const list = [];
+  for(let i=0;i<DEX.length;i++){
+    const st = stOf(i);
+    if(dview.st && st !== dview.st) continue;
+    if(dview.gen && towerGenOf(i) !== dview.gen) continue;
+    // 屬性：只有「已捕捉」的圖鑑格才會顯示屬性，所以篩選屬性時，只看得到已捕捉的
+    if(dview.type && !(st === 'caught' && (DEX[i][1] === dview.type || DEX[i][2] === dview.type))) continue;
+    list.push(i);
+  }
+  const byNo = (a,b)=> a - b;
+  if(dview.sort === 'got'){
+    const rank = i => caughtRank.has(i) ? caughtRank.get(i) : seenRank.has(i) ? 1e6 + seenRank.get(i) : 2e6 + i;   // 先捕捉順序、再只見過、最後沒見過
+    list.sort((a,b)=> rank(a) - rank(b));
+  } else if(dview.sort === 'lv'){
+    list.sort((a,b)=> (maxLv.has(b) ? maxLv.get(b) : -1) - (maxLv.has(a) ? maxLv.get(a) : -1) || byNo(a,b));
+  }   // 'dex'：維持索引順序
+  return list;
+}
 function screenDex(){
   clearLog();
-  print(`<span class="em">— 全國圖鑑（第一～九世代＋地區型態）—</span>　已捕捉 ${state.caught.size} / ${DEX.length}　✨ 色違 ${state.shinyCaught.size}`);
-  hr();
+  const view = dexViewList();
   const perPage=15;
+  const pages = Math.max(1, Math.ceil(view.length / perPage));
+  dexPage = Math.min(Math.max(0, dexPage), pages-1);
+  const note = dviewIsDefault() ? '' : `　<span class="sys">（${DSORT_LABEL[dview.sort]}${dview.st ? '・' + DST_LABEL[dview.st] : ''}${dview.type ? '・' + dview.type : ''}${dview.gen ? '・' + GEN_LABEL[dview.gen] : ''}　符合 ${view.length} 隻）</span>`;
+  print(`<span class="em">— 全國圖鑑（第一～九世代＋地區型態）—</span>　已捕捉 ${state.caught.size} / ${DEX.length}　✨ 色違 ${state.shinyCaught.size}${note}`);
+  hr();
   const start=dexPage*perPage;
-  for(let i=start;i<Math.min(start+perPage,DEX.length);i++){
+  if(!view.length) print('<span class="sys">（沒有符合篩選條件的寶可夢）</span>');
+  for(let n=start;n<Math.min(start+perPage,view.length);n++){
+    const i = view[n];
     const e=DEX[i];
     const no=dexNo(i);
     const shinyMark = state.shinyCaught.has(i) ? ' <span class="shiny">✨</span>' : '';
@@ -1954,8 +2042,14 @@ function screenDex(){
     else print(`#${no} <span class="sys">？？？</span>`);
   }
   const opts=[];
-  if(start+perPage<DEX.length) opts.push({label:"下一頁 ▶", half:true, action:()=>{dexPage++; screenDex();}});
+  if(start+perPage<view.length) opts.push({label:"下一頁 ▶", half:true, action:()=>{dexPage++; screenDex();}});
   if(dexPage>0) opts.push({label:"◀ 上一頁", half:true, action:()=>{dexPage--; screenDex();}});
+  const dsorts = ['dex','got','lv'], dsts = ['','caught','seen','unseen'], redo = ()=>{ dexPage = 0; screenDex(); };
+  opts.push({label:`排序：${DSORT_LABEL[dview.sort]}`, half:true, action:()=>{ dview.sort = dsorts[(dsorts.indexOf(dview.sort)+1) % dsorts.length]; redo(); }});
+  opts.push({label:`狀態：${DST_LABEL[dview.st]}`, half:true, action:()=>{ dview.st = dsts[(dsts.indexOf(dview.st)+1) % dsts.length]; redo(); }});
+  opts.push({label:`屬性：${dview.type || '全部'}`, half:true, action:()=>screenPickFilter('選擇屬性（只會列出已捕捉的）', TYPE_OPTIONS(), dview.type, v=>{ dview.type = v; redo(); }, screenDex)});
+  opts.push({label:`世代：${dview.gen ? GEN_LABEL[dview.gen] : '全部'}`, half:true, action:()=>screenPickFilter('選擇世代', GEN_OPTIONS(), dview.gen, v=>{ dview.gen = v; redo(); }, screenDex)});
+  if(!dviewIsDefault()) opts.push({label:'↺ 重設排序與篩選', action:()=>{ dview.sort = 'dex'; dview.st = ''; dview.type = ''; dview.gen = 0; redo(); }});
   opts.push({label:"返回", action:()=>{dexPage=0; toField();}});
   setOptions(opts);
 }
