@@ -112,6 +112,18 @@ header .title{white-space:nowrap;}
 .mvp{flex-basis:100%;font-size:11px;color:var(--dim);}
 #stage{display:none;flex-direction:column;gap:14px;margin:12px 12px 0;padding:12px;border:1px solid var(--line);border-radius:14px;background:#0f1613;}
 #app.battle #stage{display:flex;}
+#app.detail #stage{display:flex;align-items:center;gap:4px;padding:8px 10px;}
+.hexsvg{width:100%;max-width:330px;height:auto;display:block;}
+.hexsvg .ax{stroke:var(--line);stroke-width:1;fill:none;}
+.hexsvg .ring{stroke:var(--line);stroke-width:1;fill:none;}
+.hexsvg .ring.cap{stroke-dasharray:3 3;}
+.hexsvg .orig{fill:none;stroke:var(--dim);stroke-width:1.5;stroke-dasharray:4 3;}
+.hexsvg .val{fill:rgba(38,198,218,.35);stroke:#26c6da;stroke-width:2;stroke-linejoin:round;}
+.hexsvg text{fill:var(--dim);font-size:12px;text-anchor:middle;dominant-baseline:middle;}
+.hexsvg text b,.hexsvg .num{fill:var(--accent2);font-weight:bold;}
+.hexsvg .sel{fill:var(--accent);}
+.hexinfo{font-size:12px;color:var(--dim);text-align:center;line-height:1.6;}
+.hexinfo b{color:var(--accent2);}
 #app.battle #bar{display:none;}
 #app.battle #log{flex:none;margin:10px 12px 0;min-height:84px;max-height:30vh;overflow-y:auto;border:1px solid var(--line);border-radius:12px;background:#0b0f0d;padding:10px 14px;}
 .card{width:66%;padding:8px 12px;border-radius:8px;border:3px solid;}
@@ -785,18 +797,41 @@ function statsFor(entry, level){
   const atk = Math.floor(base*0.9 + level*1.7);
   const def = Math.floor(base*0.8 + level*1.5);
   const spd = Math.floor(base*0.75 + level*1.3);
-  return {hp,atk,def,spd};
+  return {hp,atk,def,spd,spa:atk,sdf:def};   // 特攻／特防的基礎值跟攻擊／防禦一樣，差在能力點
 }
+/* ---------- 能力點（參考寶可夢冠軍：每一點直接加固定數值，不是百分比）----------
+   六項各 20~60 點，遇到時隨機決定。抓到後可以重新分配，但六項總和不能超過抓到時的總和（ivCap）。
+   加成：每點 +等級/100（HP 加倍，因為 HP 的數值本來就比較大）。Lv.50 時 60 點 ≈ +30。 */
+const IV_KEYS = ['hp','atk','def','spa','sdf','spd'];
+const IV_NAMES = {hp:'HP', atk:'攻擊', def:'防禦', spa:'特攻', sdf:'特防', spd:'速度'};
+const IV_MIN = 20, IV_MAX = 60;
+const PHYS_MOVES = new Set(['撞擊','捨身衝撞','掙扎']);   // 物理招式（吃攻擊／防禦），其他屬性招式吃特攻／特防
+function rollIv(){ const iv = {}; IV_KEYS.forEach(k=>{ iv[k] = IV_MIN + Math.floor(Math.random()*(IV_MAX-IV_MIN+1)); }); return iv; }
+const ivSum = iv => IV_KEYS.reduce((a,k)=>a + (iv[k]||0), 0);
+function ensureIv(m){
+  if(!m.iv || typeof m.iv !== 'object') m.iv = rollIv();
+  IV_KEYS.forEach(k=>{ if(typeof m.iv[k] !== 'number') m.iv[k] = IV_MIN + Math.floor(Math.random()*(IV_MAX-IV_MIN+1)); });
+  if(!(m.ivCap >= ivSum(m.iv))) m.ivCap = ivSum(m.iv);
+  return m.iv;
+}
+function statsWithIv(entry, level, iv){
+  const st = statsFor(entry, level), b = k => Math.floor((iv[k]||0) * level / 100);
+  return {hp:st.hp + 2*b('hp'), atk:st.atk + b('atk'), def:st.def + b('def'), spa:st.spa + b('spa'), sdf:st.sdf + b('sdf'), spd:st.spd + b('spd')};
+}
+function monStats(m){ ensureIv(m); return statsWithIv(DEX[m.dex], m.level, m.iv); }
+function setNonHpStats(m, st){ m.atk = st.atk; m.def = st.def; m.spa = st.spa; m.sdf = st.sdf; m.spd = st.spd; }
 let gotSeq = 0;   // 獲得序號：每隻寶可夢誕生時蓋一個，倉庫「獲得順序」排序用（舊存檔在 loadGame 補）
 function makeMon(dexIndex, level, opts){
   opts = opts || {};
   level = Math.max(1, Math.min(MAX_LEVEL, level));
   const e = DEX[dexIndex];
-  const st = statsFor(e, level);
+  const iv = opts.iv ? Object.assign({}, opts.iv) : rollIv();
+  const st = statsWithIv(e, level, iv);
   const shiny = (opts.shiny !== undefined) ? opts.shiny : (Math.random() < SHINY_RATE);
   return {
     dex: dexIndex, name:e[0], t1:e[1], t2:e[2], tier:e[3],
-    level, hp:st.hp, maxhp:st.hp, atk:st.atk, def:st.def, spd:st.spd,
+    level, hp:st.hp, maxhp:st.hp, atk:st.atk, def:st.def, spa:st.spa, sdf:st.sdf, spd:st.spd,
+    iv, ivCap: opts.ivCap || ivSum(iv),
     exp:0, expNext: 18 + level*9, moves: buildMoves(e),
     status:null, atkMul:1, defMul:1, shiny, got:++gotSeq
   };
@@ -808,13 +843,19 @@ function boostMon(m, f){
   if(!(f > 1.001)) return m;
   m.boost = f;
   m.maxhp = Math.round(m.maxhp*f); m.hp = m.maxhp;
-  m.atk = Math.round(m.atk*(1+(f-1)*0.6)); m.def = Math.round(m.def*(1+(f-1)*0.5));
+  scaleAD(m, 1+(f-1)*0.6, 1+(f-1)*0.5, Math.round);
   return m;
+}
+// 攻擊＋特攻乘 fa、防禦＋特防乘 fd（各種強化倍率共用）
+function scaleAD(m, fa, fd, r){
+  r = r || Math.round;
+  m.atk = r(m.atk*fa); m.spa = r((m.spa ?? m.atk/fa)*fa);
+  m.def = r(m.def*fd); m.sdf = r((m.sdf ?? m.def/fd)*fd);
 }
 function unboostMon(m){            // 抓到之後還原成一般數值
   if(!m.boost) return;
-  const st = statsFor(DEX[m.dex], m.level), ratio = m.hp/m.maxhp;
-  m.maxhp = st.hp; m.atk = st.atk; m.def = st.def; m.spd = st.spd;
+  const st = monStats(m), ratio = m.hp/m.maxhp;
+  m.maxhp = st.hp; setNonHpStats(m, st);
   m.hp = Math.max(1, Math.round(st.hp*ratio));
   delete m.boost;
 }
@@ -1002,6 +1043,11 @@ function fixMon(m){
   if(fixed.level > MAX_LEVEL) fixed.level = MAX_LEVEL;
   if(fixed.level >= MAX_LEVEL) fixed.exp = 0;
   if(fixed._mega) megaRevert(fixed);   // 存檔時剛好在 Mega 進化中：還原成原本的樣子
+  if(!fixed.iv || fixed.spa === undefined || fixed.sdf === undefined){   // 舊存檔：補上隨機能力點並重算數值（HP 比例不變）
+    delete fixed.boost;
+    const ratio = fixed.maxhp ? fixed.hp/fixed.maxhp : 1, st = monStats(fixed);
+    fixed.maxhp = st.hp; fixed.hp = fixed.hp > 0 ? Math.max(1, Math.round(st.hp*ratio)) : 0; setNonHpStats(fixed, st);
+  }
   return fixed;
 }
 function loadGame(){
@@ -1273,7 +1319,8 @@ function pickStarter(idx){
   state.caught.add(idx); state.seen.add(idx);
   clearLog();
   print(`<span class="good">你選擇了 ${esc(mon.name)}！</span>`);
-  print(`Lv.${mon.level}　HP ${mon.hp}　攻擊 ${mon.atk}　防禦 ${mon.def}　速度 ${mon.spd}　屬性：${typeStr(mon)}`);
+  print(`Lv.${mon.level}　屬性：${typeStr(mon)}`);
+  print(statLine(mon));
   print(`媽媽塞給你 💰 ${START_MONEY} 當旅費。`);
   hr();
   print('旅程從 1 號道路開始。前方草叢似乎有寶可夢的動靜……');
@@ -1296,7 +1343,7 @@ function screenField(){
     {label:"🏪 商店", half:true, action:()=>{ shopQty=1; screenShop(); }},
     {label:`💊 補給站${state.meta.cd>0?`（再 ${state.meta.cd} 場）`:''}`, half:true, action:()=>healAll(screenField)},
     {label:`🗺 選擇地區（目前：${zoneName(state.zone)}）`, action:()=>screenZoneRegions()},
-    {label: state.zone < MAP_NAMES.length ? `⏩ 前往 ${zoneName(state.zone+1)}` : '⏩ 已到最後一站', action:advanceZone}
+    {label: advanceLabel(), action:advanceZone}
   ]);
 }
 /* ---------- 自選地圖 ---------- */
@@ -1352,11 +1399,31 @@ function toBattle(){ clearLog(); screenBattle(); }
 function advanceZone(){
   clearLog();
   if(state.zone >= MAP_NAMES.length){ print(`<span class="sys">${zoneName(state.zone)}已經是旅程的最後一站了。</span>`); return screenField(); }
+  if(!canAdvance()){
+    print(`<span class="bad">還不能前往下一區！要先在 ${zoneName(state.zone)} 打贏 ${ZONE_WIN_NEED} 場對戰（目前 ${zoneWins(state.zone)}/${ZONE_WIN_NEED}）。</span>`);
+    print('<span class="sys">打倒或抓到野生寶可夢、打贏路上的訓練家都算；逃跑和輸掉不算。</span>');
+    return screenField();
+  }
   state.zone++;
   if(state.zone > state.maxZone) state.maxZone = state.zone;
   print(`<span class="em">📍 你來到了 ${zoneName(state.zone)}。</span>`);
   print('這裡的野生寶可夢感覺更強了。');
   screenField();
+}
+/* ---------- 前往下一區的條件：在目前這一區打贏 ZONE_WIN_NEED 場（已經去過的區域不受限制） ---------- */
+const ZONE_WIN_NEED = 50;
+function zoneWins(z){ const w = state.meta.zoneWins; return (w && w[z]) || 0; }
+function addZoneWin(){   // 野外打倒／抓到、路上訓練家打贏時呼叫
+  const m = state.meta; if(!m.zoneWins || typeof m.zoneWins !== 'object') m.zoneWins = {};
+  m.zoneWins[state.zone] = (m.zoneWins[state.zone]||0) + 1;
+  if(m.zoneWins[state.zone] === ZONE_WIN_NEED && state.zone >= state.maxZone && state.zone < MAP_NAMES.length)
+    print(`<span class="good">🗺 在 ${zoneName(state.zone)} 打贏了 ${ZONE_WIN_NEED} 場，可以前往下一區了！</span>`);
+}
+function canAdvance(){ return state.zone < state.maxZone || zoneWins(state.zone) >= ZONE_WIN_NEED; }
+function advanceLabel(){
+  if(state.zone >= MAP_NAMES.length) return '⏩ 已到最後一站';
+  const next = `⏩ 前往 ${zoneName(state.zone+1)}`;
+  return canAdvance() ? next : `🔒 ${next.slice(2)}（本區勝場 ${zoneWins(state.zone)}/${ZONE_WIN_NEED}）`;
 }
 function fullHeal(){ state.party.forEach(m=>{ m.hp=m.maxhp; m.status=null; m.atkMul=1; m.defMul=1; restorePP(m); }); }
 function healAll(returnTo){
@@ -1394,6 +1461,7 @@ function encounter(){
   clearLog();
   announceShiny(wild);
   print(`<span class="em">野生的 ${nm(wild)}（Lv.${wild.level}）出現了！</span>`);
+  print(wild._newBefore ? '<span class="boss">★ 還沒抓過的寶可夢！</span>' : '<span class="sys">✔ 已經抓過了</span>');
   screenBattle(); battleIntro('wild');
 }
 function zoneName(z){ return MAP_NAMES[Math.min(z, MAP_NAMES.length)-1]; }
@@ -1528,7 +1596,7 @@ function makeMegaFoe(m, lvl){
   const f = makeMon(m.base, lvl, {shiny:false});
   f.name = m.name; f.t1 = m.t1; f.t2 = m.t2; f.megaId = m.id;
   f.maxhp = Math.round(f.maxhp*MEGA_FOE_MUL.hp); f.hp = f.maxhp;
-  f.atk = Math.round(f.atk*MEGA_FOE_MUL.atk); f.def = Math.round(f.def*MEGA_FOE_MUL.def); f.spd = Math.round(f.spd*MEGA_FOE_MUL.spd);
+  scaleAD(f, MEGA_FOE_MUL.atk, MEGA_FOE_MUL.def); f.spd = Math.round(f.spd*MEGA_FOE_MUL.spd);
   f.moves = buildMoves(megaEntry(m));
   return f;
 }
@@ -1536,13 +1604,13 @@ function megaFormsFor(p){ const st = megaState().stones; return MEGAS.filter(m=>
 function megaEvolve(p, m){
   p._mega = {id:m.id, moves:JSON.parse(JSON.stringify(p.moves))};
   p.name = m.name; p.t1 = m.t1; p.t2 = m.t2;
-  p.atk = Math.round(p.atk*MEGA_ME_MUL.atk); p.def = Math.round(p.def*MEGA_ME_MUL.def); p.spd = Math.round(p.spd*MEGA_ME_MUL.spd);
+  scaleAD(p, MEGA_ME_MUL.atk, MEGA_ME_MUL.def); p.spd = Math.round(p.spd*MEGA_ME_MUL.spd);
   p.moves = buildMoves(megaEntry(m));
 }
 function megaRevert(p){
   if(!p || !p._mega) return;
-  const e = DEX[p.dex], st = statsFor(e, p.level), saved = p._mega.moves;
-  p.name = e[0]; p.t1 = e[1]; p.t2 = e[2]; p.atk = st.atk; p.def = st.def; p.spd = st.spd;
+  const e = DEX[p.dex], st = monStats(p), saved = p._mega.moves;
+  p.name = e[0]; p.t1 = e[1]; p.t2 = e[2]; setNonHpStats(p, st);
   if(Array.isArray(saved) && saved.length === 4) p.moves = saved;
   delete p._mega;
 }
@@ -1764,7 +1832,7 @@ function startTowerFloor(){
   if(f.endless){
     const mul = endlessMul();
     wild.maxhp = Math.floor(wild.maxhp*endlessHpMul()); wild.hp = wild.maxhp;
-    wild.atk = Math.floor(wild.atk*mul); wild.def = Math.floor(wild.def*mul); wild.spd = Math.floor(wild.spd*mul);
+    scaleAD(wild, mul, mul, Math.floor); wild.spd = Math.floor(wild.spd*mul);
   }
   state.seen.add(f.dexIdx);
   clearBattleModifiers();
@@ -1791,7 +1859,7 @@ function startLegendaryChallenge(){
   const wild = makeMon(dexIdx, legendaryLevel(t.legendaryPtr));
   const lm = legendaryMul(t.legendaryPtr), lh = legendaryHpMul(t.legendaryPtr);
   wild.maxhp = Math.floor(wild.maxhp*lh); wild.hp = wild.maxhp;
-  wild.atk = Math.floor(wild.atk*lm); wild.def = Math.floor(wild.def*lm); wild.spd = Math.floor(wild.spd*lm);
+  scaleAD(wild, lm, lm, Math.floor); wild.spd = Math.floor(wild.spd*lm);
   wild.moves = wild.moves.map(m => Object.assign({}, m, {power: Math.round((m.power||0)*1.25)}));
   wild.moves.push({name:'神獸之力', type:DEX[dexIdx][1], power:110, pp:8, maxpp:8});
   wild.legend = true;   // 讓對方出招時會挑對你最有效的招（見 battle.js 的 randomWildMove）
@@ -1837,16 +1905,92 @@ function screenParty(back, msg){
 function screenMember(i, back){
   const m = state.party[i];
   if(!m) return screenParty(back);
+  ensureIv(m);
   clearLog();
   const expTxt = m.level>=MAX_LEVEL ? 'EXP MAX' : `EXP ${m.exp}/${m.expNext}`;
   print(`<span class="em">${nm(m)}</span>${i===0 ? ' <span class="em">★隊長</span>' : ''}`);
   print(`Lv.${m.level}　HP ${m.hp}/${m.maxhp}${statusTag(m)}`);
-  print(`屬性：${typeStr(m)}　速度 ${m.spd}　${expTxt}`);
+  print(`屬性：${typeStr(m)}　${expTxt}`);
+  print(statLine(m));
+  stageDetail = hexPanel(m.iv, null, m.ivCap, null);
   const opts = [];
+  opts.push({label:"📊 調整能力點", action:()=>screenIvEdit(i, back)});
   if(i>0) opts.push({label:"★ 設為隊長", action:()=>setLeader(i, back)});
   if(state.party.length>1) opts.push({label:"📦 送去倉庫", action:()=>releaseToBox(i, back)});
   opts.push({label:"返回隊伍", action:()=>screenParty(back)});
   setOptions(opts);
+}
+function statLine(m){
+  return IV_KEYS.map(k=>`${IV_NAMES[k]} ${k==='hp' ? m.maxhp : m[k]}`).join('　');
+}
+/* ---------- 能力六邊形：上 HP、右上 攻擊、右下 防禦、下 速度、左下 特防、左上 特攻 ---------- */
+const HEX_ORDER = ['hp','atk','def','spd','sdf','spa'];
+function hexPanel(iv, orig, cap, sel){
+  const cx = 150, cy = 118, R = 80;
+  const pt = (k, v) => { const a = -Math.PI/2 + HEX_ORDER.indexOf(k)*Math.PI/3, r = R*v/IV_MAX; return [cx + r*Math.cos(a), cy + r*Math.sin(a)]; };
+  const poly = vals => HEX_ORDER.map(k=>pt(k, vals[k]).map(n=>n.toFixed(1)).join(',')).join(' ');
+  const ring = v => poly(Object.fromEntries(HEX_ORDER.map(k=>[k, v])));
+  let svg = `<svg class="hexsvg" viewBox="0 0 300 236" xmlns="http://www.w3.org/2000/svg">`;
+  [IV_MIN, 40, IV_MAX].forEach(v=>{ svg += `<polygon class="ring${v===IV_MAX?' cap':''}" points="${ring(v)}"/>`; });
+  HEX_ORDER.forEach(k=>{ const [x,y] = pt(k, IV_MAX); svg += `<line class="ax" x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/>`; });
+  if(orig) svg += `<polygon class="orig" points="${poly(orig)}"/>`;
+  svg += `<polygon class="val" points="${poly(iv)}"/>`;
+  HEX_ORDER.forEach(k=>{
+    const [x,y] = pt(k, IV_MAX + 15);
+    svg += `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" class="${k===sel?'sel':''}">${k===sel?'▶':''}${IV_NAMES[k]} <tspan class="num">${iv[k]}</tspan></text>`;
+  });
+  svg += '</svg>';
+  const used = ivSum(iv);
+  const info = orig
+    ? `總和 <b>${used}</b> / 上限 ${cap}　剩餘 <b>${cap - used}</b> 點　（虛線＝原本的設定）`
+    : `能力點總和 <b>${used}</b> / 上限 ${cap}　（每項 ${IV_MIN}~${IV_MAX}）`;
+  return svg + `<div class="hexinfo">${info}</div>`;
+}
+/* ---------- 調整能力點：六項各 IV_MIN~IV_MAX，總和不能超過抓到時的總和 ---------- */
+let ivEdit = null;
+function screenIvEdit(i, back){
+  const m = state.party[i]; if(!m) return screenParty(back);
+  ensureIv(m);
+  ivEdit = {i, back, m, iv:Object.assign({}, m.iv), sel:'atk', step:1};
+  renderIvEdit();
+}
+function ivChange(d){
+  const E = ivEdit, k = E.sel, v = E.iv[k], left = E.m.ivCap - ivSum(E.iv);
+  let nv = Math.max(IV_MIN, Math.min(IV_MAX, v + d));
+  if(nv > v) nv = Math.min(nv, v + left);
+  if(nv !== v){ E.iv[k] = nv; }
+  renderIvEdit();
+}
+function renderIvEdit(){
+  const E = ivEdit, m = E.m;
+  if(!state.party.includes(m)) return screenParty(E.back);
+  clearLog();   // 不印文字，按鈕才不會每按一次就等動畫
+  stageDetail = hexPanel(E.iv, m.iv, m.ivCap, E.sel);
+  const k = E.sel, v = E.iv[k], left = m.ivCap - ivSum(E.iv);
+  const opts = IV_KEYS.map(s=>({label:`${s===k?'▶ ':''}${IV_NAMES[s]}　${E.iv[s]}`, half:true, cls:s===k?'':'', action:()=>{ E.sel = s; renderIvEdit(); }}));
+  const canDown = v > IV_MIN, canUp = v < IV_MAX && left > 0;
+  opts.push({label:'−5', cls:'q'+(canDown?'':' off'), action:()=>ivChange(-5)});
+  opts.push({label:'−1', cls:'q'+(canDown?'':' off'), action:()=>ivChange(-1)});
+  opts.push({label:'+1', cls:'q'+(canUp?'':' off'), action:()=>ivChange(1)});
+  opts.push({label:'+5', cls:'q'+(canUp?'':' off'), action:()=>ivChange(5)});
+  const changed = IV_KEYS.some(s=>E.iv[s] !== m.iv[s]);
+  opts.push({label:'✔ 確定', half:true, cls:changed?'':'off', action:ivConfirm});
+  opts.push({label:'↺ 重來', half:true, cls:changed?'':'off', action:()=>{ E.iv = Object.assign({}, m.iv); renderIvEdit(); }});
+  opts.push({label:'返回（不儲存）', action:()=>screenMember(state.party.indexOf(m), E.back)});
+  setOptions(opts);
+}
+function ivConfirm(){
+  const E = ivEdit, m = E.m;
+  if(!state.party.includes(m)) return screenParty(E.back);
+  if(ivSum(E.iv) > m.ivCap || IV_KEYS.some(k=>E.iv[k] < IV_MIN || E.iv[k] > IV_MAX)) return renderIvEdit();
+  m.iv = Object.assign({}, E.iv);
+  const ratio = m.maxhp ? m.hp/m.maxhp : 1, st = monStats(m);
+  m.maxhp = st.hp; m.hp = m.hp > 0 ? Math.max(1, Math.min(st.hp, Math.round(st.hp*ratio))) : 0;
+  setNonHpStats(m, st);
+  saveGame();
+  ivEdit = null;
+  screenMember(state.party.indexOf(m), E.back);
+  print('<span class="good">✔ 能力點已更新！</span>');
 }
 function setLeader(idx, back){
   if(idx<=0 || idx>=state.party.length) return screenParty(back);

@@ -264,6 +264,7 @@ function pctHp(m){ return Math.max(0, Math.round(100*m.hp/m.maxhp)); }
 function stChip(m){ const t={burn:'🔥灼傷',poison:'☠️中毒',paralyze:'⚡麻痺'}[m.status]; return t ? ' · '+t : ''; }
 // 對戰卡片：at = 幾毫秒後才更新（讓血條跟著文字一起變），換了寶可夢則立即更新
 let stageTimers = [], stageLatest = null, stageKey = null;
+let stageDetail = null;   // 非對戰時要顯示在上方畫面的內容（例如寶可夢的能力六邊形）；只在下一次 setOptions 生效一次
 function flushStage(){ stageTimers.forEach(clearTimeout); stageTimers = []; if(stageLatest){ stageLatest(); stageLatest = null; } }
 /* ---------- 對戰邊框：精靈球／超級球／高級球／大師球配色 ---------- */
 const FRAME_NAMES = {poke:'精靈球', great:'超級球', ultra:'高級球', master:'大師球'};
@@ -300,7 +301,7 @@ function renderStage(at, hit, power){   // hit：'foe' 或 'me'，該張卡片�
   const nmx = m => (m.shiny?'✨':'')+esc(m.name);
   const xp = p.level>=MAX_LEVEL ? 100 : Math.min(100, Math.round(100*p.exp/p.expNext));
   const html =
-    `<div class="card foe"><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${dexNo(w.dex)} · ${esc(typeStr(w))}${stChip(w)}${teamDots(b,w)}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
+    `<div class="card foe"><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${dexNo(w.dex)} · ${esc(typeStr(w))}${b.mode==='wild' ? (state.caught.has(w.dex) ? ' · ✔已抓過' : ' · ★未抓過') : ''}${stChip(w)}${teamDots(b,w)}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
     `<div class="card me ${frameClass(p)}"><div class="r1"><span>${nmx(p)}</span><span>Lv.${p.level}</span></div><div class="r2">${esc(typeStr(p))} · 速度 ${p.spd}${stChip(p)}</div><div class="bar${pctHp(p)<30?' low':''}"><i style="width:${pctHp(p)}%"></i></div><div class="hpt">HP: ${p.hp}/${p.maxhp}</div><div class="xp"><i style="width:${xp}%"></i></div></div>`;
   const turnHtml = `<div>回合<br><b>${b.turn||1}</b></div><div>狀態<br><b>${b.phase||'選擇行動'}</b></div>`;
   const apply = ()=>{
@@ -315,9 +316,12 @@ function renderStage(at, hit, power){   // hit：'foe' 或 'me'，該張卡片�
   stageTimers.push(setTimeout(apply, at));
 }
 function syncBattleUI(phase){
-  const b=state.battle;
-  if(b && state.party[b.playerIdx]){ if(phase) b.phase=phase; appEl.classList.add('battle'); renderStage(curDelay()); }
-  else appEl.classList.remove('battle');
+  const b=state.battle, d=stageDetail; stageDetail = null;
+  if(b && state.party[b.playerIdx]){ appEl.classList.remove('detail'); if(phase) b.phase=phase; appEl.classList.add('battle'); renderStage(curDelay()); }
+  else {
+    appEl.classList.remove('battle');
+    if(d){ stageEl.innerHTML = d; appEl.classList.add('detail'); } else appEl.classList.remove('detail');
+  }
 }
 
 /* ---------- BATTLE ---------- */
@@ -399,8 +403,8 @@ function hpBars(){ /* 改由 renderStage() 畫對戰卡片 */ }
 
 function normalizeLegend(w){
   if(!w.legend) return;
-  const fresh = makeMon(w.dex, w.level, {shiny:w.shiny});
-  Object.assign(w, {maxhp:fresh.maxhp, hp:fresh.maxhp, atk:fresh.atk, def:fresh.def, spd:fresh.spd, moves:fresh.moves, exp:0, expNext:fresh.expNext});
+  const fresh = makeMon(w.dex, w.level, {shiny:w.shiny, iv:w.iv, ivCap:w.ivCap});
+  Object.assign(w, {maxhp:fresh.maxhp, hp:fresh.maxhp, atk:fresh.atk, def:fresh.def, spa:fresh.spa, sdf:fresh.sdf, spd:fresh.spd, moves:fresh.moves, exp:0, expNext:fresh.expNext});
   delete w.legend;
 }
 function randomWildMove(w){
@@ -430,8 +434,9 @@ function dmg(atkMon, defMon, move){
   const e = moveEff(move, defMon);
   if(e === 0) return 0;
   const variance = 0.85 + Math.random()*0.3;
-  const atkStat = atkMon.atk * (atkMon.atkMul||1);
-  const defStat = Math.max(1, defMon.def * (defMon.defMul||1));
+  const phys = PHYS_MOVES.has(move.name);   // 物理招式吃攻擊／防禦，屬性招式吃特攻／特防
+  const atkStat = (phys ? atkMon.atk : (atkMon.spa ?? atkMon.atk)) * (atkMon.atkMul||1);
+  const defStat = Math.max(1, (phys ? defMon.def : (defMon.sdf ?? defMon.def)) * (defMon.defMul||1));
   const raw = ((2*atkMon.level/5+2)*move.power*(atkStat/defStat)/50 + 2);
   return Math.max(1, Math.floor(raw*stab*e*variance));
 }
@@ -535,6 +540,7 @@ function tryCatch(ballKey){
       if(!was && frameUnlocked(fk)) notify('🎴 解鎖新邊框：' + FRAME_NAMES[fk] + '！（到個人檔案裡設定）'); }
 
     pityResolve(w, true);
+    if(b.mode === 'wild') addZoneWin();
     state.caught.add(w.dex);
     if(w.shiny) state.shinyCaught.add(w.dex);
     print(`<span class="good">抓到了！${nm(w)} 已加入圖鑑！</span>`);
@@ -682,10 +688,10 @@ function evolveTo(p, toIdx){
   const oldName = esc(monName(p));
   const e = DEX[toIdx];
   p.dex = toIdx; p.name = e[0]; p.t1 = e[1]; p.t2 = e[2]; p.tier = e[3];
-  const st = statsFor(e, p.level);
+  const st = monStats(p);
   const hpGain = st.hp - p.maxhp;
   p.maxhp = st.hp; p.hp = Math.max(1, Math.min(p.maxhp, p.hp + hpGain));
-  p.atk = st.atk; p.def = st.def; p.spd = st.spd;
+  setNonHpStats(p, st);
   p.moves = buildMoves(e);
   state.caught.add(toIdx); state.seen.add(toIdx);
   if(p.shiny) state.shinyCaught.add(toIdx);
@@ -730,9 +736,9 @@ function grantExp(p, oppLevel, mult, verb, quiet){
   if(!quiet) print(`<span class="good">${nm(p)} ${verb} ${gained} 經驗值。</span>`);
   while(p.level < MAX_LEVEL && p.exp >= p.expNext){
     p.exp -= p.expNext; p.level++; p.expNext = 18 + p.level*9;
-    const st = statsFor(DEX[p.dex], p.level);
+    const st = monStats(p);
     const gainHp = st.hp-p.maxhp;
-    p.maxhp=st.hp; p.hp=Math.min(p.hp+gainHp, p.maxhp); p.atk=st.atk; p.def=st.def; p.spd=st.spd;
+    p.maxhp=st.hp; p.hp=Math.min(p.hp+gainHp, p.maxhp); setNonHpStats(p, st);
     print(`<span class="em">${nm(p)} 升到了 Lv.${p.level}！</span>`);
     queueEvolution(p);
   }
@@ -759,7 +765,7 @@ function winBattle(){
   const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
   const mode = b.mode;
   bump('wins'); if(mode==='tower'){ bump('floors'); if(b.boss) bump('bosses'); }
-  if(mode==='wild') pityResolve(w, false);
+  if(mode==='wild'){ pityResolve(w, false); addZoneWin(); }
   print(`<span class="good">擊敗了${mode==='wild'?'野生的 ':' '}${nm(w)}！</span>`);
   const expMul = (mode==='tower') ? TOWER_EXP_MUL : 1;
   if(p.hp>0) grantExp(p, w.level, expMul, '獲得');
@@ -789,7 +795,7 @@ function winBattle(){
     warnIfWiped(); return runEvolutions(()=>screenMegaBattle(true));
   }
   if(mode==='trainer'){
-    giveMoney(b.reward); bump('trainers'); warnIfWiped(); return runEvolutions(()=>screenField());
+    addZoneWin(); giveMoney(b.reward); bump('trainers'); warnIfWiped(); return runEvolutions(()=>screenField());
   }
   if(mode==='gym'){
     giveMoney(b.reward); state.meta.badges++; bump('gyms');
@@ -992,6 +998,7 @@ function svApply(){            // 依目前的強化重算整隊的數值（以�
   state.party.forEach(m=>{
     const b0 = m._b; if(!b0) return;
     m.atk = Math.round(b0.atk*(1+p.atk/100)); m.def = Math.round(b0.def*(1+p.def/100)); m.spd = Math.round(b0.spd*(1+p.spd/100));
+    m.spa = Math.round((b0.spa ?? b0.atk)*(1+p.atk/100)); m.sdf = Math.round((b0.sdf ?? b0.def)*(1+p.def/100));
     const nmax = Math.round(b0.maxhp*(1+p.hp/100)), gain = nmax - m.maxhp;
     m.maxhp = nmax; if(m.hp>0 && gain>0) m.hp = Math.min(nmax, m.hp + gain);
     if(m.hp>m.maxhp) m.hp = m.maxhp;
@@ -1028,7 +1035,7 @@ function svEnemy(s){
   const e = makeMon(dex, lv, {shiny:false});
   const hpS = 1 + 0.04*(s-1) + (boss ? 0.30 : 0), atkS = 1 + 0.02*(s-1) + (boss ? 0.25 : 0);
   e.maxhp = Math.round(e.maxhp*hpS); e.hp = e.maxhp;
-  e.atk = Math.round(e.atk*atkS); e.def = Math.round(e.def*(1 + 0.012*(s-1) + (boss?0.1:0)));
+  scaleAD(e, atkS, 1 + 0.012*(s-1) + (boss?0.1:0));
   e.spd = Math.round(e.spd*(1 + 0.01*(s-1)));
   return e;
 }
@@ -1050,7 +1057,7 @@ function svStart(){
   const backup = state.party;
   const team = JSON.parse(JSON.stringify(backup)).map(m=>{
     m.hp = m.maxhp; m.status = null; m.atkMul = 1; m.defMul = 1; restorePP(m);
-    m._b = {maxhp:m.maxhp, atk:m.atk, def:m.def, spd:m.spd};
+    m._b = {maxhp:m.maxhp, atk:m.atk, def:m.def, spa:m.spa, sdf:m.sdf, spd:m.spd};
     return m;
   });
   svRun = {backup, stage:0, cleared:0, perks:{atk:0,def:0,spd:0,hp:0}, total:{money:0, items:{}}};
