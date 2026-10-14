@@ -2778,6 +2778,12 @@ loadGame();
 applyFestTheme();
 screenCover();
 showInAppNotice();
+// 測試帳號：網址加 ?test 會載入 test-save.json（全圖鑑 Lv.100、能力點全滿、全部 Mega 進化石），覆蓋前會先確認
+if(/[?&]test\b/.test(location.search)){
+  fetch('test-save.json', {cache:'no-store'}).then(r=>{ if(!r.ok) throw 0; return r.text(); })
+    .then(t=>{ saveIOBack = ()=> state.party.length ? screenContinue() : screenCover(); stageImport(t); })
+    .catch(()=> print('<span class="bad">讀不到 test-save.json。</span>'));
+}
 </script>
 <script>
 /* 音效掛勾：不改原本流程，只在關鍵函式外面包一層 */
