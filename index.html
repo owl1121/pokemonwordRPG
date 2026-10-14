@@ -131,6 +131,7 @@ header .title{white-space:nowrap;}
 .card.me{align-self:flex-start;background:#dff6f8;border-color:#26c6da;color:#00838f;}
 .card .r1{display:flex;justify-content:space-between;font-weight:bold;font-size:15px;}
 .card .r2{font-size:11px;opacity:.75;margin:2px 0 5px;}
+.ab{color:#ffd166;font-weight:bold;}
 .card .bar{height:8px;border-radius:4px;background:rgba(0,0,0,.14);overflow:hidden;}
 .card .bar i{display:block;height:100%;background:#4caf50;}
 .card .bar.low i{background:#e53935;}
@@ -428,6 +429,7 @@ button,input,textarea,select{font-family:inherit;}
 <script src="data.js"></script>
 <script src="sounds/list.js" onerror="this.remove()"></script>
 <script src="battle.js"></script>
+<script src="features.js"></script>
 <script>
 /* =====================================================
    events.js — 節日活動系統
@@ -818,7 +820,7 @@ function statsWithIv(entry, level, iv){
   const st = statsFor(entry, level), b = k => Math.floor((iv[k]||0) * level / 100);
   return {hp:st.hp + 2*b('hp'), atk:st.atk + b('atk'), def:st.def + b('def'), spa:st.spa + b('spa'), sdf:st.sdf + b('sdf'), spd:st.spd + b('spd')};
 }
-function monStats(m){ ensureIv(m); return statsWithIv(DEX[m.dex], m.level, m.iv); }
+function monStats(m){ ensureIv(m); return natureStats(statsWithIv(DEX[m.dex], m.level, m.iv), ensureNature(m)); }
 function setNonHpStats(m, st){ m.atk = st.atk; m.def = st.def; m.spa = st.spa; m.sdf = st.sdf; m.spd = st.spd; }
 let gotSeq = 0;   // 獲得序號：每隻寶可夢誕生時蓋一個，倉庫「獲得順序」排序用（舊存檔在 loadGame 補）
 function makeMon(dexIndex, level, opts){
@@ -826,12 +828,13 @@ function makeMon(dexIndex, level, opts){
   level = Math.max(1, Math.min(MAX_LEVEL, level));
   const e = DEX[dexIndex];
   const iv = opts.iv ? Object.assign({}, opts.iv) : rollIv();
-  const st = statsWithIv(e, level, iv);
-  const shiny = (opts.shiny !== undefined) ? opts.shiny : (Math.random() < SHINY_RATE);
+  const nature = (opts.nature >= 0) ? opts.nature : rollNature();
+  const st = natureStats(statsWithIv(e, level, iv), nature);
+  const shiny = (opts.shiny !== undefined) ? opts.shiny : (Math.random() < shinyRate());
   return {
     dex: dexIndex, name:e[0], t1:e[1], t2:e[2], tier:e[3],
     level, hp:st.hp, maxhp:st.hp, atk:st.atk, def:st.def, spa:st.spa, sdf:st.sdf, spd:st.spd,
-    iv, ivCap: opts.ivCap || ivSum(iv),
+    iv, ivCap: opts.ivCap || ivSum(iv), nature, ab: (opts.ab && ABILITIES[opts.ab]) ? opts.ab : rollAbility(e),
     exp:0, expNext: 18 + level*9, moves: buildMoves(e),
     status:null, atkMul:1, defMul:1, shiny, got:++gotSeq
   };
@@ -999,7 +1002,7 @@ function renderBar(){
   const lead = state.party[0];
   const money = `<span>💰 ${state.money}</span><span>🪙 ${state.tower.coins}</span>`;
   barEl.innerHTML = lead
-    ? `<span>📍 ${zoneName(state.zone)}</span><span>隊長: ${esc(monName(lead))} Lv.${lead.level} HP ${lead.hp}/${lead.maxhp}</span><span>圖鑑 ${state.caught.size}/${DEX.length}</span><span>球 x${totalBalls()}</span>${money}`
+    ? `<span>📍 ${zoneName(state.zone)} ${WEATHER[fieldWeather()].icon}</span><span>隊長: ${esc(monName(lead))} Lv.${lead.level} HP ${lead.hp}/${lead.maxhp}</span><span>圖鑑 ${state.caught.size}/${DEX.length}</span><span>球 x${totalBalls()}</span>${money}`
     : `<span>圖鑑 ${state.caught.size}/${DEX.length}</span>`;
 }
 function setOptions(list, phase){
@@ -1043,7 +1046,11 @@ function fixMon(m){
   if(fixed.level > MAX_LEVEL) fixed.level = MAX_LEVEL;
   if(fixed.level >= MAX_LEVEL) fixed.exp = 0;
   if(fixed._mega) megaRevert(fixed);   // 存檔時剛好在 Mega 進化中：還原成原本的樣子
-  if(!fixed.iv || fixed.spa === undefined || fixed.sdf === undefined){   // 舊存檔：補上隨機能力點並重算數值（HP 比例不變）
+  const needNature = !(fixed.nature >= 0 && fixed.nature < NATURES.length);   // 舊存檔：補上性格、特性
+  if(needNature) fixed.nature = rollNature();
+  ensureAbility(fixed);
+  if(fixed.held && !HELD[fixed.held]) delete fixed.held;
+  if(needNature || !fixed.iv || fixed.spa === undefined || fixed.sdf === undefined){   // 舊存檔：補上隨機能力點並重算數值（HP 比例不變）
     delete fixed.boost;
     const ratio = fixed.maxhp ? fixed.hp/fixed.maxhp : 1, st = monStats(fixed);
     fixed.maxhp = st.hp; fixed.hp = fixed.hp > 0 ? Math.max(1, Math.round(st.hp*ratio)) : 0; setNonHpStats(fixed, st);
@@ -1341,7 +1348,8 @@ function screenField(){
     {label:"👥 隊伍", half:true, action:screenParty},
     {label:"🎒 背包", half:true, action:screenBag},
     {label:"🏪 商店", half:true, action:()=>{ shopQty=1; screenShop(); }},
-    {label:`💊 補給站${state.meta.cd>0?`（再 ${state.meta.cd} 場）`:''}`, half:true, action:()=>healAll(screenField)},
+    {label:`💊 補給站${state.meta.cd>0 && !daily('nurse')?`（再 ${state.meta.cd} 場）`:''}`, half:true, action:()=>healAll(screenField)},
+    {label:`📅 今日：${dailyEvent().name}　｜　天氣：${WEATHER[fieldWeather()].icon} ${WEATHER[fieldWeather()].name}`, action:screenToday},
     {label:`🗺 選擇地區（目前：${zoneName(state.zone)}）`, action:()=>screenZoneRegions()},
     {label: advanceLabel(), action:advanceZone}
   ]);
@@ -1425,16 +1433,17 @@ function advanceLabel(){
   const next = `⏩ 前往 ${zoneName(state.zone+1)}`;
   return canAdvance() ? next : `🔒 ${next.slice(2)}（本區勝場 ${zoneWins(state.zone)}/${ZONE_WIN_NEED}）`;
 }
-function fullHeal(){ state.party.forEach(m=>{ m.hp=m.maxhp; m.status=null; m.atkMul=1; m.defMul=1; restorePP(m); }); }
+function fullHeal(){ state.party.forEach(m=>{ m.hp=m.maxhp; m.status=null; m.atkMul=1; m.defMul=1; resetBattleFlags(m); restorePP(m); }); }
 function healAll(returnTo){
   const mt = state.meta;
-  if(mt.cd > 0 && !noAlive()){
+  if(mt.cd > 0 && !noAlive() && !daily('nurse')){
     clearLog(); print(`<span class="bad">補給站還在整備中……要再打完 ${mt.cd} 場戰鬥才能使用。</span>`);
     return (returnTo||screenField)();
   }
-  fullHeal(); mt.cd = 2;
+  fullHeal(); mt.cd = daily('nurse') ? 0 : 2;
   clearLog();
-  print('<span class="good">補給站的護士治好了你隊伍中所有寶可夢！（再打完 2 場戰鬥才能再次使用）</span>');
+  print(daily('nurse') ? '<span class="good">補給站的護士治好了你隊伍中所有寶可夢！（💊 今天是義診日，隨時都能再來）</span>'
+                       : '<span class="good">補給站的護士治好了你隊伍中所有寶可夢！（再打完 2 場戰鬥才能再次使用）</span>');
   (returnTo||screenField)();
 }
 function noAlive(){ return state.party.length===0 || !state.party.some(m=>m.hp>0); }
@@ -1447,7 +1456,7 @@ function encounter(){
     print('<span class="bad">你的隊伍已經沒有能戰鬥的寶可夢了，先去補給站治療吧。</span>');
     screenField(); return;
   }
-  if(Math.random() < 0.12) return findItem();
+  if(Math.random() < (daily('item') ? 0.24 : 0.12)) return findItem();
   const mt = state.meta; mt.since++;
   if(mt.since >= mt.next){ mt.since = 0; mt.next = 8 + Math.floor(Math.random()*5); return startTrainer(); }
   const lvl = Math.max(2, Math.min(MAX_LEVEL, state.zone*4 + Math.floor(Math.random()*5) - 2));
@@ -1493,7 +1502,7 @@ function pickWildIndex(zone){
   const w = stageWeights(zone);
   let r = Math.random(), s = 1;
   if(r < w[0]) s = 1; else if(r < w[0]+w[1]) s = 2; else s = 3;
-  const pool = WILD_BY_STAGE[s];
+  const pool = biasPool(WILD_BY_STAGE[s]);   // 天氣、今日大量出現的屬性比較常出現
   return pool[Math.floor(Math.random()*pool.length)];
 }
 /* ---------- 圖鑑保底：連續 PITY_N-1 次遇到的都是已經抓過的，第 PITY_N 次一定是沒抓過的（神獸不在野外出現，不算） ---------- */
@@ -1549,22 +1558,23 @@ function screenShop(msg){
   clearLog();
   renderBar();
   print('<span class="em">— 友好商店 —</span>');
-  print(`你的錢包：💰 ${state.money}　｜　一次購買 ${shopQty} 個`);
+  print(`你的錢包：💰 ${state.money}　｜　一次購買 ${shopQty} 個${daily('sale') ? '　<span class="good">🏷 特價日 8 折中</span>' : ''}`);
   if(msg) print(msg);
   hr();
   const opts = Object.keys(ITEMS).filter(k=>ITEMS[k].price>0).map(k=>{
     const it = ITEMS[k];
-    const total = it.price*shopQty;
-    return {label:`${it.label} $${it.price}`, half:true, html:`${esc(it.label)} $${total}<span class="sub">${esc(it.desc)}｜持有 ${state.bag[k]||0}</span>`, action:()=>buyItem(k)};
+    const total = priceOf(k)*shopQty;
+    return {label:`${it.label} $${priceOf(k)}`, half:true, html:`${esc(it.label)} $${total}<span class="sub">${esc(it.desc)}｜持有 ${state.bag[k]||0}</span>`, action:()=>buyItem(k)};
   });
   opts.push({label:`數量 ×${shopQty}`, half:true, action:()=>{ shopQty = shopQty===1?5:(shopQty===5?10:1); screenShop(); }});
+  opts.push({label:"🧷 攜帶道具", half:true, action:()=>screenHeldShop()});
   opts.push({label:"💎 Mega 商店", half:true, action:()=>screenMegaShop(screenShop)});
   opts.push({label:"離開", half:true, action:toField});
   setOptions(opts);
 }
 function buyItem(k){
   const it = ITEMS[k];
-  const total = it.price*shopQty;
+  const total = priceOf(k)*shopQty;
   if(state.money < total){
     return screenShop(`<span class="bad">錢不夠！還差 💰 ${total-state.money}。</span>`);
   }
@@ -1912,9 +1922,13 @@ function screenMember(i, back){
   print(`Lv.${m.level}　HP ${m.hp}/${m.maxhp}${statusTag(m)}`);
   print(`屬性：${typeStr(m)}　${expTxt}`);
   print(statLine(m));
+  print(`性格：${esc(natureText(m))}`);
+  print(`特性：${esc(abName(m))}<span class="sys">　${esc(ABILITIES[ensureAbility(m)].desc)}</span>`);
+  print(`攜帶：${esc(heldName(m))}${m.held && HELD[m.held] ? `<span class="sys">　${esc(HELD[m.held].desc)}</span>` : ''}`);
   stageDetail = hexPanel(m.iv, null, m.ivCap, null);
   const opts = [];
-  opts.push({label:"📊 調整能力點", action:()=>screenIvEdit(i, back)});
+  opts.push({label:"📊 調整能力點", half:true, action:()=>screenIvEdit(i, back)});
+  opts.push({label:`🧷 攜帶道具（${heldName(m)}）`, half:true, action:()=>screenHeld(i, back)});
   if(i>0) opts.push({label:"★ 設為隊長", action:()=>setLeader(i, back)});
   if(state.party.length>1) opts.push({label:"📦 送去倉庫", action:()=>releaseToBox(i, back)});
   opts.push({label:"返回隊伍", action:()=>screenParty(back)});
@@ -2108,6 +2122,8 @@ function screenBag(){
     const it = ITEMS[k];
     print(`${it.label} x${state.bag[k]||0}　${it.desc}`);
   });
+  const heldOwned = HELD_KEYS.filter(k=>state.bag[k] > 0);
+  if(heldOwned.length){ hr(); print('<span class="em">🧷 攜帶道具</span>（到「隊伍」點寶可夢裝上）'); heldOwned.forEach(k=>print(`${HELD[k].label} x${state.bag[k]}　${HELD[k].desc}`)); }
   hr();
   print('<span class="sys">道具不夠的話到商店購買，打倒寶可夢就能賺錢。</span>');
   const opts = [];
@@ -2272,7 +2288,7 @@ function screenDex(){
 }
 
 /* ---------- TRAINERS / GYMS / ROAD ITEMS ---------- */
-function battleDone(){ megaRevertAll(); if(state.meta.cd > 0) state.meta.cd--; }
+function battleDone(){ megaRevertAll(); state.party.forEach(resetBattleFlags); if(state.meta.cd > 0) state.meta.cd--; }
 function startMultiBattle(mode, foes, title, extra){
   foes.forEach(f=>state.seen.add(f.dex));
   const first = foes.shift();

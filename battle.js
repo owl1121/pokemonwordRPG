@@ -242,6 +242,9 @@ function eff(atkType, defTypes){
 function applyMoveEffect(atkMon, defMon, move){
   const fx = STATUS_FX[move.type];
   if(!fx || Math.random() > fx.chance) return '';
+  if(hasAb(atkMon,'sheerforce') && hasSecondary(move)) return '';                       // 強行：不觸發附加效果
+  if(fx.kind !== 'selfDefUp' && hasAb(defMon,'shielddust')) return '';                  // 鱗粉：不受附加效果
+  if(statusImmune(defMon, fx.kind)) return '';                                           // 免疫／柔軟／水幕
   switch(fx.kind){
     case 'burn': if(defMon.status) return ''; defMon.status='burn'; return `<span class="bad">${nm(defMon)} 陷入了灼傷！</span>`;
     case 'poison': if(defMon.status) return ''; defMon.status='poison'; return `<span class="bad">${nm(defMon)} 中毒了！</span>`;
@@ -253,7 +256,7 @@ function applyMoveEffect(atkMon, defMon, move){
   return '';
 }
 function tickStatus(mon){
-  if(!mon.status || mon.hp<=0) return '';
+  if(!mon.status || mon.hp<=0 || hasAb(mon,'magicguard')) return '';
   if(mon.status==='poison'){ const d=Math.max(1,Math.floor(mon.maxhp/8)); mon.hp=Math.max(0,mon.hp-d); return `<span class="bad">${nm(mon)} 因中毒損失了 ${d} 點HP。</span>`; }
   if(mon.status==='burn'){ const d=Math.max(1,Math.floor(mon.maxhp/16)); mon.hp=Math.max(0,mon.hp-d); return `<span class="bad">${nm(mon)} 因灼傷損失了 ${d} 點HP。</span>`; }
   return '';
@@ -303,7 +306,7 @@ function renderStage(at, hit, power){   // hit：'foe' 或 'me'，該張卡片�
   const html =
     `<div class="card foe"><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${dexNo(w.dex)} · ${esc(typeStr(w))}${b.mode==='wild' ? (state.caught.has(w.dex) ? ' · ✔已抓過' : ' · ★未抓過') : ''}${stChip(w)}${teamDots(b,w)}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
     `<div class="card me ${frameClass(p)}"><div class="r1"><span>${nmx(p)}</span><span>Lv.${p.level}</span></div><div class="r2">${esc(typeStr(p))} · 速度 ${p.spd}${stChip(p)}</div><div class="bar${pctHp(p)<30?' low':''}"><i style="width:${pctHp(p)}%"></i></div><div class="hpt">HP: ${p.hp}/${p.maxhp}</div><div class="xp"><i style="width:${xp}%"></i></div></div>`;
-  const turnHtml = `<div>回合<br><b>${b.turn||1}</b></div><div>狀態<br><b>${b.phase||'選擇行動'}</b></div>`;
+  const turnHtml = `<div>回合<br><b>${b.turn||1}</b></div><div>狀態<br><b>${b.phase||'選擇行動'}</b></div>${weatherChip() ? `<div>天氣<br><b>${weatherChip()}</b></div>` : ''}`;
   const apply = ()=>{
     stageEl.innerHTML = html; turnEl.innerHTML = turnHtml;
     if(hit){ const c = stageEl.querySelector('.card.'+hit); if(c){ c.classList.add('hit'); if(power) c.classList.add(power); } }
@@ -338,6 +341,7 @@ function who(m){
 function screenBattle(){
   const b = state.battle, p = state.party[b.playerIdx];
   renderBar();
+  entryCheck();   // 天氣、出場特性（威嚇、乾旱……）
   const FX={burn:'灼傷',poison:'中毒',paralyze:'麻痺',drain:'吸血',atkDown:'降攻',defDown:'降防',selfDefUp:'升防'};
   const mk = (mv,i)=>{
     const off = !mv.struggle && !(mv.pp>0), fx = STATUS_FX[mv.type];
@@ -403,7 +407,7 @@ function hpBars(){ /* 改由 renderStage() 畫對戰卡片 */ }
 
 function normalizeLegend(w){
   if(!w.legend) return;
-  const fresh = makeMon(w.dex, w.level, {shiny:w.shiny, iv:w.iv, ivCap:w.ivCap});
+  const fresh = makeMon(w.dex, w.level, {shiny:w.shiny, iv:w.iv, ivCap:w.ivCap, nature:w.nature, ab:w.ab});
   Object.assign(w, {maxhp:fresh.maxhp, hp:fresh.maxhp, atk:fresh.atk, def:fresh.def, spa:fresh.spa, sdf:fresh.sdf, spd:fresh.spd, moves:fresh.moves, exp:0, expNext:fresh.expNext});
   delete w.legend;
 }
@@ -422,7 +426,7 @@ function randomWildMove(w){
   }
   return w.moves[Math.floor(Math.random()*w.moves.length)];
 }
-function clearBattleModifiers(){ state.party.forEach(m=>{ m.status=null; m.atkMul=1; m.defMul=1; }); }
+function clearBattleModifiers(){ state.party.forEach(m=>{ m.status=null; m.atkMul=1; m.defMul=1; resetBattleFlags(m); }); }
 function effText(mult){
   if(mult === 0) return ' <span class="bad">沒有效果……</span>';
   if(mult >= 2) return ' <span class="good">效果絕佳！</span>';
@@ -430,18 +434,18 @@ function effText(mult){
   return '';
 }
 function dmg(atkMon, defMon, move){
-  const stab = typesOf(atkMon).includes(move.type) ? 1.3 : 1.0;
+  const stab = typesOf(atkMon).includes(move.type) ? (hasAb(atkMon,'adaptability') ? 1.6 : 1.3) : 1.0;
   const e = moveEff(move, defMon);
   if(e === 0) return 0;
   const variance = 0.85 + Math.random()*0.3;
   const phys = PHYS_MOVES.has(move.name);   // 物理招式吃攻擊／防禦，屬性招式吃特攻／特防
   const atkStat = (phys ? atkMon.atk : (atkMon.spa ?? atkMon.atk)) * (atkMon.atkMul||1);
-  const defStat = Math.max(1, (phys ? defMon.def : (defMon.sdf ?? defMon.def)) * (defMon.defMul||1));
+  const defStat = Math.max(1, (phys ? defMon.def : (defMon.sdf ?? defMon.def)) * (defMon.defMul||1) * fxDefStat(defMon, phys));
   const raw = ((2*atkMon.level/5+2)*move.power*(atkStat/defStat)/50 + 2);
-  return Math.max(1, Math.floor(raw*stab*e*variance));
+  return Math.max(1, Math.floor(raw*stab*e*variance*fxDmgMul(atkMon, defMon, move, e)));   // 天氣、特性、攜帶道具
 }
 function moveEff(move, defMon){ return move.struggle ? 1 : eff(move.type, typesOf(defMon)); }
-function effSpd(m){ return m.spd * (m.status==='paralyze' ? 0.5 : 1); }
+function effSpd(m){ return m.spd * fxSpd(m) * (m.status==='paralyze' ? 0.5 : 1); }
 // 單次出招：處理麻痺、傷害、反作用力、吸血、附加效果
 function doAttack(att, def, move){
   const t0 = curDelay(), hpBefore = def.hp;
@@ -463,11 +467,14 @@ function attackCore(att, def, move){
     print(`${who(att)} 使用了 ${esc(move.name)}！但是對 ${who(def)} 沒有效果……`);
     return;
   }
-  const d = dmg(att, def, move);
+  const absorbed = absorbCheck(att, def, move);   // 飄浮、蓄電、儲水、食草、引火
+  if(absorbed){ print(`${who(att)} 使用了 ${esc(move.name)}！`); print(absorbed); return; }
+  const [d, endureMsg] = endureCheck(def, dmg(att, def, move));   // 氣勢披帶／結實
   def.hp = Math.max(0, def.hp - d);
   if(!isEnemy) trackDmg(att, d);   // 寶可夢稱號：累計我方每隻寶可夢打出的傷害
   print(`${who(att)} 使用了 ${esc(move.name)}！造成 <span class="${isEnemy?'bad':'em'}">${d}</span> 點傷害。${effText(e)}`);
-  if(move.recoil){
+  if(endureMsg) print(endureMsg);
+  if(move.recoil && (move.struggle || !(hasAb(att,'rockhead') || hasAb(att,'magicguard')))){
     const rec = Math.max(1, Math.floor(d*move.recoil));
     att.hp = Math.max(0, att.hp-rec);
     print(`<span class="bad">${who(att)} 因反作用力受到了 ${rec} 點傷害！</span>`);
@@ -478,8 +485,9 @@ function attackCore(att, def, move){
     if(heal>0 && att.hp>0 && att.hp<att.maxhp){ att.hp=Math.min(att.maxhp, att.hp+heal); print(`<span class="good">${who(att)} 吸取了 ${heal} 點 HP！</span>`); }
   } else if(def.hp>0 || (fx && fx.kind==='selfDefUp')){
     const msg = applyMoveEffect(att, def, move);
-    if(msg) print(msg);
+    if(msg){ print(msg); lumCheck(def); }
   }
+  afterHitFx(att, def, move, d);   // 生命寶珠、貝殼之鈴、凸凸頭盔、靜電等、自信過度
 }
 // 回傳 true 代表戰鬥已結束或已切換畫面
 function checkBattleEnd(){
@@ -499,8 +507,10 @@ function enemyTurn(){
 function endOfTurn(){
   const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
   const tW = tickStatus(w); if(tW) print(tW);
+  endTurnFx(w);
   if(w.hp<=0){ return winBattle(); }
   const tP = tickStatus(p); if(tP) print(tP);
+  endTurnFx(p);
   if(afterFaintCheck(p)) return;
   b.turn = (b.turn||1) + 1;
   screenBattle();
@@ -511,7 +521,8 @@ function playerMove(moveIdx){
   if(moveIdx>=0 && !(p.moves[moveIdx].pp>0)) return screenMoveSelect();
   const pm = moveIdx<0 ? STRUGGLE : p.moves[moveIdx], wm = randomWildMove(w);
   const ps = effSpd(p), ws = effSpd(w);
-  const playerFirst = ps > ws || (ps === ws && Math.random() < 0.5);
+  let playerFirst = ps > ws || (ps === ws && Math.random() < 0.5);
+  if(!playerFirst && holds(p,'quickclaw') && Math.random() < 0.2){ playerFirst = true; print(`<span class="good">〔先制之爪〕${nm(p)} 搶先行動了！</span>`); }
   const order = playerFirst ? [[p,w,pm],[w,p,wm]] : [[w,p,wm],[p,w,pm]];
   for(const [a,d,m] of order){
     if(a.hp<=0 || d.hp<=0) continue;
@@ -530,10 +541,10 @@ function tryCatch(ballKey){
   }
   state.bag[ballKey]--;
   const hpRatio = w.hp/w.maxhp;
-  const chance = ball.master ? 1 : Math.min(0.97, (1-hpRatio)*0.75 + 0.15 + ball.ball);
+  const chance = ball.master ? 1 : Math.min(0.97, (1-hpRatio)*0.75 + 0.15 + ball.ball + (daily('catch') ? 0.1 : 0));
   print(`你對 ${nm(w)} 丟出了${ball.label}……`);
   if(Math.random() < chance){
-    unboostMon(w); w.status = null; w.atkMul = 1; w.defMul = 1; bump('catches'); battleDone();
+    unboostMon(w); w.status = null; w.atkMul = 1; w.defMul = 1; resetBattleFlags(w); bump('catches'); battleDone();
     w.ball = BALL_TO_FRAME[ballKey] || 'poke';   // 記住被哪種球抓到（決定邊框）
     { if([w.t1,w.t2].some(x=>x==='幽靈'||x==='惡')) bump('ghostCatch');   // 節日活動任務用
       const fk = w.ball, was = frameUnlocked(fk); bump('cb_' + fk);
@@ -619,6 +630,7 @@ function doSwitch(idx){
   b.playerIdx = idx;
   clearLog();
   print(`收回了 ${nm(old)}，換上 ${nm(state.party[idx])}！`);
+  switchOutFx(old); entryCheck();
   if(enemyTurn()) return;
   endOfTurn();
 }
@@ -654,6 +666,7 @@ function doSwitchBeforeFoe(idx, nx){
   b.playerIdx = idx;
   clearLog();
   print(`收回了 ${nm(old)}，換上 ${nm(state.party[idx])}！`);   // 這是我方的免費換人，對方不會趁機攻擊
+  switchOutFx(old);
   sendNextFoe(nx, true);
 }
 function sendNextFoe(nx, keepLog){
@@ -731,7 +744,7 @@ function grantExp(p, oppLevel, mult, verb, quiet){
     if(!quiet) print(`<span class="sys">${nm(p)} 已經是 Lv.${MAX_LEVEL}，經驗值無法再增加。</span>`);
     return;
   }
-  const gained = Math.max(1, Math.floor((10 + oppLevel*4) * mult));
+  const gained = Math.max(1, Math.floor((10 + oppLevel*4) * mult * expMulFor(p)));   // 修行日、幸運蛋
   p.exp += gained;
   if(!quiet) print(`<span class="good">${nm(p)} ${verb} ${gained} 經驗值。</span>`);
   while(p.level < MAX_LEVEL && p.exp >= p.expNext){
@@ -749,11 +762,12 @@ const SHARE_EXP = 0.3;
 function shareExp(active, oppLevel, mult){
   const others = state.party.filter(m=>m!==active && m.hp>0 && m.level<MAX_LEVEL);
   if(!others.length) return;
-  const gained = Math.max(1, Math.floor((10 + oppLevel*4) * mult * SHARE_EXP));
+  const gained = Math.max(1, Math.floor((10 + oppLevel*4) * mult * SHARE_EXP * (daily('exp') ? 1.5 : 1)));
   print(`<span class="good">隊伍中其他 ${others.length} 隻寶可夢各分到 ${gained} 經驗值。</span>`);
   others.forEach(m=>grantExp(m, oppLevel, mult*SHARE_EXP, '分到', true));
 }
 function giveMoney(amount){
+  amount = Math.round(amount * moneyMul());   // 豐收日、護符金幣
   state.money += amount;
   print(`<span class="good">獲得了 💰 ${amount}！（目前 ${state.money}）</span>`);
 }
@@ -835,7 +849,7 @@ function winBattle(){
     normalizeLegend(w);   // 降服後強化消失，數值與招式恢復成一般的神獸
     w.ball = 'master';    // 靠實力降服的神獸，邊框是大師球
     const wasMaster = frameUnlocked('master');
-    w.hp = w.maxhp; w.status=null; w.atkMul=1; w.defMul=1;
+    w.hp = w.maxhp; w.status=null; w.atkMul=1; w.defMul=1; resetBattleFlags(w);
     state.caught.add(w.dex); state.seen.add(w.dex);
     if(w.shiny) state.shinyCaught.add(w.dex);
     if(state.party.length<6){ state.party.push(w); print(`<span class="good">✦ ${nm(w)} 被你的實力降服，加入了隊伍！</span>`); }
