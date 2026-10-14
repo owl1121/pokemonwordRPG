@@ -534,6 +534,7 @@ function tryCatch(ballKey){
       const fk = w.ball, was = frameUnlocked(fk); bump('cb_' + fk);
       if(!was && frameUnlocked(fk)) notify('🎴 解鎖新邊框：' + FRAME_NAMES[fk] + '！（到個人檔案裡設定）'); }
 
+    pityResolve(w, true);
     state.caught.add(w.dex);
     if(w.shiny) state.shinyCaught.add(w.dex);
     print(`<span class="good">抓到了！${nm(w)} 已加入圖鑑！</span>`);
@@ -758,6 +759,7 @@ function winBattle(){
   const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
   const mode = b.mode;
   bump('wins'); if(mode==='tower'){ bump('floors'); if(b.boss) bump('bosses'); }
+  if(mode==='wild') pityResolve(w, false);
   print(`<span class="good">擊敗了${mode==='wild'?'野生的 ':' '}${nm(w)}！</span>`);
   const expMul = (mode==='tower') ? TOWER_EXP_MUL : 1;
   if(p.hp>0) grantExp(p, w.level, expMul, '獲得');

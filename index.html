@@ -1386,6 +1386,7 @@ function encounter(){
   const lvl = Math.max(2, Math.min(MAX_LEVEL, state.zone*4 + Math.floor(Math.random()*5) - 2));
   const dexIndex = pickWildIndexPity(state.zone);
   const wild = boostMon(makeMon(dexIndex, lvl), zoneBoost(state.zone));
+  wild._pw = true; wild._newBefore = !state.caught.has(dexIndex);   // 保底結算用
   state.seen.add(dexIndex);
   clearBattleModifiers();
   state.battle = { wild, playerIdx: firstAlive(), mode:'wild' };
@@ -1432,21 +1433,25 @@ const PITY_N = 50;
 function uncaughtWild(){ return NONLEG.filter(i=>!state.caught.has(i)); }
 function pityLabel(){
   if(!uncaughtWild().length) return '';
-  const left = PITY_N - Math.min(PITY_N-1, state.meta.pity||0);   // 還要幾次遭遇內，一定會碰到沒抓過的
-  return left <= 1 ? '・下一隻必出沒抓過的' : `・保底 ${left} 次內必出新的`;
+  const left = PITY_N - Math.min(PITY_N-1, state.meta.pity||0);   // 還要打倒／抓到幾隻（已抓過的），下一隻才會保證是新的
+  return left <= 1 ? '・下一隻必出沒抓過的' : `・再打倒／抓 ${left-1} 隻必出新的`;
 }
+// 計數只在「打倒」或「抓到」時才算（逃跑、我方被打倒都不算）；保底觸發後，要真的把新的那隻抓起來才會歸零
 function pickWildIndexPity(zone){
-  const mt = state.meta;
-  if((mt.pity||0) >= PITY_N-1){
+  if((state.meta.pity||0) >= PITY_N-1){
     const w = stageWeights(zone);
     let r = Math.random(), s = (r < w[0]) ? 1 : (r < w[0]+w[1]) ? 2 : 3;
     let pool = WILD_BY_STAGE[s].filter(i=>!state.caught.has(i));
     if(!pool.length) pool = uncaughtWild();    // 這個階段的都抓過了：改從全部沒抓過的挑
-    if(pool.length){ mt.pity = 0; return pool[Math.floor(Math.random()*pool.length)]; }
+    if(pool.length) return pool[Math.floor(Math.random()*pool.length)];
   }
-  const idx = pickWildIndex(zone);
-  mt.pity = state.caught.has(idx) ? (mt.pity||0) + 1 : 0;
-  return idx;
+  return pickWildIndex(zone);
+}
+function pityResolve(w, caught){   // 野外遭遇結算：caught=true 抓到、false 打倒
+  if(!w || !w._pw) return;
+  if(w._newBefore){ if(caught) state.meta.pity = 0; }   // 新的那隻：抓到才歸零，打倒不算也不扣
+  else state.meta.pity = (state.meta.pity||0) + 1;
+  delete w._pw; delete w._newBefore;
 }
 function firstAlive(){
   for(let i=0;i<state.party.length;i++) if(state.party[i].hp>0) return i;
