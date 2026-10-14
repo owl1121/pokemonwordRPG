@@ -460,6 +460,7 @@ function attackCore(att, def, move){
   }
   const d = dmg(att, def, move);
   def.hp = Math.max(0, def.hp - d);
+  if(!isEnemy) trackDmg(att, d);   // 寶可夢稱號：累計我方每隻寶可夢打出的傷害
   print(`${who(att)} 使用了 ${esc(move.name)}！造成 <span class="${isEnemy?'bad':'em'}">${d}</span> 點傷害。${effText(e)}`);
   if(move.recoil){
     const rec = Math.max(1, Math.floor(d*move.recoil));

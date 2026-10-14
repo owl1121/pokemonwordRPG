@@ -74,7 +74,7 @@ header .sub{font-size:11px; color:var(--dim); margin-top:2px;}
 .hpfill{height:100%; background:var(--good);}
 .line{opacity:0; transform:translateY(4px); animation:lineIn .5s ease forwards;}
 @keyframes lineIn{ to{opacity:1; transform:translateY(0);} }
-#opts.pending .opt{opacity:0; pointer-events:none;}
+#opts.pending .opt{opacity:0;}   /* 仍可點：點下去 = 跳過動畫（見最底下的按鈕腳本） */
 #opts{transition:opacity .2s;}
 #skipHint{font-size:11px; color:var(--dim); text-align:center; padding:4px 0 0;}
 .shiny{color:#ff9ef5;}
@@ -136,7 +136,15 @@ header{display:flex;justify-content:space-between;align-items:center;gap:8px;}
 #modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:30;align-items:center;justify-content:center;padding:14px;}
 #modal.open{display:flex;}
 .mbox{width:100%;max-width:460px;max-height:86vh;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
-.mhead{display:flex;gap:6px;padding:10px;border-bottom:1px solid var(--line);}
+.mhead{display:flex;flex-wrap:wrap;gap:6px;padding:10px;border-bottom:1px solid var(--line);}
+.mhead .tab.wide{flex:1 1 100%;order:5;}
+.mhead .x{order:4;}
+.ptbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;}
+.ptbar .claim.off{background:transparent;color:var(--text);border:1px solid var(--line);}
+.ptbar input{flex:1;min-width:90px;box-sizing:border-box;background:transparent;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-size:16px;font-family:inherit;}
+.ptrow .qrow .claim,.ptrow .qrow .lk{flex:1;text-align:center;}
+.ptrow .lk{color:var(--dim);font-size:12px;border:1px dashed var(--line);border-radius:10px;padding:4px 2px;}
+.ptrow .on{font-size:12px;color:var(--good);border:1px solid var(--good);border-radius:10px;padding:4px 2px;}
 .mhead .tab{flex:1;background:transparent;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit;font-size:13px;}
 .mhead .tab.on{background:#1f3a2c;border-color:var(--accent2);}
 .mhead .x{background:transparent;color:var(--dim);border:none;font-size:18px;padding:0 8px;}
@@ -397,7 +405,7 @@ button,input,textarea,select{font-family:inherit;}
   <div id="opts"></div>
   <div id="turnbar"></div>
   <div id="modal" onclick="if(event.target===this)closeMenu()"><div class="mbox">
-    <div class="mhead"><button class="tab" id="tabProfile" onclick="openMenu('profile')">👤 檔案</button><button class="tab" id="tabQuest" onclick="openMenu('quest')">📜 任務</button><button class="tab" id="tabAch" onclick="openMenu('ach')">🏆 成就</button><button class="tab" id="tabCheckin" onclick="openMenu('checkin')">📅 簽到</button><button class="x" onclick="closeMenu()">✕</button></div>
+    <div class="mhead"><button class="tab" id="tabProfile" onclick="openMenu('profile')">👤 檔案</button><button class="tab" id="tabQuest" onclick="openMenu('quest')">📜 任務</button><button class="tab" id="tabAch" onclick="openMenu('ach')">🏆 成就</button><button class="tab" id="tabCheckin" onclick="openMenu('checkin')">📅 簽到</button><button class="x" onclick="closeMenu()">✕</button><button class="tab wide" id="tabPTitle" onclick="openMenu('ptitle')">🏅 寶可夢稱號</button></div>
     <div id="mbody"></div></div></div>
   <div id="hub" onclick="if(event.target===this)closeHub()"><div class="mbox">
     <div class="mhead"><div id="hubTitle" class="htitle"></div><button class="x" onclick="closeHub()">✕</button></div>
@@ -902,7 +910,7 @@ let state = {
   party:[], box:[],
   seen:new Set(), caught:new Set(), shinyCaught:new Set(), mega:{shards:{}, stones:{}},
   bag:defaultBag(), money:START_MONEY,
-  zone:1, battle:null,
+  zone:1, maxZone:1, battle:null,
   tower:defaultTower(),
   stats:{}, quest:{base:{}}, ach:{done:[],claimed:[]}, meta:defaultMeta(), checkin:{ym:'',days:[]},
   profile:{name:'', titleId:'', frame:'auto'},
@@ -938,12 +946,13 @@ function holdOptionsUntilRevealed(){
   const wait = Math.max(0, curDelay());
   pendingTimer = setTimeout(()=>optsEl.classList.remove('pending'), wait);
 }
-logEl.addEventListener('click', ()=>{
+function skipReveal(){   // 跳過文字動畫，立刻顯示全部內容與選項
   document.querySelectorAll('#log .line').forEach(el=>el.style.animationDelay='0ms');
   if(pendingTimer) clearTimeout(pendingTimer);
   optsEl.classList.remove('pending');
   flushStage();
-});
+}
+logEl.addEventListener('click', skipReveal);
 
 function renderBar(){
   const lead = state.party[0];
@@ -978,7 +987,7 @@ function saveGame(){
     const data = {
       v:2, party:(typeof svRun!=='undefined' && svRun) ? svRun.backup : state.party, box:state.box,   // 連戰試煉中存檔，存的是原本的隊伍
       seen:Array.from(state.seen), caught:Array.from(state.caught), shinyCaught:Array.from(state.shinyCaught), mega:state.mega,
-      bag:state.bag, money:state.money, zone:state.zone, tower:state.tower,
+      bag:state.bag, money:state.money, zone:state.zone, maxZone:state.maxZone, tower:state.tower,
       stats:state.stats, quest:state.quest, ach:state.ach, meta:state.meta, checkin:state.checkin, profile:state.profile, fest:state.fest, mail:state.mail
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
@@ -1013,6 +1022,7 @@ function loadGame(){
     state.bag = Object.assign(defaultBag(), d.bag||{});
     state.money = (typeof d.money === 'number') ? d.money : START_MONEY;
     state.zone = d.zone || 1;
+    state.maxZone = Math.max(d.maxZone || 1, state.zone);
     const oldTower = !(d.tower && d.tower.rev);
     state.tower = Object.assign(defaultTower(), d.tower||{});
     if(!(d.tower && typeof d.tower.cl === 'string')) state.tower.cl = '1'.repeat(Math.min(state.tower.floorPtr||0, NONLEG.length));   // 舊存檔：floorPtr 之前的樓層視為已通過
@@ -1034,7 +1044,7 @@ function resetGame(){
   try{ localStorage.removeItem(SAVE_KEY); localStorage.removeItem(OLD_SAVE_KEY); }catch(e){}
   state.party=[]; state.box=[]; state.seen=new Set(); state.caught=new Set(); state.shinyCaught=new Set(); state.mega={shards:{}, stones:{}};
   gotSeq = 0;
-  state.bag=defaultBag(); state.money=START_MONEY; state.zone=1; state.battle=null;
+  state.bag=defaultBag(); state.money=START_MONEY; state.zone=1; state.maxZone=1; state.battle=null;
   state.tower=defaultTower();
   state.stats={}; state.quest={base:{}}; state.ach={done:[],claimed:[]}; state.meta=defaultMeta(); state.checkin={ym:'',days:[]};
   state.profile={name:'',titleId:'',frame:'auto'};
@@ -1279,14 +1289,50 @@ function screenField(){
   saveGame();
   renderBar();
   setOptions([
-    {label:"🌿 往草叢前進（遭遇野生寶可夢）", action:()=>encounter()},
+    {label:`🌿 往草叢前進（遭遇野生寶可夢${pityLabel()}）`, action:()=>encounter()},
     {label:"⚔️ 對戰", action:screenBattleMenu},
     {label:"👥 隊伍", half:true, action:screenParty},
     {label:"🎒 背包", half:true, action:screenBag},
     {label:"🏪 商店", half:true, action:()=>{ shopQty=1; screenShop(); }},
     {label:`💊 補給站${state.meta.cd>0?`（再 ${state.meta.cd} 場）`:''}`, half:true, action:()=>healAll(screenField)},
+    {label:`🗺 選擇地區（目前：${zoneName(state.zone)}）`, action:()=>screenZoneRegions()},
     {label: state.zone < MAP_NAMES.length ? `⏩ 前往 ${zoneName(state.zone+1)}` : '⏩ 已到最後一站', action:advanceZone}
   ]);
+}
+/* ---------- 自選地圖 ---------- */
+const ZONE_REGIONS = [['關都',1],['城都',19],['豐緣',31],['神奧',43],['合眾',56],['卡洛斯',68],['阿羅拉',80],['伽勒爾',92],['帕底亞',104]];   // [名稱, 起始區域編號]
+function zoneRegionRange(r){ const s = ZONE_REGIONS[r][1], e = (r+1 < ZONE_REGIONS.length ? ZONE_REGIONS[r+1][1] : MAP_NAMES.length+1) - 1; return [s, e]; }
+function screenZoneRegions(){
+  clearLog();
+  print('<span class="em">🗺 選擇地區</span>');
+  print('已經到過的地方都可以直接回去。');
+  const opts = [];
+  ZONE_REGIONS.forEach((rg, r)=>{
+    const [s, e] = zoneRegionRange(r);
+    if(s > state.maxZone) return;
+    const got = Math.min(e, state.maxZone) - s + 1, here = state.zone >= s && state.zone <= e;
+    opts.push({label:`${here?'📍 ':''}${rg[0]}（${got}/${e-s+1}）`, half:true, action:()=>screenZoneList(r)});
+  });
+  opts.push({label:'返回', action:toField});
+  renderBar(); setOptions(opts);
+}
+function screenZoneList(r){
+  clearLog();
+  const [s, e] = zoneRegionRange(r);
+  print(`<span class="em">🗺 ${ZONE_REGIONS[r][0]}</span>`);
+  print('要去哪一區？');
+  const opts = [];
+  for(let z = s; z <= Math.min(e, state.maxZone); z++){
+    opts.push({label:`${z===state.zone?'📍 ':''}${zoneName(z)}`, half:true, action:()=>setZone(z)});
+  }
+  opts.push({label:'← 回地區列表', action:screenZoneRegions});
+  renderBar(); setOptions(opts);
+}
+function setZone(z){
+  if(z < 1 || z > state.maxZone || z > MAP_NAMES.length) return;
+  clearLog();
+  if(z !== state.zone){ state.zone = z; print(`<span class="em">📍 你來到了 ${zoneName(z)}。</span>`); }
+  screenField();
 }
 
 function screenBattleMenu(){
@@ -1307,6 +1353,7 @@ function advanceZone(){
   clearLog();
   if(state.zone >= MAP_NAMES.length){ print(`<span class="sys">${zoneName(state.zone)}已經是旅程的最後一站了。</span>`); return screenField(); }
   state.zone++;
+  if(state.zone > state.maxZone) state.maxZone = state.zone;
   print(`<span class="em">📍 你來到了 ${zoneName(state.zone)}。</span>`);
   print('這裡的野生寶可夢感覺更強了。');
   screenField();
@@ -1337,7 +1384,7 @@ function encounter(){
   const mt = state.meta; mt.since++;
   if(mt.since >= mt.next){ mt.since = 0; mt.next = 8 + Math.floor(Math.random()*5); return startTrainer(); }
   const lvl = Math.max(2, Math.min(MAX_LEVEL, state.zone*4 + Math.floor(Math.random()*5) - 2));
-  const dexIndex = pickWildIndex(state.zone);
+  const dexIndex = pickWildIndexPity(state.zone);
   const wild = boostMon(makeMon(dexIndex, lvl), zoneBoost(state.zone));
   state.seen.add(dexIndex);
   clearBattleModifiers();
@@ -1379,6 +1426,27 @@ function pickWildIndex(zone){
   if(r < w[0]) s = 1; else if(r < w[0]+w[1]) s = 2; else s = 3;
   const pool = WILD_BY_STAGE[s];
   return pool[Math.floor(Math.random()*pool.length)];
+}
+/* ---------- 圖鑑保底：連續 PITY_N-1 次遇到的都是已經抓過的，第 PITY_N 次一定是沒抓過的（神獸不在野外出現，不算） ---------- */
+const PITY_N = 50;
+function uncaughtWild(){ return NONLEG.filter(i=>!state.caught.has(i)); }
+function pityLabel(){
+  if(!uncaughtWild().length) return '';
+  const left = PITY_N - Math.min(PITY_N-1, state.meta.pity||0);   // 還要幾次遭遇內，一定會碰到沒抓過的
+  return left <= 1 ? '・下一隻必出沒抓過的' : `・保底 ${left} 次內必出新的`;
+}
+function pickWildIndexPity(zone){
+  const mt = state.meta;
+  if((mt.pity||0) >= PITY_N-1){
+    const w = stageWeights(zone);
+    let r = Math.random(), s = (r < w[0]) ? 1 : (r < w[0]+w[1]) ? 2 : 3;
+    let pool = WILD_BY_STAGE[s].filter(i=>!state.caught.has(i));
+    if(!pool.length) pool = uncaughtWild();    // 這個階段的都抓過了：改從全部沒抓過的挑
+    if(pool.length){ mt.pity = 0; return pool[Math.floor(Math.random()*pool.length)]; }
+  }
+  const idx = pickWildIndex(zone);
+  mt.pity = state.caught.has(idx) ? (mt.pity||0) + 1 : 0;
+  return idx;
 }
 function firstAlive(){
   for(let i=0;i<state.party.length;i++) if(state.party[i].hp>0) return i;
@@ -2201,7 +2269,66 @@ function grantTitle(id){
   const p = state.profile; p.titles = p.titles || [];
   if(!p.titles.includes(id)) p.titles.push(id);
 }
+/* ---------- 寶可夢稱號：每隻寶可夢累計打出 1 萬／10 萬／100 萬傷害，解鎖「XX愛好者／專家／大師」 ---------- */
+const PTITLE_STEPS = [[10000,'愛好者','1萬'],[100000,'專家','10萬'],[1000000,'大師','100萬']];
+function pdmgMap(){ if(!state.stats.pd || typeof state.stats.pd !== 'object') state.stats.pd = {}; return state.stats.pd; }
+function pdmgOf(dex){ return pdmgMap()[dex] || 0; }
+function ptitleName(dex, t){ return DEX[dex][0] + PTITLE_STEPS[t][1]; }
+function ptitleUnlocked(dex, t){ return pdmgOf(dex) >= PTITLE_STEPS[t][0]; }
+function trackDmg(mon, d){
+  if(!mon || mon.dex === undefined || !DEX[mon.dex] || !(d > 0)) return;
+  const m = pdmgMap(), before = m[mon.dex] || 0, after = before + d;
+  m[mon.dex] = after;
+  for(let t = 0; t < PTITLE_STEPS.length; t++) if(before < PTITLE_STEPS[t][0] && after >= PTITLE_STEPS[t][0]) notify(`🏅 解鎖寶可夢稱號「${ptitleName(mon.dex, t)}」`);
+}
+function curPTitle(){
+  const k = state.profile.pTitle; if(!k) return null;
+  const [d, t] = String(k).split(':').map(Number);
+  return (DEX[d] && PTITLE_STEPS[t] && ptitleUnlocked(d, t)) ? ptitleName(d, t) : null;
+}
+function equipPTitle(dex, t){
+  if(!ptitleUnlocked(dex, t)) return;
+  state.profile.pTitle = dex + ':' + t; state.profile.titleId = '';
+  if(state.party.length) saveGame();
+  renderHeader(); openMenu('ptitle'); notify('🏅 已裝備稱號：' + ptitleName(dex, t));
+}
+const ptView = {mode:'prog', page:0, q:''};
+const PT_PER = 15;
+function ptSet(k, v){ ptView[k] = v; if(k !== 'page') ptView.page = 0; openMenu('ptitle'); mbodyEl.scrollTop = 0; }
+function ptitleHtml(){
+  const fmt = n => n.toLocaleString('en-US');
+  let got = 0; for(let i = 0; i < DEX.length; i++) for(let t = 0; t < 3; t++) if(ptitleUnlocked(i, t)) got++;
+  const cur = curPTitle();
+  let h = `<div class="mh">已解鎖 ${got} / ${DEX.length*3} 個稱號${cur ? '　目前裝備：🏅 ' + esc(cur) : ''}</div>`;
+  h += '<div class="sub" style="margin:-4px 0 8px;opacity:.8">用同一隻寶可夢累計打出 1 萬／10 萬／100 萬傷害就能解鎖（進化後算新的那隻，Mega 算原本那隻）。</div>';
+  h += `<div class="ptbar"><button class="claim${ptView.mode==='prog'?'':' off'}" onclick="ptSet('mode','prog')">有進度的</button><button class="claim${ptView.mode==='all'?'':' off'}" onclick="ptSet('mode','all')">全部</button><input type="text" placeholder="搜尋名字" value="${esc(ptView.q).replace(/"/g,'&quot;')}" onchange="ptSet('q', this.value.trim())"></div>`;
+  let list = [];
+  for(let i = 0; i < DEX.length; i++){
+    if(ptView.mode === 'prog' && !pdmgOf(i)) continue;
+    if(ptView.q && !DEX[i][0].includes(ptView.q)) continue;
+    list.push(i);
+  }
+  if(ptView.mode === 'prog') list.sort((a, b) => pdmgOf(b) - pdmgOf(a) || a - b);
+  const pages = Math.max(1, Math.ceil(list.length / PT_PER));
+  if(ptView.page >= pages) ptView.page = pages - 1;
+  if(!list.length) h += `<div style="color:var(--dim)">${ptView.q ? '找不到符合的寶可夢。' : '還沒有任何進度，去打幾場吧！'}</div>`;
+  list.slice(ptView.page * PT_PER, (ptView.page + 1) * PT_PER).forEach(i => {
+    const v = pdmgOf(i), next = PTITLE_STEPS.find(s => v < s[0]);
+    const cells = PTITLE_STEPS.map((s, t) => {
+      if(!ptitleUnlocked(i, t)) return `<span class="lk">🔒 ${s[1]}<br>${s[2]}</span>`;
+      return state.profile.pTitle === i + ':' + t && cur ? `<span class="on">✅ ${s[1]}</span>` : `<button class="claim" onclick="equipPTitle(${i},${t})">${s[1]}</button>`;
+    }).join('');
+    h += `<div class="qi ptrow${v >= PTITLE_STEPS[0][0] ? ' done' : ''}"><div>${dexNo(i)} ${esc(DEX[i][0])}　<span style="color:var(--accent)">累計 ${fmt(v)}</span></div>`
+       + (next ? `<div class="qbar"><i style="width:${Math.min(100, Math.round(100 * v / next[0]))}%"></i></div><small>下一個：${esc(ptitleName(i, PTITLE_STEPS.indexOf(next)))}（${fmt(v)} / ${fmt(next[0])}）</small>` : '<small>三個稱號都拿到了 🎉</small>')
+       + `<div class="qrow" style="margin-top:6px">${cells}</div></div>`;
+  });
+  if(pages > 1){
+    h += `<div class="ptbar" style="justify-content:space-between;margin-top:6px"><button class="claim${ptView.page?'':' off'}" onclick="ptSet('page',${Math.max(0, ptView.page-1)})">◀ 上一頁</button><span>${ptView.page+1} / ${pages}</span><button class="claim${ptView.page<pages-1?'':' off'}" onclick="ptSet('page',${Math.min(pages-1, ptView.page+1)})">下一頁 ▶</button></div>`;
+  }
+  return h;
+}
 function curTitle(){
+  const pt = curPTitle(); if(pt) return pt;
   const id = state.profile.titleId;
   if(id && hasExtraTitle(id)) return EXTRA_TITLES[id];
   return (id && state.ach.done.includes(id) && TITLE_OF[id]) || DEFAULT_TITLE;
@@ -2322,7 +2449,7 @@ const ACH = [
   {id:'a_mega1000',name:'Mega 傳說',    desc:'打贏 1000 場 Mega 對戰',    pts:65, cur:()=>state.stats.megaWins||0, target:1000},
   {id:'a_stone30', name:'進化石大亨',   desc:'合成 30 種 Mega 進化石',    pts:26, cur:()=>megaStoneCount(), target:30},
   {id:'a_stone60', name:'進化石帝王',   desc:'合成 60 種 Mega 進化石',    pts:42, cur:()=>megaStoneCount(), target:60},
-  {id:'a_zone',    name:'旅程終點',     desc:'抵達地圖最後一站',          pts:20, cur:()=>state.zone, target:MAP_NAMES.length},
+  {id:'a_zone',    name:'旅程終點',     desc:'抵達地圖最後一站',          pts:20, cur:()=>state.maxZone, target:MAP_NAMES.length},
   {id:'a_rich1m',  name:'百萬富翁',     desc:'身上持有 💰 1,000,000',     pts:22, cur:()=>state.money, target:1000000},
   {id:'a_rich10m', name:'千萬富翁',     desc:'身上持有 💰 10,000,000',    pts:42, cur:()=>state.money, target:10000000},
   {id:'a_lv30',    name:'精銳部隊',     desc:'擁有 30 隻 Lv.100 的寶可夢', pts:28, cur:()=>[...state.party,...state.box].filter(m=>m.level>=MAX_LEVEL).length, target:30},
@@ -2400,7 +2527,7 @@ function setFrame(k){
 }
 function equipTitle(id){
   if(id!=='' && !state.ach.done.includes(id) && !hasExtraTitle(id)) return;
-  state.profile.titleId = id;
+  state.profile.titleId = id; state.profile.pTitle = '';
   if(state.party.length) saveGame();
   renderHeader(); openMenu('profile'); notify('🎖 已裝備稱號：'+curTitle());
 }
@@ -2441,6 +2568,8 @@ function openMenu(tab){
   let h = '';
   if(menuTab==='profile'){
     h = profileHtml();
+  } else if(menuTab==='ptitle'){
+    h = ptitleHtml();
   } else if(menuTab==='checkin'){
     h = checkinHtml();
   } else if(menuTab==='quest'){
@@ -2467,6 +2596,7 @@ function openMenu(tab){
   document.getElementById('tabQuest').className = 'tab' + (menuTab==='quest'?' on':'');
   document.getElementById('tabAch').className = 'tab' + (menuTab==='ach'?' on':'');
   document.getElementById('tabCheckin').className = 'tab' + (menuTab==='checkin'?' on':'');
+  document.getElementById('tabPTitle').className = 'tab wide' + (menuTab==='ptitle'?' on':'');
   modalEl.classList.add('open');
 }
 
@@ -2529,13 +2659,14 @@ showInAppNotice();
 <script>
 /* 按下去先陷 0.2 秒，再執行動作 */
 (function(){
-  const DELAY = 200;   // 按住多久（毫秒）
-  const REBOUND = 140; // 彈回動畫播多久才執行動作（毫秒）
+  const DELAY = 70;    // 按住多久（毫秒）
+  const REBOUND = 60;  // 彈回動畫播多久才執行動作（毫秒）
   let pressLock = false;
   document.addEventListener('click', function(e){
     const btn = e.target.closest('button');
     if(!btn || btn._go) return;
     e.stopImmediatePropagation(); e.preventDefault();
+    if(btn.closest('#opts.pending')){ skipReveal(); return; }   // 動畫還在播：這一下只負責跳過動畫，不會誤觸看不到的選項
     if(pressLock) return;
     pressLock = true;
     btn.classList.add('pressed');
