@@ -79,6 +79,8 @@ const SFX = (function(){
     throw:  t=>osc('triangle', 392, t, 0.25, 0.14, 784),
     catchok:t=>jingle([[72,0,0.12],[79,0.12,0.12],[84,0.24,0.7]],'p25',0.14,t,0.08),
     catchfail:t=>jingle([[60,0,0.12],[55,0.14,0.3]],'p25',0.14,t,0.1),
+    crack:  t=>{ noise(t,0.12,0.4,3200,1400); osc('p25',1900,t,0.05,0.06,900); },
+    shatter:t=>{ noise(t,0.55,0.55,4200,1000); noise(t,0.3,0.3,9000,5000); [0,.03,.07,.12,.17,.24,.31].forEach(o=>osc('triangle',2200+Math.random()*2600,t+o,0.14,0.07)); },
     reward: t=>jingle([[79,0,0.08],[84,0.08,0.4]],'p25',0.12,t,0.2)
   };
   /* 背景音樂：每首 16 小節（A 段＋B 段循環），有主旋律、和弦伴奏、低音和鼓。
@@ -276,9 +278,74 @@ function stageHeldMs(){ return Math.max(0, stageHoldTill - performance.now()); }
 function holdStage(ms){ stageHoldTill = Math.max(stageHoldTill, performance.now() + ms); }
 function releaseStage(){ stageHoldTill = 0; fxGen++; clearTimeout(stageHoldTimer); if(!state.battle && appEl.classList.contains('battle')) syncBattleUI(); }
 function fxReduced(){ try{ return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
-const KO_MS = 2200;
-// 對手被打倒：像玻璃一樣碎掉——先震動幾下，出現裂痕，然後碎成一片片往外噴、往下掉
-const KO_SHAKE = 800, KO_CRACK = 450;   // 震動 → 裂痕；剩下的時間是碎片飛散
+const KO_MS = 2400;
+// 對手被打倒：像玻璃一樣碎掉——震動 → 裂痕 → 閃光一聲碎開，碎片往外噴、往下掉
+// 每次隨機挑一種碎法（蛛網／三角格／亂刀／蛛網＋亂刀），形狀、數量都不一樣
+const KO_SHAKE = 750, KO_CRACK = 500;
+// 用一條直線把多邊形切成兩半（線：通過 p，方向 d）
+function splitPoly(poly, p, d){
+  const side = q => (q[0]-p[0])*d[1] - (q[1]-p[1])*d[0];
+  const A = [], B = [];
+  for(let i=0;i<poly.length;i++){
+    const u = poly[i], v = poly[(i+1)%poly.length], su = side(u), sv = side(v);
+    (su >= 0 ? A : B).push(u);
+    if((su > 0 && sv < 0) || (su < 0 && sv > 0)){
+      const t = su/(su - sv), x = [u[0] + (v[0]-u[0])*t, u[1] + (v[1]-u[1])*t];
+      A.push(x); B.push(x);
+    }
+  }
+  return [A, B].filter(q => q.length >= 3);
+}
+function polyArea(q){ let a = 0; for(let i=0;i<q.length;i++){ const u=q[i], v=q[(i+1)%q.length]; a += u[0]*v[1]-v[0]*u[1]; } return Math.abs(a)/2; }
+function shatterPolys(W, H, cx, cy){
+  const rnd = (a, b)=> a + Math.random()*(b-a), M = 6;   // M：外框多留一點，碎片才不會有缺角
+  const box = [[-M,-M],[W+M,-M],[W+M,H+M],[-M,H+M]];
+  const radial = ()=>{                                  // 蛛網：從撞擊點放射，3 圈
+    const N = 10 + Math.floor(Math.random()*5), FAR = Math.hypot(W, H)*1.2, R = Math.min(W, H);
+    const ang = Array.from({length:N}, (_, i)=> (i + .15 + Math.random()*.7) * 2*Math.PI/N);
+    const rings = [R*.22, R*.5, R*.95].map(r => ang.map(()=> r*rnd(.7, 1.3)));
+    const pt = (i, r)=> [cx + Math.cos(ang[i%N])*r, cy + Math.sin(ang[i%N])*r];
+    const out = [];
+    for(let i=0;i<N;i++){
+      const j = i+1;
+      out.push([[cx,cy], pt(i, rings[0][i]), pt(j, rings[0][j%N])]);
+      for(let k=0;k<3;k++){
+        const r0 = rings[k], r1 = k<2 ? rings[k+1] : null;
+        const q = [pt(i, r0[i]), r1 ? pt(i, r1[i]) : pt(i, FAR), r1 ? pt(j, r1[j%N]) : pt(j, FAR), pt(j, r0[j%N])];
+        if(Math.random() < .45){ out.push([q[0],q[1],q[2]], [q[0],q[2],q[3]]); } else out.push(q);   // 有些再對切一刀
+      }
+    }
+    return out;
+  };
+  const grid = ()=>{                                    // 三角格：抖動過的格點，每格斜切成兩塊
+    const C = 7 + Math.floor(Math.random()*3), Rw = 3 + Math.floor(Math.random()*2);
+    const P = [];
+    for(let r=0;r<=Rw;r++){ P.push([]); for(let c=0;c<=C;c++){
+      let x = -M + (W+2*M)*c/C, y = -M + (H+2*M)*r/Rw;
+      if(c>0 && c<C) x += rnd(-.35, .35)*(W/C);
+      if(r>0 && r<Rw) y += rnd(-.3, .3)*(H/Rw);
+      P[r].push([x, y]);
+    }}
+    const out = [];
+    for(let r=0;r<Rw;r++) for(let c=0;c<C;c++){
+      const a = P[r][c], b = P[r][c+1], d = P[r+1][c+1], e = P[r+1][c];
+      if(Math.random() < .5) out.push([a,b,d],[a,d,e]); else out.push([a,b,e],[b,d,e]);
+    }
+    return out;
+  };
+  const slash = (polys, n)=>{                           // 亂刀：好幾條穿過撞擊點附近的直線
+    for(let k=0;k<n;k++){
+      const p = [cx + rnd(-.25, .25)*W, cy + rnd(-.35, .35)*H], a = Math.random()*Math.PI;
+      polys = polys.flatMap(q => splitPoly(q, p, [Math.cos(a), Math.sin(a)]));
+    }
+    return polys;
+  };
+  const style = Math.floor(Math.random()*4);
+  let polys = style===0 ? radial() : style===1 ? grid() : style===2 ? slash([box], 7 + Math.floor(Math.random()*3)) : slash(radial(), 2);
+  polys = polys.filter(q => polyArea(q) > 6);
+  while(polys.length > 70){ polys.sort((a,b)=>polyArea(a)-polyArea(b)); polys.shift(); }   // 太碎就去掉最小的幾片
+  return polys;
+}
 function koFx(){
   if(fxReduced()) return;
   const at = Math.max(0, curDelay() - ATTACK_GAP + 450), gen = fxGen;
@@ -288,70 +355,88 @@ function koFx(){
     if(gen !== fxGen) return;
     const c = stageEl.querySelector('.card.foe'); if(!c || !c.animate) return;
     const W = c.offsetWidth, H = c.offsetHeight, L = c.offsetLeft, T = c.offsetTop;
-    // 1. 震動 5 下，越震越輕
-    const k = [{transform:'translateX(0)'}], n = 5;
+    // 1. 震動 6 下，越震越輕
+    const k = [{transform:'translate(0,0)'}], n = 6;
     for(let i=0;i<n;i++){
-      const amp = 8*(1 - i/n) + 2;
-      k.push({transform:`translateX(${-amp}px)`, offset:(i+.25)/n});
-      k.push({transform:`translateX(${amp}px)`,  offset:(i+.75)/n});
+      const amp = 9*(1 - i/n) + 2;
+      k.push({transform:`translate(${-amp}px,${(Math.random()-.5)*3}px)`, offset:(i+.25)/n});
+      k.push({transform:`translate(${amp}px,${(Math.random()-.5)*3}px)`,  offset:(i+.75)/n});
     }
-    k.push({transform:'translateX(0)'});
+    k.push({transform:'translate(0,0)'});
     c.animate(k, {duration:KO_SHAKE, easing:'linear'});
-    // 撞擊點（卡片中間偏一點），以它為中心切出放射狀的碎片
-    const cx = W*(.4 + Math.random()*.2), cy = H*(.4 + Math.random()*.2);
-    const N = 9, R1 = Math.min(W, H)*.45, FAR = Math.hypot(W, H);
-    const ang = Array.from({length:N}, (_, i)=> (i + .2 + Math.random()*.6) * 2*Math.PI/N);
-    const r1 = ang.map(()=> R1*(.7 + Math.random()*.6));
-    const pt = (a, r)=> [cx + Math.cos(a)*r, cy + Math.sin(a)*r];
-    // 2. 裂痕：從撞擊點放射出去，外圈再連一圈
+    const cx = W*(.3 + Math.random()*.4), cy = H*(.3 + Math.random()*.4);
+    const polys = shatterPolys(W, H, cx, cy);
+    // 2. 裂痕：每條邊照離撞擊點的距離依序裂開（近的先裂）
     setTimeout(()=>{
       if(gen !== fxGen) return;
+      if(typeof SFX !== 'undefined') SFX.play('crack');
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('class', 'koCrack'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
       Object.assign(svg.style, {left:L+'px', top:T+'px', width:W+'px', height:H+'px'});
-      let d = '';
-      ang.forEach((a, i)=>{
-        const [x1, y1] = pt(a, r1[i]), [x2, y2] = pt(a, FAR), [x3, y3] = pt(ang[(i+1)%N], r1[(i+1)%N]);
-        d += `M${cx},${cy}L${x1},${y1}L${x2},${y2}M${x1},${y1}L${x3},${y3}`;
-      });
-      svg.innerHTML = `<path d="${d}"/>`;
+      const seen = new Set(), edges = [];
+      polys.forEach(q => q.forEach((u, i)=>{
+        const v = q[(i+1)%q.length], key = [u, v].map(p=>p.map(x=>Math.round(x)).join(',')).sort().join('|');
+        if(seen.has(key)) return; seen.add(key);
+        const du = Math.hypot(u[0]-cx, u[1]-cy), dv = Math.hypot(v[0]-cx, v[1]-cy);
+        edges.push(du <= dv ? [u, v, du] : [v, u, dv]);
+      }));
+      const maxD = Math.max(1, ...edges.map(e=>e[2]));
+      svg.innerHTML = edges.map(([u, v])=>`<path d="M${u[0].toFixed(1)},${u[1].toFixed(1)}L${v[0].toFixed(1)},${v[1].toFixed(1)}"/>`).join('');
       stageEl.appendChild(svg);
-      const path = svg.firstChild, len = path.getTotalLength ? path.getTotalLength() : 2000;
-      path.style.strokeDasharray = len; path.style.strokeDashoffset = len;
-      path.animate([{strokeDashoffset:len}, {strokeDashoffset:0}], {duration:KO_CRACK*.8, easing:'ease-out', fill:'forwards'});
-      c.animate([{filter:'none'}, {filter:'brightness(1.5)'}, {filter:'brightness(1.15)'}], {duration:KO_CRACK, fill:'forwards'});
+      [...svg.children].forEach((path, i)=>{
+        const len = Math.hypot(edges[i][1][0]-edges[i][0][0], edges[i][1][1]-edges[i][0][1]) + 1;
+        path.style.strokeDasharray = len; path.style.strokeDashoffset = len;
+        path.animate([{strokeDashoffset:len}, {strokeDashoffset:0}],
+          {duration:KO_CRACK*.35, delay:KO_CRACK*.55*edges[i][2]/maxD, easing:'ease-out', fill:'forwards'});
+      });
+      c.animate([{filter:'none'}, {filter:'brightness(1.6)'}, {filter:'brightness(1.2)'}], {duration:KO_CRACK, fill:'forwards'});
     }, KO_SHAKE);
-    // 3. 碎掉：原卡片藏起來，換成一片片的複製卡片（用 clip-path 切形狀）往外飛、往下掉
+    // 3. 碎開：閃光＋畫面一震＋亮片，原卡片換成一片片的複製卡片（clip-path 切形狀）往外噴、往下掉
     setTimeout(()=>{
       if(gen !== fxGen) return;
+      if(typeof SFX !== 'undefined') SFX.play('shatter');
       stageEl.querySelectorAll('.koCrack').forEach(e=>e.remove());
-      const shards = [];
-      ang.forEach((a, i)=>{
-        const b2 = ang[(i+1)%N], A = pt(a, r1[i]), B = pt(b2, r1[(i+1)%N]);
-        shards.push([[cx, cy], A, B]);                          // 內圈三角形
-        shards.push([A, pt(a, FAR), pt(b2 < a ? b2 + 2*Math.PI : b2, FAR), B]);   // 外圈
-      });
-      const rest = KO_MS - KO_SHAKE - KO_CRACK;
+      const rest = KO_MS - KO_SHAKE - KO_CRACK, diag = Math.hypot(W, H);
       c.style.visibility = 'hidden';
-      shards.forEach(poly=>{
+      stageEl.animate([{transform:'translate(0,0)'},{transform:'translate(-5px,3px)'},{transform:'translate(4px,-3px)'},{transform:'translate(-3px,2px)'},{transform:'translate(0,0)'}],
+        {duration:260, easing:'linear'});
+      const flash = document.createElement('div'); flash.className = 'koFlash';
+      Object.assign(flash.style, {left:(L-8)+'px', top:(T-8)+'px', width:(W+16)+'px', height:(H+16)+'px'});
+      stageEl.appendChild(flash);
+      flash.animate([{opacity:.95, transform:'scale(1)'}, {opacity:0, transform:'scale(1.25)'}], {duration:280, easing:'ease-out', fill:'forwards'});
+      setTimeout(()=>flash.remove(), 320);
+      polys.forEach(poly=>{
         const s = c.cloneNode(true);
         s.classList.add('koShard'); s.style.visibility = 'visible';
         Object.assign(s.style, {left:L+'px', top:T+'px', width:W+'px', height:H+'px', margin:0});
         s.style.clipPath = `polygon(${poly.map(([x,y])=>`${x.toFixed(1)}px ${y.toFixed(1)}px`).join(',')})`;
-        // 碎片中心相對撞擊點的方向 → 往那邊噴，再加上重力往下掉
-        const mx = poly.reduce((t,p)=>t+Math.max(0,Math.min(W,p[0])),0)/poly.length - cx;
-        const my = poly.reduce((t,p)=>t+Math.max(0,Math.min(H,p[1])),0)/poly.length - cy;
-        const dist = Math.hypot(mx, my) || 1, sp = 25 + Math.random()*35;
-        const vx = mx/dist*sp, vy = my/dist*sp*.6, fall = 70 + Math.random()*60, rot = (Math.random()-.5)*120;
-        s.style.transformOrigin = `${(cx+mx).toFixed(0)}px ${(cy+my).toFixed(0)}px`;
+        const mx = poly.reduce((t,p)=>t+Math.max(0,Math.min(W,p[0])),0)/poly.length, my = poly.reduce((t,p)=>t+Math.max(0,Math.min(H,p[1])),0)/poly.length;
+        const dx = mx - cx, dy = my - cy, dist = Math.hypot(dx, dy) || 1;
+        const near = 1 - Math.min(1, dist/diag), small = polyArea(poly) < 300;   // 離撞擊點越近、越小片 → 噴越遠、轉越快
+        const sp = (45 + Math.random()*55) * (.6 + near) * (small ? 1.3 : 1);
+        const vx = dx/dist*sp, vy = dy/dist*sp*.7 - 10*Math.random(), fall = 80 + Math.random()*90;
+        const rot = (Math.random()-.5) * (small ? 540 : 220), glint = 1 + Math.random()*.6;
+        s.style.transformOrigin = `${mx.toFixed(0)}px ${my.toFixed(0)}px`;
         stageEl.appendChild(s);
         s.animate([
-          {transform:'translate(0,0) rotate(0deg)', opacity:1, filter:'brightness(1.15)'},
-          {transform:`translate(${vx*.6}px,${vy*.6 - 6}px) rotate(${rot*.4}deg)`, opacity:1, offset:.3},
+          {transform:'translate(0,0) rotate(0deg)', opacity:1, filter:`brightness(${glint+.4})`},
+          {transform:`translate(${vx*.55}px,${vy*.55 - 8}px) rotate(${rot*.3}deg)`, opacity:1, filter:`brightness(${glint})`, offset:.18},
+          {transform:`translate(${vx*.85}px,${vy*.85 + fall*.35}px) rotate(${rot*.65}deg)`, opacity:.85, offset:.55},
           {transform:`translate(${vx}px,${vy + fall}px) rotate(${rot}deg)`, opacity:0}
-        ], {duration:rest, easing:'cubic-bezier(.3,.1,.7,1)', fill:'forwards'});
+        ], {duration:rest*(.8 + Math.random()*.2), easing:'linear', fill:'forwards'});
         setTimeout(()=>s.remove(), rest + 50);
       });
+      // 亮晶晶的小玻璃屑
+      for(let i=0;i<22;i++){
+        const g = document.createElement('i'); g.className = 'koGlint';
+        g.style.left = (L+cx)+'px'; g.style.top = (T+cy)+'px';
+        stageEl.appendChild(g);
+        const a = Math.random()*2*Math.PI, r = 40 + Math.random()*110;
+        g.animate([{transform:'translate(0,0) rotate(45deg) scale(1)', opacity:1},
+                   {transform:`translate(${Math.cos(a)*r}px,${Math.sin(a)*r*.7 + 30}px) rotate(${225+Math.random()*360}deg) scale(.3)`, opacity:0}],
+          {duration:450 + Math.random()*500, easing:'cubic-bezier(.2,.7,.4,1)', fill:'forwards'});
+        setTimeout(()=>g.remove(), 1000);
+      }
     }, KO_SHAKE + KO_CRACK);
   }, at);
 }
