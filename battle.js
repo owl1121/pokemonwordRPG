@@ -343,8 +343,9 @@ function screenBattle(){
   renderBar();
   entryCheck();   // 天氣、出場特性（威嚇、乾旱……）
   const FX={burn:'灼傷',poison:'中毒',paralyze:'麻痺',drain:'吸血',atkDown:'降攻',defDown:'降防',selfDefUp:'升防'};
+  const lock = holds(p,'choicescarf') && p._lock;   // 講究圍巾：只能用第一個選的招式
   const mk = (mv,i)=>{
-    const off = !mv.struggle && !(mv.pp>0), fx = STATUS_FX[mv.type];
+    const off = !mv.struggle && (!(mv.pp>0) || (lock && mv.name !== lock)), fx = STATUS_FX[mv.type];
     const ppTxt = mv.struggle ? 'PP ∞' : `PP ${mv.pp}/${mv.maxpp}`;
     const ppCls = mv.struggle ? '' : (mv.pp<=0 ? ' zero' : mv.pp <= Math.ceil(mv.maxpp/4) ? ' low' : '');
     const sub = `威力 ${mv.power}` + (fx?` · ✦${FX[fx.kind]}`:'') + (mv.recoil?' · ⚠反作用力':'');
@@ -353,8 +354,9 @@ function screenBattle(){
       action: off ? ()=>screenBattle() : ()=>playerMove(i) };
   };
   let opts;
-  if(p.moves.some(m=>m.pp>0)) opts = p.moves.map(mk);
-  else { print('<span class="bad">所有招式的 PP 都用完了！只能使用「掙扎」（會受到反作用力）。</span>'); opts = [mk(STRUGGLE,-1)]; }
+  if(lock && p.moves.some(m=>m.name===lock && m.pp>0)){ opts = p.moves.map(mk); print(`<span class="sys">〔講究圍巾〕只能使用 ${esc(lock)}。</span>`); }
+  else if(!lock && p.moves.some(m=>m.pp>0)) opts = p.moves.map(mk);
+  else { print(lock ? `<span class="bad">${esc(lock)} 的 PP 用完了，只能使用「掙扎」。</span>` : '<span class="bad">所有招式的 PP 都用完了！只能使用「掙扎」。</span>'); opts = [mk(STRUGGLE,-1)]; }
   if(b.mode !== 'run') opts.push({label:'🎒 道具', cls:'q', action:screenItemSelect});   // 連戰試煉不能用道具
   if(state.party.filter(m=>m.hp>0).length>1) opts.push({label:'🔄 換上場', cls:'q', action:screenSwitch});
   if(b.mode !== 'run' && !b.megaUsed && !p._mega && megaFormsFor(p).length) opts.push({label:'✨ Mega 進化', cls:'q', action:screenMegaEvolve});
@@ -377,7 +379,8 @@ function screenMegaEvolve(){
   if(forms.length === 1) return doMegaEvolve(forms[0].id);
   clearLog();
   print(`<span class="em">✨ 要讓 ${nm(p)} 進化成哪一種 Mega？</span>`);
-  const opts = forms.map(m=>({label:`${m.name}（${typeStr(m)}）`, action:()=>doMegaEvolve(m.id)}));
+  forms.forEach(m=>print(`<b>${esc(m.name)}</b>　${esc(typeStr(m))}`));
+  const opts = forms.map(m=>({label:m.name, action:()=>doMegaEvolve(m.id)}));
   opts.push({label:'← 返回', action:toBattle});
   setOptions(opts, '選擇 Mega');
 }
@@ -396,7 +399,9 @@ function doMegaEvolve(id){
 function screenBallSelect(){
   const b = state.battle;
   clearLog(); renderBar();
-  const opts = BALL_KEYS.filter(k=>state.bag[k]>0).map(k=>({label:`${ITEMS[k].label} ×${state.bag[k]}`, half:true, html:`${esc(ITEMS[k].label)} ×${state.bag[k]}<span class="sub">${esc(ITEMS[k].desc)}</span>`, action:()=>tryCatch(k)}));
+  const balls = BALL_KEYS.filter(k=>state.bag[k]>0);
+  balls.forEach(k=>print(`<b>${esc(ITEMS[k].label)}</b> ×${state.bag[k]}　<span class="sys">${esc(ITEMS[k].desc)}</span>`));
+  const opts = balls.map(k=>({label:ITEMS[k].label, half:true, action:()=>tryCatch(k)}));
   if(!opts.length) print('<span class="bad">你沒有任何精靈球了！去商店買吧。</span>');
   opts.push({label:'← 返回', action:toBattle});
   setOptions(opts,'選擇球種');
@@ -456,11 +461,12 @@ function doAttack(att, def, move){
   gap(ATTACK_GAP);
 }
 function attackCore(att, def, move){
+  if(!beforeMoveFx(att, move)) return;   // 畏縮、節拍器
   if(att.status==='paralyze' && Math.random()<0.25){
     print(`<span class="bad">${who(att)} 因麻痺而無法動彈！</span>`);
     return;
   }
-  if(att !== state.battle.wild && move.maxpp !== undefined) move.pp = Math.max(0, move.pp - 1);
+  if(att !== state.battle.wild && move.maxpp !== undefined){ move.pp = Math.max(0, move.pp - 1); leppaCheck(att, move); }
   const isEnemy = att === state.battle.wild;
   const e = moveEff(move, def);
   if(e === 0){
@@ -469,10 +475,12 @@ function attackCore(att, def, move){
   }
   const absorbed = absorbCheck(att, def, move);   // 飄浮、蓄電、儲水、食草、引火
   if(absorbed){ print(`${who(att)} 使用了 ${esc(move.name)}！`); print(absorbed); return; }
-  const [d, endureMsg] = endureCheck(def, dmg(att, def, move));   // 氣勢披帶／結實
+  fxNotes = [];
+  const [d, endureMsg] = endureCheck(def, dmg(att, def, move));   // 氣勢披帶／結實／氣勢頭帶
   def.hp = Math.max(0, def.hp - d);
   if(!isEnemy) trackDmg(att, d);   // 寶可夢稱號：累計我方每隻寶可夢打出的傷害
   print(`${who(att)} 使用了 ${esc(move.name)}！造成 <span class="${isEnemy?'bad':'em'}">${d}</span> 點傷害。${effText(e)}`);
+  flushFxNotes();   // 會心一擊、抗性樹果、一般寶石
   if(endureMsg) print(endureMsg);
   if(move.recoil && (move.struggle || !(hasAb(att,'rockhead') || hasAb(att,'magicguard')))){
     const rec = Math.max(1, Math.floor(d*move.recoil));
@@ -481,11 +489,11 @@ function attackCore(att, def, move){
   }
   const fx = STATUS_FX[move.type];
   if(fx && fx.kind==='drain'){
-    const heal = Math.floor(d*0.5);
+    const heal = Math.floor(d*0.5*(holds(att,'bigroot') ? 1.3 : 1));
     if(heal>0 && att.hp>0 && att.hp<att.maxhp){ att.hp=Math.min(att.maxhp, att.hp+heal); print(`<span class="good">${who(att)} 吸取了 ${heal} 點 HP！</span>`); }
   } else if(def.hp>0 || (fx && fx.kind==='selfDefUp')){
     const msg = applyMoveEffect(att, def, move);
-    if(msg){ print(msg); lumCheck(def); }
+    if(msg){ print(msg); lumCheck(def); herbCheck(def); herbCheck(att); }
   }
   afterHitFx(att, def, move, d);   // 生命寶珠、貝殼之鈴、凸凸頭盔、靜電等、自信過度
 }
@@ -511,6 +519,7 @@ function endOfTurn(){
   if(w.hp<=0){ return winBattle(); }
   const tP = tickStatus(p); if(tP) print(tP);
   endTurnFx(p);
+  weatherTick();
   if(afterFaintCheck(p)) return;
   b.turn = (b.turn||1) + 1;
   screenBattle();
@@ -518,8 +527,9 @@ function endOfTurn(){
 function playerMove(moveIdx){
   const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
   clearLog();
-  if(moveIdx>=0 && !(p.moves[moveIdx].pp>0)) return screenMoveSelect();
+  if(moveIdx>=0 && (!(p.moves[moveIdx].pp>0) || (holds(p,'choicescarf') && p._lock && p.moves[moveIdx].name !== p._lock))) return screenMoveSelect();
   const pm = moveIdx<0 ? STRUGGLE : p.moves[moveIdx], wm = randomWildMove(w);
+  if(holds(p,'choicescarf') && !pm.struggle && !p._lock) p._lock = pm.name;
   const ps = effSpd(p), ws = effSpd(w);
   let playerFirst = ps > ws || (ps === ws && Math.random() < 0.5);
   if(!playerFirst && holds(p,'quickclaw') && Math.random() < 0.2){ playerFirst = true; print(`<span class="good">〔先制之爪〕${nm(p)} 搶先行動了！</span>`); }
@@ -575,7 +585,7 @@ function screenItemSelect(){
     const it = ITEMS[kind];
     if(it.ball!==undefined || it.stone || !(state.bag[kind] > 0)) return;
     const relevant = it.pp ? p.moves.some(m=>m.pp<m.maxpp) : it.heal ? p.hp < p.maxhp : p.status === it.cure;
-    if(relevant) opts.push({label:`${it.label}：${it.desc}（剩 ${state.bag[kind]}）`, action:()=>useItem(kind)});
+    if(relevant){ print(`<b>${esc(it.label)}</b> ×${state.bag[kind]}　<span class="sys">${esc(it.desc)}</span>`); opts.push({label:it.label, half:true, action:()=>useItem(kind)}); }
   });
   if(opts.length===0) print('<span class="sys">（目前沒有能用的道具）</span>');
   opts.push({label:'← 返回', action:toBattle});
@@ -999,7 +1009,7 @@ function svRoll3(){
     return {kind:'stat', k:s.k, pct, label:`${s.icon} ${s.name} +${pct}%　${'★'.repeat(pct)}`};
   });
   if(Math.random() < 0.15){                                          // 15% 機率其中一張變成稀有的「全能強化」
-    cards[Math.floor(Math.random()*3)] = {kind:'all', pct:2, label:'🌟 全能強化：攻擊／防禦／速度／血量 各 +2%　✦'};
+    cards[Math.floor(Math.random()*3)] = {kind:'all', pct:2, label:'🌟 全能強化 +2%'};
   }
   return cards;
 }
@@ -1062,7 +1072,7 @@ function screenSurvival(){
   print('每 5 關有寶箱（越後面越豐厚，還會給進化石和大師球），每 10 關是魔王。不能用道具、逃跑和捕捉。');
   print(best ? `<span class="good">個人最高紀錄：第 ${best} 關</span>` : '<span class="sys">還沒有挑戰紀錄</span>');
   setOptions([
-    {label:`▶ 開始挑戰（隊伍 ${state.party.length} 隻）`, action:svStart},
+    {label:'▶ 開始挑戰', action:svStart},
     {label:"返回", action:screenBattleMenu}
   ]);
 }
@@ -1114,9 +1124,10 @@ function svPerkScreen(){
   print(`<span class="sys">目前累計　${svPerkLine()}</span>`);
   const cards = svRoll3();
   const allDead = firstAlive() < 0;       // 打贏的同時最後一隻也倒了（反作用力等）：只能選復活
+  print(`<span class="sys">🌟 全能強化＝攻擊／防禦／速度／血量各 +2%　💚 全隊回血 ${SV_HEAL_PCT}%　✨ 復活一隻倒下的寶可夢（HP ${SV_REVIVE_PCT}%）</span>`);
   const opts = allDead ? [] : cards.map(c=>({label:c.label, action:()=>svPick(c)}));
-  if(!allDead) opts.push({label:`💚 回血：全隊回復 ${SV_HEAL_PCT}% HP`, action:svHeal});
-  if(state.party.some(m=>m.hp<=0)) opts.push({label:`✨ 復活：復活一隻倒下的寶可夢（HP ${SV_REVIVE_PCT}%）`, action:svRevive});
+  if(!allDead) opts.push({label:'💚 全隊回血', action:svHeal});
+  if(state.party.some(m=>m.hp<=0)) opts.push({label:'✨ 復活一隻', action:svRevive});
   setOptions(opts, '選擇強化');
 }
 function svPick(c){

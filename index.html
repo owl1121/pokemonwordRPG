@@ -1164,7 +1164,7 @@ function screenSaveIO(back){
     fr.readAsText(f);
   };
   setOptions([
-    {label:'📤 匯出存檔（下載檔案）', action:exportSaveFile},
+    {label:'📤 匯出存檔', action:exportSaveFile},
     {label:'📋 複製存檔代碼', half:true, action:exportSaveCopy},
     {label:'📥 匯入貼上的代碼', half:true, action:()=> stageImport(document.getElementById('saveBox').value)},
     {label:'返回', action:()=> (saveIOBack || screenCover)()}
@@ -1227,7 +1227,7 @@ function screenCover(){
   </div>`);
   renderBar();
   setOptions([
-    {label: hasSave ? "▶ 開始遊戲（讀取存檔）" : "▶ 開始遊戲", action: hasSave ? screenContinue : ()=>screenNamePrompt(screenTitle)},
+    {label:"▶ 開始遊戲", action: hasSave ? screenContinue : ()=>screenNamePrompt(screenTitle)},
     {label:"📖 遊戲簡介", half:true, action:screenIntro},
     ...(hasSave ? [{label:"🗑 清除存檔", half:true, action:screenResetConfirm}] : []),
     {label:"💾 存檔匯出 / 匯入", action:()=> screenSaveIO(screenCover)}
@@ -1262,15 +1262,15 @@ function screenTitle(){
   print('<span class="sys">選擇只影響初始夥伴，冒險開始後所有世代的寶可夢都會遇到。</span>');
   renderBar();
   setOptions([
-    {label:"第一世代　關都地方（妙蛙種子／小火龍／傑尼龜／皮卡丘）", action:()=>screenStarterPick(1)},
-    {label:"第二世代　城都地方（菊草葉／火球鼠／小鋸鱷）", action:()=>screenStarterPick(2)},
-    {label:"第三世代　豐緣地方（木守宮／火稚雞／水躍魚）", action:()=>screenStarterPick(3)},
-    {label:"第四世代　神奧地方（草苗龜／小火焰猴／波加曼）", action:()=>screenStarterPick(4)},
-    {label:"第五世代　合眾地方（藤藤蛇／暖暖豬／水水獺）", action:()=>screenStarterPick(5)},
-    {label:"第六世代　卡洛斯地方（哈力栗／火狐狸／呱呱泡蛙）", action:()=>screenStarterPick(6)},
-    {label:"第七世代　阿羅拉地方（木木梟／火斑喵／球球海獅）", action:()=>screenStarterPick(7)},
-    {label:"第八世代　伽勒爾地方（敲音猴／炎兔兒／淚眼蜥）", action:()=>screenStarterPick(8)},
-    {label:"第九世代　帕底亞地方（新葉喵／呆火鱷／潤水鴨）", action:()=>screenStarterPick(9)},
+    {label:"第一世代　關都地方", action:()=>screenStarterPick(1)},
+    {label:"第二世代　城都地方", action:()=>screenStarterPick(2)},
+    {label:"第三世代　豐緣地方", action:()=>screenStarterPick(3)},
+    {label:"第四世代　神奧地方", action:()=>screenStarterPick(4)},
+    {label:"第五世代　合眾地方", action:()=>screenStarterPick(5)},
+    {label:"第六世代　卡洛斯地方", action:()=>screenStarterPick(6)},
+    {label:"第七世代　阿羅拉地方", action:()=>screenStarterPick(7)},
+    {label:"第八世代　伽勒爾地方", action:()=>screenStarterPick(8)},
+    {label:"第九世代　帕底亞地方", action:()=>screenStarterPick(9)},
     {label:"← 返回封面", action:screenCover}
   ]);
 }
@@ -1317,6 +1317,10 @@ function screenStarterPick(gen){
     {label:"呆火鱷（火）－火，進化後帶有幽靈屬性，耐打又有爆發力", action:()=>pickStarter(965)},
     {label:"潤水鴨（水）－水，進化後成為水＋格鬥的華麗舞者", action:()=>pickStarter(968)}
   ];
+  list.forEach(o=>{   // 介紹寫在畫面上，按鈕只留名字
+    const mm = o.label.match(/^(.+?)（(.+?)）－(.+)$/);
+    if(mm){ print(`<b>${esc(mm[1])}</b>　${esc(mm[2])}　<span class="sys">${esc(mm[3])}</span>`); o.label = mm[1]; o.half = true; }
+  });
   list.push({label:"← 重新選擇世代", action:screenTitle});
   setOptions(list);
 }
@@ -1343,14 +1347,14 @@ function screenField(){
   saveGame();
   renderBar();
   setOptions([
-    {label:`🌿 往草叢前進（遭遇野生寶可夢${pityLabel()}）`, action:()=>encounter()},
+    {label:'🌿 往草叢前進', action:()=>encounter()},
     {label:"⚔️ 對戰", action:screenBattleMenu},
     {label:"👥 隊伍", half:true, action:screenParty},
     {label:"🎒 背包", half:true, action:screenBag},
     {label:"🏪 商店", half:true, action:()=>{ shopQty=1; screenShop(); }},
-    {label:`💊 補給站${state.meta.cd>0 && !daily('nurse')?`（再 ${state.meta.cd} 場）`:''}`, half:true, action:()=>healAll(screenField)},
-    {label:`📅 今日：${dailyEvent().name}　｜　天氣：${WEATHER[fieldWeather()].icon} ${WEATHER[fieldWeather()].name}`, action:screenToday},
-    {label:`🗺 選擇地區（目前：${zoneName(state.zone)}）`, action:()=>screenZoneRegions()},
+    {label:'💊 補給站', half:true, action:()=>healAll(screenField)},
+    {label:'📅 今日', half:true, action:screenToday},
+    {label:'🗺 選擇地區', half:true, action:()=>screenZoneRegions()},
     {label: advanceLabel(), action:advanceZone}
   ]);
 }
@@ -1360,14 +1364,16 @@ function zoneRegionRange(r){ const s = ZONE_REGIONS[r][1], e = (r+1 < ZONE_REGIO
 function screenZoneRegions(){
   clearLog();
   print('<span class="em">🗺 選擇地區</span>');
-  print('已經到過的地方都可以直接回去。');
-  const opts = [];
+  print(`目前在 <b>${esc(zoneName(state.zone))}</b>。已經到過的地方都可以直接回去。`);
+  const opts = [], prog = [];
   ZONE_REGIONS.forEach((rg, r)=>{
     const [s, e] = zoneRegionRange(r);
     if(s > state.maxZone) return;
     const got = Math.min(e, state.maxZone) - s + 1, here = state.zone >= s && state.zone <= e;
-    opts.push({label:`${here?'📍 ':''}${rg[0]}（${got}/${e-s+1}）`, half:true, action:()=>screenZoneList(r)});
+    prog.push(`${rg[0]} ${got}/${e-s+1}`);
+    opts.push({label:`${here?'📍 ':''}${rg[0]}`, half:true, action:()=>screenZoneList(r)});
   });
+  print(`<span class="sys">${prog.join('　')}</span>`);
   opts.push({label:'返回', action:toField});
   renderBar(); setOptions(opts);
 }
@@ -1393,12 +1399,15 @@ function setZone(z){
 function screenBattleMenu(){
   clearLog();
   print('<span class="em">⚔️ 對戰</span>');
-  print('要挑戰哪裡？');
+  print(`🏛 道館　徽章 ${state.meta.badges}/${GYMS.length}`);
+  print(`🗼 寶可塔　無限之塔，打倒樓層賺硬幣、挑戰神獸`);
+  print(`🔥 連戰試煉　${state.stats.runBest ? `最高紀錄 第 ${state.stats.runBest} 關` : '還沒挑戰過'}`);
+  print(`💎 Mega 對戰　碎片 ${megaTotalShards()} 片`);
   setOptions([
-    {label:`1. 🏛 道館（${state.meta.badges}/${GYMS.length}）`, action:screenGym},
-    {label:"2. 🗼 寶可塔（無限之塔）", action:enterTower},
-    {label:`3. 🔥 連戰試煉${state.stats.runBest?`（最高 第 ${state.stats.runBest} 關）`:''}`, action:screenSurvival},
-    {label:`4. 💎 Mega 對戰${megaTotalShards()?`（碎片 ${megaTotalShards()}）`:''}`, action:()=>screenMegaBattle()},
+    {label:'🏛 道館', half:true, action:screenGym},
+    {label:'🗼 寶可塔', half:true, action:enterTower},
+    {label:'🔥 連戰試煉', half:true, action:screenSurvival},
+    {label:'💎 Mega 對戰', half:true, action:()=>screenMegaBattle()},
     {label:"返回", action:toField}
   ]);
 }
@@ -1431,7 +1440,7 @@ function canAdvance(){ return state.zone < state.maxZone || zoneWins(state.zone)
 function advanceLabel(){
   if(state.zone >= MAP_NAMES.length) return '⏩ 已到最後一站';
   const next = `⏩ 前往 ${zoneName(state.zone+1)}`;
-  return canAdvance() ? next : `🔒 ${next.slice(2)}（本區勝場 ${zoneWins(state.zone)}/${ZONE_WIN_NEED}）`;
+  return canAdvance() ? next : `🔒 ${next.slice(2)}`;
 }
 function fullHeal(){ state.party.forEach(m=>{ m.hp=m.maxhp; m.status=null; m.atkMul=1; m.defMul=1; resetBattleFlags(m); restorePP(m); }); }
 function healAll(returnTo){
@@ -1470,7 +1479,7 @@ function encounter(){
   clearLog();
   announceShiny(wild);
   print(`<span class="em">野生的 ${nm(wild)}（Lv.${wild.level}）出現了！</span>`);
-  print(wild._newBefore ? '<span class="boss">★ 還沒抓過的寶可夢！</span>' : '<span class="sys">✔ 已經抓過了</span>');
+  print(wild._newBefore ? '<span class="boss">★ 還沒抓過的寶可夢！</span>' : `<span class="sys">✔ 已經抓過了${pityLabel().replace('・','　')}</span>`);
   screenBattle(); battleIntro('wild');
 }
 function zoneName(z){ return MAP_NAMES[Math.min(z, MAP_NAMES.length)-1]; }
@@ -1554,34 +1563,38 @@ function screenForcedSwitch(){
 
 /* ---------- SHOP ---------- */
 let shopQty = 1;
+// 商店：按鈕只放名稱和價格，點道具才顯示說明和購買數量
 function screenShop(msg){
   clearLog();
   renderBar();
-  print('<span class="em">— 友好商店 —</span>');
-  print(`你的錢包：💰 ${state.money}　｜　一次購買 ${shopQty} 個${daily('sale') ? '　<span class="good">🏷 特價日 8 折中</span>' : ''}`);
+  print(`<span class="em">— 友好商店 —</span>　💰 ${state.money}${daily('sale') ? '　<span class="good">🏷 8 折</span>' : ''}`);
   if(msg) print(msg);
-  hr();
-  const opts = Object.keys(ITEMS).filter(k=>ITEMS[k].price>0).map(k=>{
-    const it = ITEMS[k];
-    const total = priceOf(k)*shopQty;
-    return {label:`${it.label} $${priceOf(k)}`, half:true, html:`${esc(it.label)} $${total}<span class="sub">${esc(it.desc)}｜持有 ${state.bag[k]||0}</span>`, action:()=>buyItem(k)};
-  });
-  opts.push({label:`數量 ×${shopQty}`, half:true, action:()=>{ shopQty = shopQty===1?5:(shopQty===5?10:1); screenShop(); }});
-  opts.push({label:"🧷 攜帶道具", half:true, action:()=>screenHeldShop()});
+  print('<span class="sys">點道具看說明。</span>');
+  const opts = Object.keys(ITEMS).filter(k=>ITEMS[k].price>0).map(k=>({label:`${ITEMS[k].label} $${priceOf(k)}`, half:true, action:()=>screenShopItem(k)}));
+  opts.push({label:"🧷 攜帶道具", half:true, action:()=>screenHeldShop(null, null)});
   opts.push({label:"💎 Mega 商店", half:true, action:()=>screenMegaShop(screenShop)});
-  opts.push({label:"離開", half:true, action:toField});
+  opts.push({label:"離開", action:toField});
   setOptions(opts);
+}
+function screenShopItem(k, msg){
+  const it = ITEMS[k], p = priceOf(k);
+  clearLog(); renderBar();
+  print(`<span class="em">${esc(it.label)}</span>　$${p}　<span class="sys">持有 ${state.bag[k]||0}　💰 ${state.money}</span>`);
+  print(esc(it.desc));
+  if(msg) print(msg);
+  setOptions([1,5,10].map(n=>({label:`買 ${n} 個 $${p*n}`, half:n!==10, action:()=>{ shopQty = n; buyItem(k); }}))
+    .concat([{label:'← 返回', action:()=>screenShop()}]));
 }
 function buyItem(k){
   const it = ITEMS[k];
   const total = priceOf(k)*shopQty;
   if(state.money < total){
-    return screenShop(`<span class="bad">錢不夠！還差 💰 ${total-state.money}。</span>`);
+    return screenShopItem(k, `<span class="bad">錢不夠！還差 💰 ${total-state.money}。</span>`);
   }
   state.money -= total;
   state.bag[k] = (state.bag[k]||0) + shopQty;
   saveGame();
-  screenShop(`<span class="good">買了 ${it.label} ×${shopQty}，花費 💰 ${total}。</span>`);
+  screenShopItem(k, `<span class="good">買了 ${it.label} ×${shopQty}，花費 💰 ${total}。</span>`);
 }
 
 
@@ -1661,7 +1674,7 @@ function screenMegaBag(msg){
   if(!owned.length) print('<span class="sys">還沒有任何碎片，去打 Mega 對戰吧。</span>');
   owned.forEach(m=>print(`${ms.stones[m.id]?'💠':'🔹'} ${esc(m.name)}　碎片 ${megaShards(m.id)}/${MEGA_NEED}${ms.stones[m.id]?'　（已有進化石）':''}`));
   const opts = MEGAS.filter(m=>megaShards(m.id) >= MEGA_NEED && !ms.stones[m.id])
-    .map(m=>({label:`🔧 合成 ${m.name} 進化石（${MEGA_NEED} 片）`, action:()=>megaCraft(m.id)}));
+    .map(m=>({label:`🔧 合成 ${m.name}`, action:()=>megaCraft(m.id)}));
   opts.push({label:'返回', action:()=>screenMegaBattle()});
   setOptions(opts);
 }
@@ -1684,8 +1697,10 @@ function screenMegaShop(back, msg){
   const PAGE = 8, pages = Math.ceil(MEGAS.length/PAGE);
   megaShopPage = Math.max(0, Math.min(pages-1, megaShopPage));
   print(`<span class="sys">選擇想換的碎片　第 ${megaShopPage+1} / ${pages} 頁</span>`);
-  const opts = MEGAS.slice(megaShopPage*PAGE, megaShopPage*PAGE + PAGE).map(m=>({
-    label:`${m.name}（${megaShards(m.id)}/${MEGA_NEED}${megaState().stones[m.id]?' 💠':''}）`, half:true, action:()=>{ megaTarget = m.id; megaPay = {}; screenMegaPay(); }
+  const pageMegas = MEGAS.slice(megaShopPage*PAGE, megaShopPage*PAGE + PAGE);
+  print(pageMegas.map(m=>`${esc(m.name)} ${megaShards(m.id)}/${MEGA_NEED}${megaState().stones[m.id]?' 💠':''}`).join('　'));
+  const opts = pageMegas.map(m=>({
+    label:`${m.name}${megaState().stones[m.id]?' 💠':''}`, half:true, action:()=>{ megaTarget = m.id; megaPay = {}; screenMegaPay(); }
   }));
   if(megaShopPage > 0) opts.push({label:'◀ 上一頁', half:true, action:()=>{ megaShopPage--; screenMegaShop(); }});
   if(megaShopPage < pages-1) opts.push({label:'下一頁 ▶', half:true, action:()=>{ megaShopPage++; screenMegaShop(); }});
@@ -1719,12 +1734,13 @@ function screenMegaPay(msg){
   if(totalOther < MEGA_SWAP) print(`<span class="bad">除了這一種以外，碎片不夠 ${MEGA_SWAP} 片。</span>`);
   const opts = [];
   if(n === MEGA_SWAP) opts.push({label:'✅ 確認兌換', action:megaSwapConfirm});
-  else opts.push({label:`（還要再選 ${MEGA_SWAP-n} 片）`, cls:'off', action:()=>screenMegaPay()});
+  else opts.push({label:'✅ 確認兌換', cls:'off', action:()=>screenMegaPay()});
   opts.push({label:'⚙ 自動選擇', half:true, action:()=>{ megaAutoPick(); screenMegaPay(); }});
   opts.push({label:'🗑 清除選擇', half:true, action:()=>{ megaPay = {}; screenMegaPay(); }});
+  if(owned.length) print(`<span class="sys">可用：${owned.map(m=>`${esc(m.name)}×${megaShards(m.id) - (megaPay[m.id]||0)}`).join('、')}</span>`);
   owned.forEach(m=>{
     const left = megaShards(m.id) - (megaPay[m.id]||0);
-    opts.push({label:`${m.name}（剩 ${left}）`, half:true, cls: (left>0 && n<MEGA_SWAP) ? '' : 'off',
+    opts.push({label:m.name, half:true, cls: (left>0 && n<MEGA_SWAP) ? '' : 'off',
       action:()=>{ if(left>0 && megaPayCount()<MEGA_SWAP){ megaPay[m.id] = (megaPay[m.id]||0)+1; } screenMegaPay(); }});
   });
   opts.push({label:'返回', action:()=>screenMegaShop()});
@@ -1796,10 +1812,10 @@ function screenTower(keepLog){
       print(`　${g.floorsOk?'✅':'❌'} 第${g.gen===10?9:g.gen}世代普通樓層全數通過（${g.gp.floorsDone}/${g.gp.floorsTotal}）`);
       print(`　${g.bossOk?'✅':'❌'} 第${g.gen===10?9:g.gen}世代第二輪小魔王全數擊破（${g.gp.bossDone}/${g.gp.bossTotal}）`);
     } else {
-      print(`下一位神獸：#${dexNo(ldex)} ${esc(le[0])}　需要 ${g.cost} 枚硬幣`);
+      print(`下一位神獸：#${dexNo(ldex)} ${esc(le[0])}　需要 ${g.cost} 枚硬幣${g.ok ? '' : `<span class="bad">（還差 ${g.cost - t.coins} 枚）</span>`}`);
     }
     opts.push({
-      label: g.ok ? `🪙 花費 ${g.cost} 枚硬幣挑戰 ${le[0]}！` : (isMew ? `（${le[0]}：尚未達成全部條件）` : `（神獸：硬幣不足，還差 ${g.cost - t.coins} 枚）`),
+      label: g.ok ? `🪙 挑戰 ${le[0]}` : `🔒 挑戰 ${le[0]}`,
       action: g.ok ? startLegendaryChallenge : ()=>screenTower()
     });
   } else {
@@ -1908,7 +1924,7 @@ function screenParty(back, msg){
     label:`${i===0?'★ ':''}${monName(m)}　Lv.${m.level}　HP ${m.hp}/${m.maxhp}`,
     action:()=>screenMember(i, back)
   }));
-  opts.push({label:`📦 倉庫（${state.box.length}）`, half:true, action:()=>{ boxPage = 0; screenBox(back); }});
+  opts.push({label:'📦 倉庫', half:true, action:()=>{ boxPage = 0; screenBox(back); }});
   opts.push({label:"返回", half:true, action:back});
   setOptions(opts);
 }
@@ -1928,7 +1944,7 @@ function screenMember(i, back){
   stageDetail = hexPanel(m.iv, null, m.ivCap, null);
   const opts = [];
   opts.push({label:"📊 調整能力點", half:true, action:()=>screenIvEdit(i, back)});
-  opts.push({label:`🧷 攜帶道具（${heldName(m)}）`, half:true, action:()=>screenHeld(i, back)});
+  opts.push({label:'🧷 攜帶道具', half:true, action:()=>screenHeld(i, back)});
   if(i>0) opts.push({label:"★ 設為隊長", action:()=>setLeader(i, back)});
   if(state.party.length>1) opts.push({label:"📦 送去倉庫", action:()=>releaseToBox(i, back)});
   opts.push({label:"返回隊伍", action:()=>screenParty(back)});
@@ -1990,7 +2006,7 @@ function renderIvEdit(){
   const changed = IV_KEYS.some(s=>E.iv[s] !== m.iv[s]);
   opts.push({label:'✔ 確定', half:true, cls:changed?'':'off', action:ivConfirm});
   opts.push({label:'↺ 重來', half:true, cls:changed?'':'off', action:()=>{ E.iv = Object.assign({}, m.iv); renderIvEdit(); }});
-  opts.push({label:'返回（不儲存）', action:()=>screenMember(state.party.indexOf(m), E.back)});
+  opts.push({label:'放棄修改', action:()=>screenMember(state.party.indexOf(m), E.back)});
   setOptions(opts);
 }
 function ivConfirm(){
@@ -2123,12 +2139,12 @@ function screenBag(){
     print(`${it.label} x${state.bag[k]||0}　${it.desc}`);
   });
   const heldOwned = HELD_KEYS.filter(k=>state.bag[k] > 0);
-  if(heldOwned.length){ hr(); print('<span class="em">🧷 攜帶道具</span>（到「隊伍」點寶可夢裝上）'); heldOwned.forEach(k=>print(`${HELD[k].label} x${state.bag[k]}　${HELD[k].desc}`)); }
+  if(heldOwned.length){ hr(); print('<span class="em">🧷 攜帶道具</span>'); heldOwned.forEach(k=>print(`${HELD[k].label} x${state.bag[k]}　${HELD[k].desc}`)); }
   hr();
   print('<span class="sys">道具不夠的話到商店購買，打倒寶可夢就能賺錢。</span>');
   const opts = [];
-  if(healItemKeys().some(k=>state.bag[k]>0)) opts.push({label:"💊 使用傷藥／藥品（隊伍、倉庫都能用）", action:()=>screenHealItems()});
-  STONE_KEYS.filter(k=>state.bag[k]>0).forEach(k=>opts.push({label:`💎 使用${ITEMS[k].label}（${state.bag[k]}）`, half:true, action:()=>screenStoneUse(k)}));
+  if(healItemKeys().some(k=>state.bag[k]>0)) opts.push({label:"💊 使用藥品", action:()=>screenHealItems()});
+  STONE_KEYS.filter(k=>state.bag[k]>0).forEach(k=>opts.push({label:`💎 ${ITEMS[k].label}`, half:true, action:()=>screenStoneUse(k)}));
   opts.push({label:"去商店", half:true, action:()=>{ shopQty=1; screenShop(); }});
   opts.push({label:"返回", half:true, action:toField});
   setOptions(opts);
@@ -2149,7 +2165,8 @@ function screenHealItems(msg){
   healItemKeys().forEach(k=>{
     if(!(state.bag[k] > 0)) return;
     const it = ITEMS[k], n = [...state.party, ...state.box].filter(m=>needsItem(m,it)).length;
-    opts.push({label:`${it.label}（剩 ${state.bag[k]}）　${it.desc}　${n?`可用 ${n} 隻`:'（沒有需要的）'}`, action:()=>{ healPage = 0; screenHealTarget(k); }});
+    print(`<b>${esc(it.label)}</b> ×${state.bag[k]}　${esc(it.desc)}　<span class="sys">${n?`可用 ${n} 隻`:'沒有需要的'}</span>`);
+    opts.push({label:it.label, half:true, action:()=>{ healPage = 0; screenHealTarget(k); }});
   });
   if(!opts.length) print('<span class="sys">沒有可以使用的藥品。</span>');
   opts.push({label:'← 返回背包', action:screenBag});
@@ -2334,7 +2351,7 @@ function screenGym(keepLog){
     print(`　${ok?'✅':'❌'} 圖鑑登錄 ≥ ${need} 隻（目前 ${n}）`);
     if(gymBoost(i) > 1.001) print(`<span class="sys">　館主隊伍已超過等級上限，能力強化 ×${gymBoost(i).toFixed(2)}</span>`);
     print(`<span class="sys">建議等級約 Lv.${10+i*4}；館主有 ${gymFoeCount(i)} 隻寶可夢，不能逃跑或捕捉。</span>`);
-    opts.push(ok ? {label:`⚔ 挑戰 ${g[0]}`, action:startGym} : {label:`（圖鑑還差 ${need-n} 隻）`, action:()=>screenGym()});
+    opts.push(ok ? {label:`⚔ 挑戰 ${g[0]}`, action:startGym} : {label:`🔒 挑戰 ${g[0]}`, action:()=>screenGym()});
   }
   opts.push({label:'← 返回', action:toField});
   setOptions(opts);
