@@ -1076,7 +1076,7 @@ function loadGame(){
     state.seen = new Set(d.seen||[]);
     state.caught = new Set(d.caught||[]);
     state.shinyCaught = new Set(d.shinyCaught||[]);
-    state.mega = {shards:Object.assign({}, d.mega&&d.mega.shards), stones:Object.assign({}, d.mega&&d.mega.stones)};
+    state.mega = {shards:Object.assign({}, d.mega&&d.mega.shards), stones:Object.assign({}, d.mega&&d.mega.stones), seen:Object.assign({}, d.mega&&d.mega.seen)};
     state.bag = Object.assign(defaultBag(), d.bag||{});
     state.money = (typeof d.money === 'number') ? d.money : START_MONEY;
     state.zone = d.zone || 1;
@@ -1100,7 +1100,7 @@ function loadGame(){
 }
 function resetGame(){
   try{ localStorage.removeItem(SAVE_KEY); localStorage.removeItem(OLD_SAVE_KEY); }catch(e){}
-  state.party=[]; state.box=[]; state.seen=new Set(); state.caught=new Set(); state.shinyCaught=new Set(); state.mega={shards:{}, stones:{}};
+  state.party=[]; state.box=[]; state.seen=new Set(); state.caught=new Set(); state.shinyCaught=new Set(); state.mega={shards:{}, stones:{}, seen:{}};
   gotSeq = 0;
   state.bag=defaultBag(); state.money=START_MONEY; state.zone=1; state.maxZone=1; state.battle=null;
   state.tower=defaultTower();
@@ -1614,6 +1614,7 @@ function megaState(){
   if(!state.mega || typeof state.mega !== 'object') state.mega = {};
   if(!state.mega.shards || typeof state.mega.shards !== 'object') state.mega.shards = {};
   if(!state.mega.stones || typeof state.mega.stones !== 'object') state.mega.stones = {};
+  if(!state.mega.seen || typeof state.mega.seen !== 'object') state.mega.seen = {};
   return state.mega;
 }
 const megaShards = id => megaState().shards[id] || 0;
@@ -1655,6 +1656,7 @@ function screenMegaBattle(keepLog){
     {label:'▶ 開始 Mega 對戰', action:startMegaBattle},
     {label:'📦 碎片與進化石', half:true, action:()=>screenMegaBag()},
     {label:'💎 Mega 商店', half:true, action:()=>screenMegaShop(screenMegaBattle)},
+    {label:'📕 Mega 圖鑑', action:()=>{ megaDexBack = ()=>screenMegaBattle(); screenMegaDex(); }},
     {label:'返回', action:screenBattleMenu}
   ]);
 }
@@ -1663,6 +1665,7 @@ function startMegaBattle(){
   const m = MEGAS[Math.floor(Math.random()*MEGAS.length)];
   const lvl = MEGA_LV_MIN + Math.floor(Math.random()*(MEGA_LV_MAX - MEGA_LV_MIN + 1));
   const wild = makeMegaFoe(m, lvl);
+  megaState().seen[m.id] = true;   // Mega 圖鑑：遇過就登錄
   clearBattleModifiers();
   state.battle = {wild, playerIdx:firstAlive(), mode:'mega', megaUsed:false};
   introLead = introLeadFor('big');
@@ -2284,6 +2287,7 @@ function screenDex(){   // 地區選單
   print('<span class="sys">選擇要翻閱的地區圖鑑：</span>');
   const opts = DEX_REGIONS.map(([g,name])=>{ const c = genCaught(g), t = genSize(g); return {label:`📖 ${name}　${c}/${t}${c===t?' ✔':''}`, half:true, action:()=>{ dview.gen = g; screenDexRegion(); }}; });
   opts.push({label:'🌐 全國圖鑑（全部）', action:()=>{ dview.gen = 0; screenDexRegion(); }});
+  opts.push({label:`💎 Mega 圖鑑　${megaDexKnown()}/${MEGAS.length}　💠 ${megaStoneCount()}`, action:()=>{ megaDexBack = screenDex; screenMegaDex(); }});
   opts.push({label:'返回', action:()=>{ dview.gen = 0; toField(); }});
   setOptions(opts);
 }
@@ -2312,6 +2316,40 @@ function screenDexRegion(){   // 單一地區：直向卷軸
   opts.push({label:'← 換地區', half:true, action:screenDex});
   opts.push({label:'返回', half:true, action:()=>{ dview.gen = 0; toField(); }});
   setOptions(opts);
+}
+
+/* Mega 圖鑑：93 種 Mega 依全國圖鑑編號排列
+   遇過（Mega 對戰遇到）、有碎片或有進化石就算「已登錄」，會顯示名字與屬性；沒遇過顯示 ？？？
+   🎒 = 隊伍或倉庫裡有這隻的基礎寶可夢（有進化石就能在對戰中 Mega 進化） */
+let megaDexBack = null, megaDexSt = '';
+const MDEX_ST_LABEL = {'':'全部', stone:'已有進化石', shard:'收集碎片中', seen:'只遇過', unseen:'未遇過'};
+const megaNo = m => m.base >= 962 ? m.base - 56 : m.base + 1;
+const megaKnown = m => { const ms = megaState(); return !!(ms.seen[m.id] || ms.stones[m.id] || megaShards(m.id) > 0); };
+const megaDexKnown = () => MEGAS.filter(megaKnown).length;
+function megaDexStOf(m){ const ms = megaState(); return ms.stones[m.id] ? 'stone' : megaShards(m.id) > 0 ? 'shard' : megaKnown(m) ? 'seen' : 'unseen'; }
+function screenMegaDex(){
+  clearLog(); renderBar();
+  const owned = new Set([...state.party, ...state.box].map(p=>p.dex));
+  const list = MEGAS.slice().sort((a,b)=>megaNo(a)-megaNo(b) || a.suf.localeCompare(b.suf))
+    .filter(m=>!megaDexSt || megaDexStOf(m) === megaDexSt);
+  const rows = list.map(m=>{
+    const no = '#' + String(megaNo(m)).padStart(3,'0') + (m.suf ? m.suf : ''), st = megaDexStOf(m);
+    const bag = owned.has(m.base) ? ' <span title="持有基礎寶可夢">🎒</span>' : '';
+    if(st === 'unseen') return `<div class="dexrow"><span class="dexno">${no}</span><span class="sys">？？？</span></div>`;
+    const ty = `<span class="sys">${m.t2 ? m.t1 + '／' + m.t2 : m.t1}</span>`;
+    if(st === 'stone') return `<div class="dexrow"><span class="dexno">${no}</span><span class="good">💠 ${esc(m.name)}</span>${ty}${bag}</div>`;
+    if(st === 'shard') return `<div class="dexrow"><span class="dexno">${no}</span><span>🔹 ${esc(m.name)}</span>${ty}<span class="sys">碎片 ${megaShards(m.id)}/${MEGA_NEED}</span>${bag}</div>`;
+    return `<div class="dexrow"><span class="dexno">${no}</span><span>${esc(m.name)}</span>${ty}<span class="sys">（已遇過）</span>${bag}</div>`;
+  }).join('');
+  const note = megaDexSt ? `　<span class="sys">（${MDEX_ST_LABEL[megaDexSt]}　符合 ${list.length} 種）</span>` : '';
+  print(`<div class="dexwrap"><div class="dexhead"><span class="em">— 💎 Mega 圖鑑 —</span>　已登錄 ${megaDexKnown()} / ${MEGAS.length}　💠 進化石 ${megaStoneCount()}${note}</div>${rows || '<span class="sys">（沒有符合篩選條件的 Mega）</span>'}</div>`);
+  skipReveal(); logEl.scrollTop = 0;
+  const sts = ['','stone','shard','seen','unseen'];
+  setOptions([
+    {label:`狀態：${MDEX_ST_LABEL[megaDexSt]}`, half:true, action:()=>{ megaDexSt = sts[(sts.indexOf(megaDexSt)+1) % sts.length]; screenMegaDex(); }},
+    {label:'📦 碎片與進化石', half:true, action:()=>screenMegaBag()},
+    {label:'返回', action:()=>{ megaDexSt = ''; (megaDexBack || screenDex)(); }}
+  ]);
 }
 
 /* ---------- TRAINERS / GYMS / ROAD ITEMS ---------- */
