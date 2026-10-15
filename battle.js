@@ -269,6 +269,96 @@ function stChip(m){ const t={burn:'🔥灼傷',poison:'☠️中毒',paralyze:'�
 let stageTimers = [], stageLatest = null, stageKey = null;
 let stageDetail = null;   // 非對戰時要顯示在上方畫面的內容（例如寶可夢的能力六邊形）；只在下一次 setOptions 生效一次
 function flushStage(){ stageTimers.forEach(clearTimeout); stageTimers = []; if(stageLatest){ stageLatest(); stageLatest = null; } }
+/* ---------- 擊倒／捕捉動畫 ---------- */
+// 動畫期間先「留住」對戰畫面，避免對戰一結束卡片就消失
+let stageHoldTill = 0, stageHoldTimer = 0, fxGen = 0;
+function stageHeldMs(){ return Math.max(0, stageHoldTill - performance.now()); }
+function holdStage(ms){ stageHoldTill = Math.max(stageHoldTill, performance.now() + ms); }
+function releaseStage(){ stageHoldTill = 0; fxGen++; clearTimeout(stageHoldTimer); if(!state.battle && appEl.classList.contains('battle')) syncBattleUI(); }
+function fxReduced(){ try{ return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+const KO_MS = 950;
+// 對手被打倒：卡片閃白、抖動、💥，然後往下沉並淡出
+function koFx(){
+  if(fxReduced()) return;
+  const at = Math.max(0, curDelay() - ATTACK_GAP + 450), gen = fxGen;
+  gap(Math.max(0, at + KO_MS - curDelay()));   // 後面的文字等動畫播完再出現
+  holdStage(at + KO_MS + 150);
+  setTimeout(()=>{
+    if(gen !== fxGen) return;
+    const c = stageEl.querySelector('.card.foe'); if(!c || !c.animate) return;
+    c.style.position = 'relative';
+    c.animate([
+      {transform:'none', filter:'none', opacity:1},
+      {transform:'translateX(-7px)', filter:'brightness(2.4)', offset:.12},
+      {transform:'translateX(7px)', filter:'none', offset:.24},
+      {transform:'translateX(-4px)', filter:'brightness(2.4)', offset:.36},
+      {transform:'translateX(0)', filter:'grayscale(1)', opacity:1, offset:.5},
+      {transform:'translateY(36px) scaleY(.15)', filter:'grayscale(1)', opacity:0}
+    ], {duration:KO_MS, easing:'ease-in', fill:'forwards'});
+    const boom = document.createElement('span'); boom.className = 'koBoom'; boom.textContent = '💥';
+    c.appendChild(boom);
+  }, at);
+}
+// 丟球：球飛過去 → 對手被吸進球裡 → 搖晃 → 成功（★）或掙脫
+const CATCH_FLY = 450, CATCH_SUCK = 300, CATCH_DROP = 250, CATCH_SHAKE = 600, CATCH_END = 550;
+function catchFx(ballKey, caught, shakes){
+  if(fxReduced()) return 0;
+  const total = CATCH_FLY + CATCH_SUCK + CATCH_DROP + shakes*CATCH_SHAKE + CATCH_END;
+  const at = curDelay(), gen = fxGen;
+  holdStage(at + total + 150);
+  setTimeout(()=>{
+    if(gen !== fxGen) return;
+    const c = stageEl.querySelector('.card.foe'), me = stageEl.querySelector('.card.me');
+    if(!c || !c.animate) return;
+    const tx = c.offsetLeft + c.offsetWidth/2 - 13, ty = c.offsetTop + c.offsetHeight/2 - 13;
+    const sx = me ? me.offsetLeft + 20 : 20, sy = me ? me.offsetTop + me.offsetHeight/2 : stageEl.offsetHeight;
+    const ball = document.createElement('div');
+    ball.className = 'cball fr-' + (BALL_TO_FRAME[ballKey] || 'poke');
+    ball.style.left = tx+'px'; ball.style.top = ty+'px';
+    stageEl.appendChild(ball);
+    const dx = sx - tx, dy = sy - ty, T = (x,y,r)=>`translate(${x}px,${y}px) rotate(${r||0}deg)`;
+    // 1. 拋物線飛過去
+    ball.animate([
+      {transform:T(dx,dy,0)}, {transform:T(dx*.5,dy*.5-60,360), offset:.5}, {transform:T(0,0,720)}
+    ], {duration:CATCH_FLY, easing:'ease-out', fill:'forwards'});
+    // 2. 對手閃一下被吸進球裡
+    const t1 = CATCH_FLY;
+    c.animate([
+      {transform:'none', filter:'none', opacity:1},
+      {transform:'scale(.9)', filter:'brightness(3)', opacity:1, offset:.3},
+      {transform:'scale(.05)', filter:'brightness(3)', opacity:0}
+    ], {duration:CATCH_SUCK, delay:t1, easing:'ease-in', fill:'forwards'});
+    ball.animate([{transform:T(0,0)}, {transform:T(0,-14)}, {transform:T(0,0)}],
+      {duration:CATCH_SUCK + CATCH_DROP, delay:t1, easing:'ease-in-out', fill:'forwards'});
+    // 3. 搖晃
+    const t2 = t1 + CATCH_SUCK + CATCH_DROP;
+    for(let i=0;i<shakes;i++){
+      ball.animate([
+        {transform:T(0,0,0)}, {transform:T(-4,0,-25), offset:.2}, {transform:T(4,0,25), offset:.45}, {transform:T(0,0,0), offset:.65}, {transform:T(0,0,0)}
+      ], {duration:CATCH_SHAKE, delay:t2 + i*CATCH_SHAKE, easing:'ease-in-out', fill:'forwards'});
+    }
+    const t3 = t2 + shakes*CATCH_SHAKE;
+    setTimeout(()=>{
+      if(gen !== fxGen) return;
+      if(caught){
+        ball.classList.add('done');
+        ['★','★','★'].forEach((s,i)=>{
+          const st = document.createElement('span'); st.className = 'cstar'; st.textContent = s;
+          st.style.left = (tx+8)+'px'; st.style.top = (ty+4)+'px'; stageEl.appendChild(st);
+          const ang = (-150 + i*60) * Math.PI/180;
+          st.animate([{transform:'translate(0,0) scale(.4)', opacity:1}, {transform:`translate(${Math.cos(ang)*34}px,${Math.sin(ang)*34}px) scale(1.2)`, opacity:0}],
+            {duration:CATCH_END, easing:'ease-out', fill:'forwards'});
+        });
+      } else {
+        ball.animate([{transform:T(0,0), opacity:1, filter:'brightness(1)'}, {transform:T(0,-6)+' scale(1.4)', opacity:0, filter:'brightness(3)'}],
+          {duration:300, easing:'ease-out', fill:'forwards'});
+        c.animate([{transform:'scale(.05)', filter:'brightness(3)', opacity:0}, {transform:'scale(1.08)', filter:'brightness(1.6)', opacity:1, offset:.6}, {transform:'none', filter:'none', opacity:1}],
+          {duration:CATCH_END, easing:'ease-out', fill:'forwards'});
+      }
+    }, t3);
+  }, at);
+  return total;
+}
 /* ---------- 對戰邊框：精靈球／超級球／高級球／大師球配色 ---------- */
 const FRAME_NAMES = {poke:'精靈球', great:'超級球', ultra:'高級球', master:'大師球'};
 const BALL_TO_FRAME = {pokeball:'poke', greatball:'great', ultraball:'ultra', masterball:'master'};
@@ -314,11 +404,18 @@ function renderStage(at, hit, power){   // hit：'foe' 或 'me'，該張卡片�
   };
   const fresh = stageKey && (stageKey[0]!==w || stageKey[1]!==p);
   stageKey = [w,p];
-  if(!at || at<=0 || fresh || !stageEl.innerHTML){ apply(); return; }
+  const held = stageHeldMs();   // 擊倒／捕捉動畫還在播：卡片晚點再換
+  if(held > 0) at = Math.max(at||0, held);
+  if(!at || at<=0 || (fresh && !held) || !stageEl.innerHTML){ apply(); return; }
   stageLatest = apply;
   stageTimers.push(setTimeout(apply, at));
 }
 function syncBattleUI(phase){
+  if(!state.battle && appEl.classList.contains('battle') && stageHeldMs() > 0){   // 對戰剛結束：等動畫播完再收起對戰畫面
+    clearTimeout(stageHoldTimer);
+    stageHoldTimer = setTimeout(()=>{ if(!state.battle) syncBattleUI(); }, stageHeldMs() + 30);
+    return;
+  }
   const b=state.battle, d=stageDetail; stageDetail = null;
   if(b && state.party[b.playerIdx]){ appEl.classList.remove('detail'); if(phase) b.phase=phase; appEl.classList.add('battle'); renderStage(curDelay()); }
   else {
@@ -501,6 +598,7 @@ function attackCore(att, def, move){
 function checkBattleEnd(){
   const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
   if(w.hp<=0){
+    koFx();
     if(p.hp<=0) print(`<span class="bad">${nm(p)} 也在同一擊中倒下了！</span>`);
     winBattle(); return true;
   }
@@ -516,7 +614,7 @@ function endOfTurn(){
   const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
   const tW = tickStatus(w); if(tW) print(tW);
   endTurnFx(w);
-  if(w.hp<=0){ return winBattle(); }
+  if(w.hp<=0){ koFx(); return winBattle(); }
   const tP = tickStatus(p); if(tP) print(tP);
   endTurnFx(p);
   weatherTick();
@@ -553,7 +651,9 @@ function tryCatch(ballKey){
   const hpRatio = w.hp/w.maxhp;
   const chance = ball.master ? 1 : Math.min(0.97, (1-hpRatio)*0.75 + 0.15 + ball.ball + (daily('catch') ? 0.1 : 0));
   print(`你對 ${nm(w)} 丟出了${ball.label}……`);
-  if(Math.random() < chance){
+  const caught = Math.random() < chance;
+  gap(catchFx(ballKey, caught, caught ? 3 : Math.floor(Math.random()*3)));
+  if(caught){
     unboostMon(w); w.status = null; w.atkMul = 1; w.defMul = 1; resetBattleFlags(w); bump('catches'); battleDone();
     w.ball = BALL_TO_FRAME[ballKey] || 'poke';   // 記住被哪種球抓到（決定邊框）
     { if([w.t1,w.t2].some(x=>x==='幽靈'||x==='惡')) bump('ghostCatch');   // 節日活動任務用
@@ -919,6 +1019,7 @@ function introLabel(kind){
 }
 let introEl = null, introRaf = 0;
 function battleIntro(kind){
+  stageHoldTill = 0; fxGen++;   // 新的對戰：上一場的擊倒／捕捉動畫不再保留畫面
   const cfg = INTRO[kind];
   if(!cfg || introReduced()) return;
   if(introEl){ cancelAnimationFrame(introRaf); introEl.remove(); introEl = null; }

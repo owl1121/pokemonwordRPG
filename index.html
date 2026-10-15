@@ -308,6 +308,14 @@ button,input,textarea,select{font-family:inherit;}
 #introFx .vs{font-size:44px;font-weight:bold;letter-spacing:6px;color:#eafff2;text-shadow:0 0 14px #3fbf7f,0 3px 0 #07100b;}
 #introFx .sub{font-size:14px;color:#9ad9b6;margin-top:6px;}
 @keyframes introPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.18);opacity:1}100%{transform:scale(1)}}
+/* ---- 擊倒／捕捉動畫 ---- */
+#stage{position:relative;}
+.koBoom{position:absolute;left:50%;top:50%;font-size:34px;pointer-events:none;transform:translate(-50%,-50%) scale(.3);opacity:0;animation:koBoom .55s ease-out forwards;}
+@keyframes koBoom{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}35%{transform:translate(-50%,-50%) scale(1.4);opacity:1}100%{transform:translate(-50%,-50%) scale(1.8);opacity:0}}
+.cball{position:absolute;width:26px;height:26px;border-radius:50%;border:2px solid #1b1b1b;background:var(--fr);z-index:5;pointer-events:none;box-shadow:0 2px 4px rgba(0,0,0,.45);}
+.cball::after{content:"";position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-5px 0 0 -5px;border-radius:50%;background:#fff;border:2px solid #1b1b1b;}
+.cball.done::after{background:#ff4d4d;box-shadow:0 0 6px #ff4d4d;}
+.cstar{position:absolute;color:#ffe066;font-size:14px;z-index:6;pointer-events:none;text-shadow:0 0 6px #ffcf33;}
 /* ---- 對戰邊框（球種配色） ---- */
 .fr-poke  {--fr:linear-gradient(180deg,#e53935 0 46%,#1b1b1b 46% 54%,#fff 54% 100%);}
 .fr-great {--fr:linear-gradient(90deg,#e53935 0 13%,transparent 13% 87%,#e53935 87% 100%) top/100% 46% no-repeat border-box,
@@ -1000,6 +1008,7 @@ function skipReveal(){   // 跳過文字動畫，立刻顯示全部內容與選�
   if(pendingTimer) clearTimeout(pendingTimer);
   optsEl.classList.remove('pending');
   flushStage();
+  releaseStage();
 }
 logEl.addEventListener('click', skipReveal);
 
@@ -1251,7 +1260,7 @@ function screenIntro(){
   print('<span class="intro-h">◆ 隊伍</span>　最多帶 6 隻上場，抓超過的會送進倉庫；可隨時查看隊伍、設定隊長、與倉庫交換寶可夢，完全不用浪費戰鬥中的回合。');
   print('<span class="intro-h">◆ 無限之塔</span>　依全國圖鑑順序一路挑戰，打倒小魔王（最終進化型）能拿硬幣，集滿硬幣可以依序挑戰各世代的傳說寶可夢，從急凍鳥、超夢一路到帕底亞的故勒頓、密勒頓。幻之寶可夢（夢幻、時拉比）需先清空該世代的普通樓層與「第二輪」強化小魔王。');
   print('<span class="intro-h">◆ 訓練家與道館</span>　草叢中每 8～12 場戰鬥會遇到訓練家（贏了有獎金）；圖鑑每登錄 10 隻可開啟下一間道館，先打關都 8 間，再打城都 8 間。');
-  print('<span class="intro-h">◆ 補給站</span>　用過之後要再打完 2 場戰鬥才能再用（隊伍全倒時例外）；探索時偶爾會撿到道具。招式有 PP，用完只能「掙扎」。右上角「☰ 選單」可領任務與成就獎勵。');
+  print('<span class="intro-h">◆ 補給站</span>　用過之後要再打完 5 場戰鬥才能再用（隊伍全倒時例外）；探索時偶爾會撿到道具。招式有 PP，用完只能「掙扎」。右上角「☰ 選單」可領任務與成就獎勵。');
   hr();
   print('<span class="sys">目標：抓齊全國圖鑑 1025 隻（加上 57 種地區型態）、收服所有傳說寶可夢！進度會自動儲存在這台裝置的瀏覽器裡。</span>');
   setOptions([{label:"← 返回封面", action:screenCover}]);
@@ -1447,6 +1456,7 @@ function advanceLabel(){
   const next = `⏩ 前往 ${zoneName(state.zone+1)}`;
   return canAdvance() ? next : `🔒 ${next.slice(2)}`;
 }
+const HEAL_CD = 5;
 function fullHeal(){ state.party.forEach(m=>{ m.hp=m.maxhp; m.status=null; m.atkMul=1; m.defMul=1; resetBattleFlags(m); restorePP(m); }); }
 function healAll(returnTo){
   const mt = state.meta;
@@ -1454,10 +1464,10 @@ function healAll(returnTo){
     clearLog(); print(`<span class="bad">補給站還在整備中……要再打完 ${mt.cd} 場戰鬥才能使用。</span>`);
     return (returnTo||screenField)();
   }
-  fullHeal(); mt.cd = daily('nurse') ? 0 : 2;
+  fullHeal(); mt.cd = daily('nurse') ? 0 : HEAL_CD;
   clearLog();
   print(daily('nurse') ? '<span class="good">補給站的護士治好了你隊伍中所有寶可夢！（💊 今天是義診日，隨時都能再來）</span>'
-                       : '<span class="good">補給站的護士治好了你隊伍中所有寶可夢！（再打完 2 場戰鬥才能再次使用）</span>');
+                       : `<span class="good">補給站的護士治好了你隊伍中所有寶可夢！（再打完 ${HEAL_CD} 場戰鬥才能再次使用）</span>`);
   (returnTo||screenField)();
 }
 function noAlive(){ return state.party.length===0 || !state.party.some(m=>m.hp>0); }
