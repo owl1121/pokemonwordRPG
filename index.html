@@ -310,8 +310,6 @@ button,input,textarea,select{font-family:inherit;}
 @keyframes introPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.18);opacity:1}100%{transform:scale(1)}}
 /* ---- 擊倒／捕捉動畫 ---- */
 #stage{position:relative;}
-.koBoom{position:absolute;left:50%;top:50%;font-size:34px;pointer-events:none;transform:translate(-50%,-50%) scale(.3);opacity:0;animation:koBoom .55s ease-out forwards;}
-@keyframes koBoom{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}35%{transform:translate(-50%,-50%) scale(1.4);opacity:1}100%{transform:translate(-50%,-50%) scale(1.8);opacity:0}}
 .cball{position:absolute;width:26px;height:26px;border-radius:50%;border:2px solid #1b1b1b;background:var(--fr);z-index:5;pointer-events:none;box-shadow:0 2px 4px rgba(0,0,0,.45);}
 .cball::after{content:"";position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-5px 0 0 -5px;border-radius:50%;background:#fff;border:2px solid #1b1b1b;}
 .cball.done::after{background:#ff4d4d;box-shadow:0 0 6px #ff4d4d;}
@@ -1010,7 +1008,7 @@ function skipReveal(){   // 跳過文字動畫，立刻顯示全部內容與選�
   flushStage();
   releaseStage();
 }
-logEl.addEventListener('click', skipReveal);
+logEl.addEventListener('click', ()=>{ if(!appEl.classList.contains('battle')) skipReveal(); });   // 對戰中文字不能跳過
 
 function renderBar(){
   const lead = state.party[0];
@@ -2912,7 +2910,7 @@ if(/[?&]test\b/.test(location.search)){
     const btn = e.target.closest('button');
     if(!btn || btn._go) return;
     e.stopImmediatePropagation(); e.preventDefault();
-    if(btn.closest('#opts.pending')){ skipReveal(); return; }   // 動畫還在播：這一下只負責跳過動畫，不會誤觸看不到的選項
+    if(btn.closest('#opts.pending')){ if(!appEl.classList.contains('battle')) skipReveal(); return; }   // 動畫還在播：這一下只負責跳過動畫，不會誤觸看不到的選項
     if(pressLock) return;
     pressLock = true;
     btn.classList.add('pressed');

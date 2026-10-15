@@ -276,8 +276,8 @@ function stageHeldMs(){ return Math.max(0, stageHoldTill - performance.now()); }
 function holdStage(ms){ stageHoldTill = Math.max(stageHoldTill, performance.now() + ms); }
 function releaseStage(){ stageHoldTill = 0; fxGen++; clearTimeout(stageHoldTimer); if(!state.battle && appEl.classList.contains('battle')) syncBattleUI(); }
 function fxReduced(){ try{ return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
-const KO_MS = 950;
-// 對手被打倒：卡片閃白、抖動、💥，然後往下沉並淡出
+const KO_MS = 2000;
+// 對手被打倒：先左右震動幾下，然後越縮越小直到不見
 function koFx(){
   if(fxReduced()) return;
   const at = Math.max(0, curDelay() - ATTACK_GAP + 450), gen = fxGen;
@@ -286,17 +286,19 @@ function koFx(){
   setTimeout(()=>{
     if(gen !== fxGen) return;
     const c = stageEl.querySelector('.card.foe'); if(!c || !c.animate) return;
-    c.style.position = 'relative';
-    c.animate([
-      {transform:'none', filter:'none', opacity:1},
-      {transform:'translateX(-7px)', filter:'brightness(2.4)', offset:.12},
-      {transform:'translateX(7px)', filter:'none', offset:.24},
-      {transform:'translateX(-4px)', filter:'brightness(2.4)', offset:.36},
-      {transform:'translateX(0)', filter:'grayscale(1)', opacity:1, offset:.5},
-      {transform:'translateY(36px) scaleY(.15)', filter:'grayscale(1)', opacity:0}
-    ], {duration:KO_MS, easing:'ease-in', fill:'forwards'});
-    const boom = document.createElement('span'); boom.className = 'koBoom'; boom.textContent = '💥';
-    c.appendChild(boom);
+    const k = [{transform:'translateX(0) scale(1)', opacity:1}];
+    const SHAKE_END = .45, n = 5;               // 前 45%：震動 5 下，越震越小力
+    for(let i=0;i<n;i++){
+      const amp = 9 * (1 - i/n) + 2;
+      k.push({transform:`translateX(${-amp}px) scale(1)`, opacity:1, offset:SHAKE_END*(i+.25)/n});
+      k.push({transform:`translateX(${amp}px) scale(1)`,  opacity:1, offset:SHAKE_END*(i+.75)/n});
+    }
+    k.push({transform:'translateX(0) scale(1)', opacity:1, offset:SHAKE_END});
+    k.push({transform:'translateX(0) scale(.6)', opacity:.9, offset:.72});   // 後段：慢慢縮小
+    k.push({transform:'translateX(0) scale(.25)', opacity:.6, offset:.9});
+    k.push({transform:'translateX(0) scale(0)', opacity:0});
+    c.style.transformOrigin = 'center';
+    c.animate(k, {duration:KO_MS, easing:'linear', fill:'forwards'});
   }, at);
 }
 // 丟球：球飛過去 → 對手被吸進球裡 → 搖晃 → 成功（★）或掙脫
