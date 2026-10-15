@@ -276,8 +276,9 @@ function stageHeldMs(){ return Math.max(0, stageHoldTill - performance.now()); }
 function holdStage(ms){ stageHoldTill = Math.max(stageHoldTill, performance.now() + ms); }
 function releaseStage(){ stageHoldTill = 0; fxGen++; clearTimeout(stageHoldTimer); if(!state.battle && appEl.classList.contains('battle')) syncBattleUI(); }
 function fxReduced(){ try{ return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
-const KO_MS = 2000;
-// 對手被打倒：先左右震動幾下，然後越縮越小直到不見
+const KO_MS = 2200;
+// 對手被打倒：像玻璃一樣碎掉——先震動幾下，出現裂痕，然後碎成一片片往外噴、往下掉
+const KO_SHAKE = 800, KO_CRACK = 450;   // 震動 → 裂痕；剩下的時間是碎片飛散
 function koFx(){
   if(fxReduced()) return;
   const at = Math.max(0, curDelay() - ATTACK_GAP + 450), gen = fxGen;
@@ -286,19 +287,72 @@ function koFx(){
   setTimeout(()=>{
     if(gen !== fxGen) return;
     const c = stageEl.querySelector('.card.foe'); if(!c || !c.animate) return;
-    const k = [{transform:'translateX(0) scale(1)', opacity:1}];
-    const SHAKE_END = .45, n = 5;               // 前 45%：震動 5 下，越震越小力
+    const W = c.offsetWidth, H = c.offsetHeight, L = c.offsetLeft, T = c.offsetTop;
+    // 1. 震動 5 下，越震越輕
+    const k = [{transform:'translateX(0)'}], n = 5;
     for(let i=0;i<n;i++){
-      const amp = 9 * (1 - i/n) + 2;
-      k.push({transform:`translateX(${-amp}px) scale(1)`, opacity:1, offset:SHAKE_END*(i+.25)/n});
-      k.push({transform:`translateX(${amp}px) scale(1)`,  opacity:1, offset:SHAKE_END*(i+.75)/n});
+      const amp = 8*(1 - i/n) + 2;
+      k.push({transform:`translateX(${-amp}px)`, offset:(i+.25)/n});
+      k.push({transform:`translateX(${amp}px)`,  offset:(i+.75)/n});
     }
-    k.push({transform:'translateX(0) scale(1)', opacity:1, offset:SHAKE_END});
-    k.push({transform:'translateX(0) scale(.6)', opacity:.9, offset:.72});   // 後段：慢慢縮小
-    k.push({transform:'translateX(0) scale(.25)', opacity:.6, offset:.9});
-    k.push({transform:'translateX(0) scale(0)', opacity:0});
-    c.style.transformOrigin = 'center';
-    c.animate(k, {duration:KO_MS, easing:'linear', fill:'forwards'});
+    k.push({transform:'translateX(0)'});
+    c.animate(k, {duration:KO_SHAKE, easing:'linear'});
+    // 撞擊點（卡片中間偏一點），以它為中心切出放射狀的碎片
+    const cx = W*(.4 + Math.random()*.2), cy = H*(.4 + Math.random()*.2);
+    const N = 9, R1 = Math.min(W, H)*.45, FAR = Math.hypot(W, H);
+    const ang = Array.from({length:N}, (_, i)=> (i + .2 + Math.random()*.6) * 2*Math.PI/N);
+    const r1 = ang.map(()=> R1*(.7 + Math.random()*.6));
+    const pt = (a, r)=> [cx + Math.cos(a)*r, cy + Math.sin(a)*r];
+    // 2. 裂痕：從撞擊點放射出去，外圈再連一圈
+    setTimeout(()=>{
+      if(gen !== fxGen) return;
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'koCrack'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      Object.assign(svg.style, {left:L+'px', top:T+'px', width:W+'px', height:H+'px'});
+      let d = '';
+      ang.forEach((a, i)=>{
+        const [x1, y1] = pt(a, r1[i]), [x2, y2] = pt(a, FAR), [x3, y3] = pt(ang[(i+1)%N], r1[(i+1)%N]);
+        d += `M${cx},${cy}L${x1},${y1}L${x2},${y2}M${x1},${y1}L${x3},${y3}`;
+      });
+      svg.innerHTML = `<path d="${d}"/>`;
+      stageEl.appendChild(svg);
+      const path = svg.firstChild, len = path.getTotalLength ? path.getTotalLength() : 2000;
+      path.style.strokeDasharray = len; path.style.strokeDashoffset = len;
+      path.animate([{strokeDashoffset:len}, {strokeDashoffset:0}], {duration:KO_CRACK*.8, easing:'ease-out', fill:'forwards'});
+      c.animate([{filter:'none'}, {filter:'brightness(1.5)'}, {filter:'brightness(1.15)'}], {duration:KO_CRACK, fill:'forwards'});
+    }, KO_SHAKE);
+    // 3. 碎掉：原卡片藏起來，換成一片片的複製卡片（用 clip-path 切形狀）往外飛、往下掉
+    setTimeout(()=>{
+      if(gen !== fxGen) return;
+      stageEl.querySelectorAll('.koCrack').forEach(e=>e.remove());
+      const shards = [];
+      ang.forEach((a, i)=>{
+        const b2 = ang[(i+1)%N], A = pt(a, r1[i]), B = pt(b2, r1[(i+1)%N]);
+        shards.push([[cx, cy], A, B]);                          // 內圈三角形
+        shards.push([A, pt(a, FAR), pt(b2 < a ? b2 + 2*Math.PI : b2, FAR), B]);   // 外圈
+      });
+      const rest = KO_MS - KO_SHAKE - KO_CRACK;
+      c.style.visibility = 'hidden';
+      shards.forEach(poly=>{
+        const s = c.cloneNode(true);
+        s.classList.add('koShard'); s.style.visibility = 'visible';
+        Object.assign(s.style, {left:L+'px', top:T+'px', width:W+'px', height:H+'px', margin:0});
+        s.style.clipPath = `polygon(${poly.map(([x,y])=>`${x.toFixed(1)}px ${y.toFixed(1)}px`).join(',')})`;
+        // 碎片中心相對撞擊點的方向 → 往那邊噴，再加上重力往下掉
+        const mx = poly.reduce((t,p)=>t+Math.max(0,Math.min(W,p[0])),0)/poly.length - cx;
+        const my = poly.reduce((t,p)=>t+Math.max(0,Math.min(H,p[1])),0)/poly.length - cy;
+        const dist = Math.hypot(mx, my) || 1, sp = 25 + Math.random()*35;
+        const vx = mx/dist*sp, vy = my/dist*sp*.6, fall = 70 + Math.random()*60, rot = (Math.random()-.5)*120;
+        s.style.transformOrigin = `${(cx+mx).toFixed(0)}px ${(cy+my).toFixed(0)}px`;
+        stageEl.appendChild(s);
+        s.animate([
+          {transform:'translate(0,0) rotate(0deg)', opacity:1, filter:'brightness(1.15)'},
+          {transform:`translate(${vx*.6}px,${vy*.6 - 6}px) rotate(${rot*.4}deg)`, opacity:1, offset:.3},
+          {transform:`translate(${vx}px,${vy + fall}px) rotate(${rot}deg)`, opacity:0}
+        ], {duration:rest, easing:'cubic-bezier(.3,.1,.7,1)', fill:'forwards'});
+        setTimeout(()=>s.remove(), rest + 50);
+      });
+    }, KO_SHAKE + KO_CRACK);
   }, at);
 }
 // 丟球：球飛過去 → 對手被吸進球裡 → 搖晃 → 成功（★）或掙脫

@@ -310,6 +310,9 @@ button,input,textarea,select{font-family:inherit;}
 @keyframes introPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.18);opacity:1}100%{transform:scale(1)}}
 /* ---- 擊倒／捕捉動畫 ---- */
 #stage{position:relative;}
+.koCrack{position:absolute;z-index:4;pointer-events:none;overflow:hidden;border-radius:12px;}
+.koCrack path{fill:none;stroke:#3a3f55;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 2px rgba(255,255,255,.9));}
+.koShard{position:absolute;z-index:4;pointer-events:none;box-sizing:border-box;}
 .cball{position:absolute;width:26px;height:26px;border-radius:50%;border:2px solid #1b1b1b;background:var(--fr);z-index:5;pointer-events:none;box-shadow:0 2px 4px rgba(0,0,0,.45);}
 .cball::after{content:"";position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-5px 0 0 -5px;border-radius:50%;background:#fff;border:2px solid #1b1b1b;}
 .cball.done::after{background:#ff4d4d;box-shadow:0 0 6px #ff4d4d;}
