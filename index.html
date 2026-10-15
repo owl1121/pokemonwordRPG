@@ -54,6 +54,11 @@ header .sub{font-size:11px; color:var(--dim); margin-top:2px;}
 #log .good{color:var(--good);}
 #log .bad{color:var(--danger);}
 #log .hr{border-top:1px dashed var(--line); margin:10px 0;}
+#log .dexwrap{white-space:normal;}
+#log .dexhead{position:sticky; top:-16px; background:var(--bg); padding:6px 0 8px; margin-top:-6px; border-bottom:1px solid var(--line); z-index:1;}
+#log .dexrow{display:flex; gap:10px; align-items:baseline; padding:5px 0; border-bottom:1px dashed var(--line);}
+#log .dexrow:last-child{border-bottom:none;}
+#log .dexno{color:var(--dim); min-width:4.2em; font-variant-numeric:tabular-nums;}
 #bar{
   padding:8px 16px; font-size:12px; color:var(--dim); border-top:1px solid var(--line);
   display:flex; gap:14px; flex-wrap:wrap;
@@ -2239,7 +2244,6 @@ function useStone(k, box, i){
   saveGame();
   setOptions([{label:'← 返回背包', action:screenBag}, {label:'返回', action:toField}]);
 }
-let dexPage=0;
 // 圖鑑編號：地區型態顯示成基礎寶可夢的編號加 ◇（例：阿羅拉小拉達 = #019◇）
 const dexNo = i => { const b = (typeof FORM_BASE !== 'undefined') ? FORM_BASE[i] : undefined; const base = (b !== undefined) ? b : (i >= 962 ? i - 57 : i); return String(base + 1).padStart(3,'0') + (b !== undefined ? '◇' : ''); };   // 索引 962 起是第九世代，索引 − 56 = 圖鑑編號
 /* 圖鑑的排序與篩選：圖鑑記的是「種類」，所以「等級」用隊伍＋倉庫裡該種的最高等級；沒持有的排最後 */
@@ -2271,36 +2275,42 @@ function dexViewList(){
   }   // 'dex'：維持索引順序
   return list;
 }
-function screenDex(){
+/* 圖鑑分地區：先選地區（關都、城都…），再以直向卷軸一次列出該地區全部寶可夢（不再分頁） */
+const DEX_REGIONS = [[1,'關都'],[2,'城都'],[3,'豐緣'],[4,'神奧'],[5,'合眾'],[6,'卡洛斯'],[7,'阿羅拉'],[8,'伽勒爾'],[10,'帕底亞'],[9,'地區型態']];
+const dexRegionName = g => g ? (DEX_REGIONS.find(r=>r[0]===g)||[0,''])[1] + (g===9 ? '' : '圖鑑') : '全國圖鑑';
+function screenDex(){   // 地區選單
+  clearLog();
+  print(`<span class="em">— 圖鑑 —</span>　已捕捉 ${state.caught.size} / ${DEX.length}　✨ 色違 ${state.shinyCaught.size}`);
+  print('<span class="sys">選擇要翻閱的地區圖鑑：</span>');
+  const opts = DEX_REGIONS.map(([g,name])=>{ const c = genCaught(g), t = genSize(g); return {label:`📖 ${name}　${c}/${t}${c===t?' ✔':''}`, half:true, action:()=>{ dview.gen = g; screenDexRegion(); }}; });
+  opts.push({label:'🌐 全國圖鑑（全部）', action:()=>{ dview.gen = 0; screenDexRegion(); }});
+  opts.push({label:'返回', action:()=>{ dview.gen = 0; toField(); }});
+  setOptions(opts);
+}
+function screenDexRegion(){   // 單一地區：直向卷軸
   clearLog();
   const view = dexViewList();
-  const perPage=15;
-  const pages = Math.max(1, Math.ceil(view.length / perPage));
-  dexPage = Math.min(Math.max(0, dexPage), pages-1);
-  const note = dviewIsDefault() ? '' : `　<span class="sys">（${DSORT_LABEL[dview.sort]}${dview.st ? '・' + DST_LABEL[dview.st] : ''}${dview.type ? '・' + dview.type : ''}${dview.gen ? '・' + GEN_LABEL[dview.gen] : ''}　符合 ${view.length} 隻）</span>`;
-  print(`<span class="em">— 全國圖鑑（第一～九世代＋地區型態）—</span>　已捕捉 ${state.caught.size} / ${DEX.length}　✨ 色違 ${state.shinyCaught.size}${note}`);
-  hr();
-  const start=dexPage*perPage;
-  if(!view.length) print('<span class="sys">（沒有符合篩選條件的寶可夢）</span>');
-  for(let n=start;n<Math.min(start+perPage,view.length);n++){
-    const i = view[n];
-    const e=DEX[i];
-    const no=dexNo(i);
+  const g = dview.gen, total = g ? genSize(g) : DEX.length, caught = g ? genCaught(g) : state.caught.size;
+  const filtered = dview.sort !== 'dex' || dview.st || dview.type;
+  const note = filtered ? `　<span class="sys">（${DSORT_LABEL[dview.sort]}${dview.st ? '・' + DST_LABEL[dview.st] : ''}${dview.type ? '・' + dview.type : ''}　符合 ${view.length} 隻）</span>` : '';
+  const rows = view.map(i=>{
+    const e = DEX[i], no = dexNo(i);
     const shinyMark = state.shinyCaught.has(i) ? ' <span class="shiny">✨</span>' : '';
-    if(state.caught.has(i)) print(`#${no} <span class="good">${esc(e[0])}</span>　${e[2]?e[1]+'／'+e[2]:e[1]}${shinyMark}`);
-    else if(state.seen.has(i)) print(`#${no} <span class="sys">${esc(e[0])}（已見過，尚未捕捉）</span>`);
-    else print(`#${no} <span class="sys">？？？</span>`);
-  }
-  const opts=[];
-  if(start+perPage<view.length) opts.push({label:"下一頁 ▶", half:true, action:()=>{dexPage++; screenDex();}});
-  if(dexPage>0) opts.push({label:"◀ 上一頁", half:true, action:()=>{dexPage--; screenDex();}});
-  const dsorts = ['dex','got','lv'], dsts = ['','caught','seen','unseen'], redo = ()=>{ dexPage = 0; screenDex(); };
-  opts.push({label:`排序：${DSORT_LABEL[dview.sort]}`, half:true, action:()=>{ dview.sort = dsorts[(dsorts.indexOf(dview.sort)+1) % dsorts.length]; redo(); }});
-  opts.push({label:`狀態：${DST_LABEL[dview.st]}`, half:true, action:()=>{ dview.st = dsts[(dsts.indexOf(dview.st)+1) % dsts.length]; redo(); }});
-  opts.push({label:`屬性：${dview.type || '全部'}`, half:true, action:()=>screenPickFilter('選擇屬性（只會列出已捕捉的）', TYPE_OPTIONS(), dview.type, v=>{ dview.type = v; redo(); }, screenDex)});
-  opts.push({label:`世代：${dview.gen ? GEN_LABEL[dview.gen] : '全部'}`, half:true, action:()=>screenPickFilter('選擇世代', GEN_OPTIONS(), dview.gen, v=>{ dview.gen = v; redo(); }, screenDex)});
-  if(!dviewIsDefault()) opts.push({label:'↺ 重設排序與篩選', action:()=>{ dview.sort = 'dex'; dview.st = ''; dview.type = ''; dview.gen = 0; redo(); }});
-  opts.push({label:"返回", action:()=>{dexPage=0; toField();}});
+    if(state.caught.has(i)) return `<div class="dexrow"><span class="dexno">#${no}</span><span class="good">${esc(e[0])}</span><span class="sys">${e[2]?e[1]+'／'+e[2]:e[1]}</span>${shinyMark}</div>`;
+    if(state.seen.has(i)) return `<div class="dexrow"><span class="dexno">#${no}</span><span class="sys">${esc(e[0])}（已見過）</span></div>`;
+    return `<div class="dexrow"><span class="dexno">#${no}</span><span class="sys">？？？</span></div>`;
+  }).join('');
+  // 標題與清單包在同一個區塊，標題才能在捲動時固定在上方；清單直接用 #log 本身的直向捲軸
+  print(`<div class="dexwrap"><div class="dexhead"><span class="em">— ${esc(dexRegionName(g))} —</span>　已捕捉 ${caught} / ${total}${note}</div>${rows || '<span class="sys">（沒有符合篩選條件的寶可夢）</span>'}</div>`);
+  skipReveal(); logEl.scrollTop = 0;
+  const dsorts = ['dex','got','lv'], dsts = ['','caught','seen','unseen'];
+  const opts = [];
+  opts.push({label:`排序：${DSORT_LABEL[dview.sort]}`, half:true, action:()=>{ dview.sort = dsorts[(dsorts.indexOf(dview.sort)+1) % dsorts.length]; screenDexRegion(); }});
+  opts.push({label:`狀態：${DST_LABEL[dview.st]}`, half:true, action:()=>{ dview.st = dsts[(dsts.indexOf(dview.st)+1) % dsts.length]; screenDexRegion(); }});
+  opts.push({label:`屬性：${dview.type || '全部'}`, half:true, action:()=>screenPickFilter('選擇屬性（只會列出已捕捉的）', TYPE_OPTIONS(), dview.type, v=>{ dview.type = v; screenDexRegion(); }, screenDexRegion)});
+  if(filtered) opts.push({label:'↺ 重設排序與篩選', half:true, action:()=>{ dview.sort = 'dex'; dview.st = ''; dview.type = ''; screenDexRegion(); }});
+  opts.push({label:'← 換地區', half:true, action:screenDex});
+  opts.push({label:'返回', half:true, action:()=>{ dview.gen = 0; toField(); }});
   setOptions(opts);
 }
 
@@ -2716,7 +2726,7 @@ function equipTitle(id){
 function canLeaveScreen(){ return state.party.length>0 && !state.battle && !state.tower.inTower; }
 function openDexFromProfile(){
   if(!canLeaveScreen()){ notify('戰鬥中或在塔內無法開啟圖鑑'); return; }
-  closeMenu(); dexPage = 0; screenDex();
+  closeMenu(); screenDex();
 }
 function renameFromProfile(){
   if(!canLeaveScreen()){ notify('戰鬥中或在塔內無法改名'); return; }
