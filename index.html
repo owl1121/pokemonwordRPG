@@ -339,14 +339,30 @@ button,input,textarea,select{font-family:inherit;}
 .card.me[class*="fr-"]::before{left:-12px;} .card.me[class*="fr-"]::after{right:-12px;}
 /* ---- 寶可夢特徵（耳朵、尾巴…）：疊在玩家選的邊框後面，只露出框外的部分；顏色用該寶可夢的 --c1/--c2/--c3 ---- */
 #stage{isolation:isolate;}
-.ft{--ink:#1b1b1b;position:absolute;z-index:-1;pointer-events:none;overflow:visible;}
-.ft svg{display:block;overflow:visible;}
-.ft .c1{fill:var(--c1);} .ft .c2{fill:var(--c2);} .ft .c3{fill:var(--c3);}
-.ft .ink{fill:var(--ink);} .ft .ol{stroke:var(--ink);stroke-width:2.2;stroke-linejoin:round;}
-.ft-earL{left:8%;top:-33px;width:24px;height:30px;transform:rotate(-16deg);transform-origin:50% 100%;}
-.ft-earR{left:38%;top:-33px;width:24px;height:30px;transform:rotate(16deg);transform-origin:50% 100%;}
-.ft-tail{right:-51px;bottom:14px;width:50px;height:58px;}
-.ft-tailFlame{right:-41px;bottom:14px;width:40px;height:48px;}
+.ft{--ink:#1b1b1b;position:absolute;z-index:-1;pointer-events:none;overflow:visible}
+.ft svg{display:block;overflow:visible}
+.ft .c1{fill:var(--c1)}.ft .c2{fill:var(--c2)}.ft .c3{fill:var(--c3)}.ft .ink{fill:var(--ink)}
+.ft-earL{left:7%;top:-42px;width:31px;height:39px;transform:rotate(-16deg);transform-origin:50% 100%}
+.ft-earR{left:37%;top:-42px;width:31px;height:39px;transform:rotate(16deg);transform-origin:50% 100%}
+.ft-earSmallL{left:9%;top:-30px;width:25px;height:32px;transform:rotate(-12deg);transform-origin:50% 100%}
+.ft-earSmallR{left:40%;top:-30px;width:25px;height:32px;transform:rotate(12deg);transform-origin:50% 100%}
+.ft-clawFootL{left:-29px;bottom:-29px;width:80px;height:80px}
+.ft-clawFootR{right:-29px;bottom:-29px;width:80px;height:80px}
+.ft-earRoundL{left:6%;top:-35px;width:34px;height:37px;transform:rotate(-10deg);transform-origin:50% 100%}
+.ft-earRoundR{left:38%;top:-35px;width:34px;height:37px;transform:rotate(10deg);transform-origin:50% 100%}
+.ft-earLongL{left:6%;top:-48px;width:30px;height:52px;transform:rotate(-14deg);transform-origin:50% 100%}
+.ft-earLongR{left:37%;top:-48px;width:30px;height:52px;transform:rotate(14deg);transform-origin:50% 100%}
+.ft-horn{left:calc(50% - 12px);top:-38px;width:24px;height:40px}
+.ft-bulb{left:calc(50% - 26px);top:-40px;width:52px;height:44px}
+.ft-finTop{left:calc(50% - 38px);top:-32px;width:76px;height:34px}
+.ft-wing{right:-44px;top:-12px;width:58px;height:52px}
+.ft-shell{right:-27px;top:18px;width:34px;height:64px}
+.ft-tail{right:-51px;bottom:14px;width:50px;height:58px}
+.ft-tailFlame{right:-41px;bottom:14px;width:40px;height:48px}
+.ft-tailCurl{right:-43px;bottom:8px;width:46px;height:50px}
+.ft-tailFluffy{right:-47px;bottom:10px;width:48px;height:58px}
+.ft-tailFin{right:-47px;bottom:6px;width:48px;height:60px}
+.ft-tailPoint{right:-47px;bottom:8px;width:50px;height:50px}
 .frgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
 .frbtn{background:transparent;border:2px solid var(--line);border-radius:12px;padding:8px 2px 6px;color:var(--text);font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;}
 .frbtn.on{border-color:var(--accent);}
@@ -453,6 +469,7 @@ button,input,textarea,select{font-family:inherit;}
 </div>
 
 <script src="data.js"></script>
+<script src="mon-parts.js"></script>
 <script src="sounds/list.js" onerror="this.remove()"></script>
 <script src="battle.js"></script>
 <script src="features.js"></script>

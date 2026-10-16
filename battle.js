@@ -526,17 +526,7 @@ function frameKey(m){
 }
 /* ---------- 寶可夢特徵（疊在玩家選的邊框後面） ----------
    邊框一律照個人檔案的選擇（含限定的超級球／高級球／大師球）；各寶可夢的特徵（耳朵、尾巴…）再疊在框後面。
-   MON_PARTS 的 key = DEX 索引（圖鑑編號 − 1，例：皮卡丘 #025 → 24）。
-   c1 主色、c2 次色、c3 點綴色（特徵上色用），ft = 特徵清單（見 MON_FEATURES）。 */
-const MON_FEATURES = {
-  earL: `<span class="ft ft-earL"><svg viewBox="0 0 24 30"><path class="c1" d="M3 30 L12 2 L21 30 Z"/><path class="ink" d="M12 2 L15.6 13 L8.4 13 Z"/><path d="M3 30 L12 2 L21 30" fill="none" stroke="#1b1b1b" stroke-width="2.2" stroke-linejoin="round"/></svg></span>`,
-  earR: `<span class="ft ft-earR"><svg viewBox="0 0 24 30"><path class="c1" d="M3 30 L12 2 L21 30 Z"/><path class="ink" d="M12 2 L15.6 13 L8.4 13 Z"/><path d="M3 30 L12 2 L21 30" fill="none" stroke="#1b1b1b" stroke-width="2.2" stroke-linejoin="round"/></svg></span>`,
-  tailBolt: `<span class="ft ft-tail"><svg viewBox="0 0 50 58"><path class="c1" d="M0 58 L0 46 L14 40 L8 36 L26 22 L18 19 L44 2 L34 26 L46 29 L24 46 L30 50 L18 58 Z"/><path class="c2" d="M0 58 L0 46 L14 40 L24 46 L30 50 L18 58 Z"/><path d="M6 43.4 L14 40 L8 36 L26 22 L18 19 L44 2 L34 26 L46 29 L24 46 L30 50 L18 58 L6 58" fill="none" stroke="#1b1b1b" stroke-width="2.2" stroke-linejoin="round"/></svg></span>`,
-  tailFlame: `<span class="ft ft-tailFlame"><svg viewBox="0 0 40 48"><defs><clipPath id="cpF"><rect x="6" y="0" width="40" height="48"/></clipPath></defs><path clip-path="url(#cpF)" d="M0 40 C14 42 25 36 28 27" fill="none" stroke="#1b1b1b" stroke-width="10"/><path d="M0 40 C14 42 25 36 28 27" fill="none" style="stroke:var(--c1)" stroke-width="6"/><path d="M0 40 C3.5 40.5 6.81 40.5 9.86 40.08" fill="none" style="stroke:var(--c2)" stroke-width="6"/><path class="c3 ol" d="M29 28 C20 22 27 14 30 3 C34 11 41 16 38 23 C37 27 33 30 29 28Z"/><path d="M30 26 C27 23 30 20 31 15 C34 19 35 22 33 25Z" fill="#ffe066"/></svg></span>`
-};
-const MON_PARTS = {
-  24: {c1:'#ffd83a', c2:'#c98a3a', c3:'#e53935', ft:['earL','earR','tailBolt']}   // 皮卡丘
-};
+   零件庫與每隻的設定在 mon-parts.js（MON_FEATURES、MON_PARTS）。 */
 function monParts(m){ return (m && MON_PARTS[m.dex]) || null; }
 function frameClass(m){ return 'fr-' + frameKey(m); }
 function frameStyle(m){ const f = monParts(m); return f ? ` style="--c1:${f.c1};--c2:${f.c2};--c3:${f.c3}"` : ''; }
