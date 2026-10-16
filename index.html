@@ -337,6 +337,20 @@ button,input,textarea,select{font-family:inherit;}
   content:"";position:absolute;top:50%;border-radius:50%;background:#fff;border:3px solid #1b1b1b;}
 .card.me[class*="fr-"]::before,.card.me[class*="fr-"]::after{width:18px;height:18px;margin-top:-9px;}
 .card.me[class*="fr-"]::before{left:-12px;} .card.me[class*="fr-"]::after{right:-12px;}
+/* ---- 寶可夢專屬外框（MON_FRAME）：--c1 主色 --c2 次色 --c3 點綴色，特徵(.ft)接在框邊 ---- */
+.card.me.fr-mon{--ink:#1b1b1b;color:color-mix(in srgb,var(--c1) 35%,#2a1a00);
+  background:linear-gradient(color-mix(in srgb,var(--c1) 14%,#fff),color-mix(in srgb,var(--c1) 14%,#fff)) padding-box,
+             linear-gradient(180deg,var(--c1) 0 46%,var(--ink) 46% 54%,var(--c2) 54% 100%) border-box;
+  box-shadow:0 0 0 2px var(--ink),0 0 10px 2px color-mix(in srgb,var(--c1) 55%,transparent),0 5px 0 2px rgba(0,0,0,.35);}
+.card.me.fr-mon::before,.card.me.fr-mon::after{display:none;}
+.ft{position:absolute;z-index:1;pointer-events:none;overflow:visible;}
+.ft svg{display:block;overflow:visible;}
+.ft .c1{fill:var(--c1);} .ft .c2{fill:var(--c2);} .ft .c3{fill:var(--c3);}
+.ft .ink{fill:var(--ink);} .ft .ol{stroke:var(--ink);stroke-width:2.2;stroke-linejoin:round;}
+.ft-earL{left:8%;top:-33px;width:24px;height:30px;transform:rotate(-16deg);transform-origin:50% 100%;}
+.ft-earR{left:38%;top:-33px;width:24px;height:30px;transform:rotate(16deg);transform-origin:50% 100%;}
+.ft-tail{right:-51px;bottom:14px;width:50px;height:58px;}
+.ft-tailFlame{right:-41px;bottom:14px;width:40px;height:48px;}
 .frgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
 .frbtn{background:transparent;border:2px solid var(--line);border-radius:12px;padding:8px 2px 6px;color:var(--text);font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;}
 .frbtn.on{border-color:var(--accent);}
