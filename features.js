@@ -540,9 +540,21 @@ function screenHeldBuy(k, msg){
   print(esc(HELD[k].desc));
   if(msg) print(msg);
   setOptions([
-    {label:`購買 $${priceOf(k)}`, action:()=>buyHeld(k)},
+    {label:`購買 $${priceOf(k)}`, action:()=>screenHeldConfirm(k)},
     {label:'← 返回', action:()=>screenHeldShop()}
   ]);
+}
+// 確認頁：按「確認購買」才會扣錢
+function screenHeldConfirm(k){
+  const p = priceOf(k);
+  clearLog(); renderBar();
+  print(`<span class="em">確認購買</span>`);
+  print(`${esc(HELD[k].label)}　💰 ${p}　<span class="sys">（目前 💰 ${state.money}）</span>`);
+  if(state.money < p) print(`<span class="bad">錢不夠，還差 💰 ${p-state.money}。</span>`);
+  const opts = [];
+  if(state.money >= p) opts.push({label:`✅ 確認購買 $${p}`, action:()=>buyHeld(k)});
+  opts.push({label:'取消', action:()=>screenHeldBuy(k)});
+  setOptions(opts);
 }
 function buyHeld(k){
   const p = priceOf(k);

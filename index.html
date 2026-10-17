@@ -1627,8 +1627,22 @@ function screenShopItem(k, msg){
   print(`<span class="em">${esc(it.label)}</span>　$${p}　<span class="sys">持有 ${state.bag[k]||0}　💰 ${state.money}</span>`);
   print(esc(it.desc));
   if(msg) print(msg);
-  setOptions([1,5,10].map(n=>({label:`買 ${n} 個 $${p*n}`, half:n!==10, action:()=>{ shopQty = n; buyItem(k); }}))
+  print('<span class="sys">選要買幾個，下一步再確認。</span>');
+  setOptions([1,5,10].map(n=>({label:`買 ${n} 個`, half:n!==10, action:()=>{ shopQty = n; screenShopConfirm(k); }}))
     .concat([{label:'← 返回', action:()=>screenShop()}]));
+}
+// 確認頁：按「確認購買」才會扣錢
+function screenShopConfirm(k){
+  const it = ITEMS[k], total = priceOf(k)*shopQty;
+  clearLog(); renderBar();
+  print(`<span class="em">確認購買</span>`);
+  print(`${esc(it.label)} ×${shopQty}　共 💰 ${total}　<span class="sys">（目前 💰 ${state.money}）</span>`);
+  if(state.money < total) print(`<span class="bad">錢不夠，還差 💰 ${total-state.money}。</span>`);
+  const opts = [];
+  if(state.money >= total) opts.push({label:`✅ 確認購買 $${total}`, action:()=>buyItem(k)});
+  opts.push({label:'重選數量', half:true, action:()=>screenShopItem(k)});
+  opts.push({label:'取消', half:true, action:()=>screenShop()});
+  setOptions(opts);
 }
 function buyItem(k){
   const it = ITEMS[k];

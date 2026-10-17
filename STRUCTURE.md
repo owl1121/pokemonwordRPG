@@ -31,4 +31,5 @@
 - 畫面切換 = 呼叫某個 `screenXxx()`，內部用 `print()` 輸出文字、`setOptions([...])` 放按鈕。
 - 改完要存檔就呼叫 `saveGame()`；新增存檔欄位要在 `loadGame`/`fixMon` 補預設值，避免舊存檔壞掉。
 - 新增寶可夢外觀：在 `mon-parts.js` 加 `MON_PARTS[DEX索引]`，改完跑 `tools/check-mon-parts.js`。
+- 商店買東西一律「選道具 → 選數量 → 確認頁」才扣錢：一般商店 `screenShop` → `screenShopItem` → `screenShopConfirm` → `buyItem`；攜帶道具 `screenHeldShop` → `screenHeldBuy` → `screenHeldConfirm` → `buyHeld`。新增購買入口也要走確認頁。
 - 各檔之間用全域函式互相呼叫，改函式名要全 repo grep。
