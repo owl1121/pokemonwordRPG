@@ -8,7 +8,7 @@
 | 檔案 | 內容 |
 |---|---|
 | `data.js`（約 1100 行） | 純資料表：`DEX`（圖鑑，`[名稱,屬性1,屬性2,tier]`，依世代排）、`EVO`/`STONE_EVO`/`TIME_EVO`（進化）、`CHART`（屬性相剋）、`MOVES`、`STATUS_FX`、`ITEMS`、`GYMS`、`TRAINERS`、`QUESTS`、`MILESTONES`、`MEGAS`、`CHECKIN_*`、`MAP_NAMES` |
-| `mon-parts.js` | 寶可夢外觀的 SVG 零件庫：`MON_FEATURES`（零件）、`MON_PARTS`（每隻的顏色 c1~c3 與零件清單 ft，key 為 DEX 索引） |
+| `mon-parts.js` | 寶可夢外觀的 SVG 零件庫：`MON_FEATURES`（零件，共 32 種；零件位置 CSS 在 index.html 的 `.ft-xxx`）、`MON_PARTS`（每隻的顏色 c1~c3 與零件清單 ft，key 為 DEX 索引）。一代 151 隻（索引 0~150）已全部設定完成，二代起尚未做 |
 | `battle.js`（約 1420 行） | 音效 `SFX`、屬性相剋 `eff`、傷害 `dmg`/`attackCore`、回合流程 `playerMove`/`enemyTurn`/`endOfTurn`、捕捉 `tryCatch`、換人、進化 `evoTarget`/`evolveTo`、經驗 `grantExp`、戰鬥結算 `winBattle`/`loseBattle`、對戰畫面 `renderStage`/`screenBattle`、擊倒與捕捉動畫 `koFx`/`catchFx`、球框 `FRAME_*` |
 | `features.js`（約 550 行） | 性格 `NATURES`、特性 `ABILITIES`、攜帶道具 `HELD`（含商店 `screenHeldShop`）、每日活動 `DAILY_EVENTS`、天氣 `WEATHER`、戰鬥中各種效果掛勾（`afterHitFx`、`endTurnFx`、`onEntry` 等） |
 | `index.html`（約 2960 行） | 見下 |
@@ -30,6 +30,6 @@
 
 - 畫面切換 = 呼叫某個 `screenXxx()`，內部用 `print()` 輸出文字、`setOptions([...])` 放按鈕。
 - 改完要存檔就呼叫 `saveGame()`；新增存檔欄位要在 `loadGame`/`fixMon` 補預設值，避免舊存檔壞掉。
-- 新增寶可夢外觀：在 `mon-parts.js` 加 `MON_PARTS[DEX索引]`，改完跑 `tools/check-mon-parts.js`。
+- 新增寶可夢外觀：在 `mon-parts.js` 加 `MON_PARTS[DEX索引]`，改完跑 `tools/check-mon-parts.js`。新增零件要同時加 `MON_FEATURES.xxx`（SVG）和 index.html 的 `.ft-xxx` 定位 CSS；同一位置（頭頂中央、右下尾巴）不要疊兩個零件。
 - 商店買東西一律「選道具 → 選數量 → 確認頁」才扣錢：一般商店 `screenShop` → `screenShopItem` → `screenShopConfirm` → `buyItem`；攜帶道具 `screenHeldShop` → `screenHeldBuy` → `screenHeldConfirm` → `buyHeld`。新增購買入口也要走確認頁。
 - 各檔之間用全域函式互相呼叫，改函式名要全 repo grep。

@@ -44,18 +44,172 @@ function clawFan(side){
 }
 MON_FEATURES.clawFootL = clawFan('L');
 MON_FEATURES.clawFootR = clawFan('R');
+/* 一代補充零件：觸角、鳥冠、花、葉、鉗、觸手、背刺、雙角、細長尾、頭頂火焰 */
+Object.assign(MON_FEATURES, {
+  antenna: `<span class="ft ft-antenna"><svg viewBox="0 0 50 34"><path d="M15 34 C13 20 9 12 5 5 M35 34 C37 20 41 12 45 5" fill="none" stroke="#1b1b1b" stroke-width="5.4" stroke-linecap="round"/><path d="M15 34 C13 20 9 12 5 5 M35 34 C37 20 41 12 45 5" fill="none" style="stroke:var(--c2)" stroke-width="2.6" stroke-linecap="round"/><circle class="c3" cx="5" cy="5" r="3.6"/><circle class="c3" cx="45" cy="5" r="3.6"/><circle cx="5" cy="5" r="3.6" ${MON_OL}/><circle cx="45" cy="5" r="3.6" ${MON_OL}/></svg></span>`,
+  crest: `<span class="ft ft-crest"><svg viewBox="0 0 40 36"><path class="c3" d="M5 36 L9 10 L16 24 L20 2 L24 24 L31 10 L35 36 Z"/><path d="M5 36 L9 10 L16 24 L20 2 L24 24 L31 10 L35 36" ${MON_OL}/></svg></span>`,
+  flower: `<span class="ft ft-flower"><svg viewBox="0 0 44 36">${[-60,-30,0,30,60].map(a => `<ellipse class="c3" cx="22" cy="17" rx="6.5" ry="12.5" transform="rotate(${a} 22 30)"/><ellipse cx="22" cy="17" rx="6.5" ry="12.5" transform="rotate(${a} 22 30)" ${MON_OL}/>`).join('')}<circle class="c2" cx="22" cy="29" r="5.5"/><circle cx="22" cy="29" r="5.5" ${MON_OL}/></svg></span>`,
+  leaves: `<span class="ft ft-leaves"><svg viewBox="0 0 44 34">${[-44,44,0].map(a => `<g transform="rotate(${a} 22 34)"><path class="c3" d="M22 34 C13 25 12 10 19 0 C28 9 29 24 22 34 Z"/><path d="M22 34 C13 25 12 10 19 0 C28 9 29 24 22 34 Z" ${MON_OL}/><path d="M22 32 C20 22 20 12 20 6" fill="none" stroke="#1b1b1b" stroke-width="1.2" opacity=".5"/></g>`).join('')}</svg></span>`,
+  pincerL: `<span class="ft ft-pincerL"><svg viewBox="0 0 36 40"><path class="c1" d="M36 34 C20 36 3 30 2 8 C8 16 15 18 21 15 C17 9 17 5 19 1 C26 8 32 16 36 24 Z"/><path d="M36 34 C20 36 3 30 2 8 C8 16 15 18 21 15 C17 9 17 5 19 1 C26 8 32 16 36 24" ${MON_OL}/></svg></span>`,
+  pincerR: `<span class="ft ft-pincerR"><svg viewBox="0 0 36 40"><g transform="translate(36 0) scale(-1 1)"><path class="c1" d="M36 34 C20 36 3 30 2 8 C8 16 15 18 21 15 C17 9 17 5 19 1 C26 8 32 16 36 24 Z"/><path d="M36 34 C20 36 3 30 2 8 C8 16 15 18 21 15 C17 9 17 5 19 1 C26 8 32 16 36 24" ${MON_OL}/></g></svg></span>`,
+  tentacles: `<span class="ft ft-tentacles"><svg viewBox="0 0 60 34"><path d="M12 0 C6 10 18 16 12 30 M30 0 C24 10 36 16 30 32 M48 0 C42 10 54 16 48 30" fill="none" stroke="#1b1b1b" stroke-width="8.4" stroke-linecap="round"/><path d="M12 0 C6 10 18 16 12 30 M30 0 C24 10 36 16 30 32 M48 0 C42 10 54 16 48 30" fill="none" style="stroke:var(--c2)" stroke-width="4.4" stroke-linecap="round"/></svg></span>`,
+  spikesTop: `<span class="ft ft-spikesTop"><svg viewBox="0 0 70 18"><path class="c2" d="M2 18 L10 2 L18 18 L26 4 L35 18 L44 4 L52 18 L60 2 L68 18 Z"/><path d="M2 18 L10 2 L18 18 L26 4 L35 18 L44 4 L52 18 L60 2 L68 18" ${MON_OL}/></svg></span>`,
+  hornPair: `<span class="ft ft-hornPair"><svg viewBox="0 0 70 34"><path class="c3" d="M14 34 C6 28 2 16 4 2 C14 8 22 18 24 34 Z"/><path class="c3" d="M56 34 C64 28 68 16 66 2 C56 8 48 18 46 34 Z"/><path d="M14 34 C6 28 2 16 4 2 C14 8 22 18 24 34 M56 34 C64 28 68 16 66 2 C56 8 48 18 46 34" ${MON_OL}/></svg></span>`,
+  tailLong: `<span class="ft ft-tailLong"><svg viewBox="0 0 54 54"><path d="M0 46 C20 50 36 40 40 22 C41 14 45 9 50 7" fill="none" stroke="#1b1b1b" stroke-width="7" stroke-linecap="round"/><path d="M0 46 C20 50 36 40 40 22 C41 14 45 9 50 7" fill="none" style="stroke:var(--c1)" stroke-width="3.6" stroke-linecap="round"/><circle class="c3" cx="50" cy="7" r="5"/><circle cx="50" cy="7" r="5" ${MON_OL}/></svg></span>`,
+  flameTop: `<span class="ft ft-flameTop"><svg viewBox="0 0 40 40"><path d="M4 40 C0 28 10 22 12 10 C16 16 18 14 20 0 C26 12 36 20 36 40 Z" fill="#ff5a2a" ${MON_OL}/><path d="M14 40 C12 32 18 28 20 18 C24 26 28 30 26 40 Z" fill="#ffe066"/></svg></span>`
+});
 
 /* ---------- 各寶可夢設定 ---------- */
 const MON_PARTS = {
-  0:   {c1:'#5fb8a8', c2:'#3b8f7d', c3:'#5bb04a', ft:['earL','earR','bulb']},                          // 妙蛙種子
-  3:   {c1:'#f08030', c2:'#f4d89a', c3:'#f08030', ft:['tailFlame']},                                   // 小火龍
-  5:   {c1:'#f08030', c2:'#f4d89a', c3:'#4db6a8', ft:['wing','tailFlame']},                            // 噴火龍
-  6:   {c1:'#6cb7e0', c2:'#b8864b', c3:'#f4ecc8', ft:['shell','tailCurl']},                            // 傑尼龜
-  24:  {c1:'#ffd83a', c2:'#c98a3a', c3:'#e53935', ft:['earL','earR','tailBolt']},                      // 皮卡丘
-  33:  {c1:'#8a6fc0', c2:'#d8c8f0', c3:'#f4ecd2', ft:['earRoundL','earRoundR','horn','tailPoint']},    // 尼多王
-  51:  {c1:'#f3dca0', c2:'#c9a24e', c3:'#e8c94a', ft:['earL','earR','tailCurl']},                      // 喵喵
-  128: {c1:'#e8643c', c2:'#f4d27a', c3:'#e8643c', ft:['finTop','tailFin']},                            // 鯉魚王
-  132: {c1:'#c98a4b', c2:'#f4e3c0', c3:'#c98a4b', ft:['earLongL','earLongR','tailFluffy']},            // 伊布
-  142: {c1:'#7fb0bd', c2:'#f4ead2', c3:'#7fb0bd', ft:['earSmallL','earSmallR','clawFootL','clawFootR']}, // 卡比獸
-  148: {c1:'#f0b050', c2:'#f4e0a0', c3:'#7bb0d8', ft:['horn','wing','tailPoint']}                      // 快龍
+  0: {c1:'#5fb8a8', c2:'#3b8f7d', c3:'#5bb04a', ft:['earL','earR','bulb']},  // 妙蛙種子
+  1: {c1:'#5fb8a8', c2:'#3b8f7d', c3:'#e8508a', ft:['earL','earR','bulb']},  // 妙蛙草
+  2: {c1:'#5fb8a8', c2:'#3b8f7d', c3:'#e8508a', ft:['earRoundL','earRoundR','flower']},  // 妙蛙花
+  3: {c1:'#f08030', c2:'#f4d89a', c3:'#f08030', ft:['tailFlame']},  // 小火龍
+  4: {c1:'#e8643c', c2:'#f4d89a', c3:'#e8643c', ft:['horn','tailFlame']},  // 火恐龍
+  5: {c1:'#f08030', c2:'#f4d89a', c3:'#4db6a8', ft:['wing','tailFlame']},  // 噴火龍
+  6: {c1:'#6cb7e0', c2:'#b8864b', c3:'#f4ecc8', ft:['shell','tailCurl']},  // 傑尼龜
+  7: {c1:'#6cb7e0', c2:'#b8864b', c3:'#f4ecc8', ft:['earLongL','earLongR','shell','tailFluffy']},  // 卡咪龜
+  8: {c1:'#4a88c7', c2:'#b8864b', c3:'#f4ecc8', ft:['earRoundL','earRoundR','shell','tailCurl']},  // 水箭龜
+  9: {c1:'#8fd04a', c2:'#f4ecc8', c3:'#e8508a', ft:['antenna']},  // 綠毛蟲
+  10: {c1:'#6fbf5a', c2:'#4a8f3a', c3:'#6fbf5a', ft:['horn']},  // 鐵甲蛹
+  11: {c1:'#8f6fc0', c2:'#f4f4f4', c3:'#b8c8f0', ft:['antenna','wing']},  // 巴大蝶
+  12: {c1:'#e8d06a', c2:'#b8864b', c3:'#f4ecc8', ft:['horn','tailPoint']},  // 獨角蟲
+  13: {c1:'#e8d06a', c2:'#b8864b', c3:'#e8d06a', ft:['spikesTop']},  // 鐵殼蛹
+  14: {c1:'#e8c94a', c2:'#2b2b2b', c3:'#f4f4f4', ft:['hornPair','wing','tailPoint']},  // 大針蜂
+  15: {c1:'#b8864b', c2:'#f4e3c0', c3:'#e8d06a', ft:['crest','tailPoint']},  // 波波
+  16: {c1:'#b8864b', c2:'#f4e3c0', c3:'#e8643c', ft:['crest','wing','tailPoint']},  // 比比鳥
+  17: {c1:'#c98a4b', c2:'#f4e3c0', c3:'#e8643c', ft:['crest','wing','tailPoint']},  // 大比鳥
+  18: {c1:'#8f6fc0', c2:'#f4ecd2', c3:'#c9a24e', ft:['earRoundL','earRoundR','tailCurl']},  // 小拉達
+  19: {c1:'#b8864b', c2:'#f4ecd2', c3:'#e8d06a', ft:['earRoundL','earRoundR','tailCurl']},  // 拉達
+  20: {c1:'#b8864b', c2:'#f4e3c0', c3:'#e8643c', ft:['crest','tailPoint']},  // 烈雀
+  21: {c1:'#b8864b', c2:'#f4e3c0', c3:'#e8643c', ft:['crest','wing','tailPoint']},  // 大嘴雀
+  22: {c1:'#8f6fc0', c2:'#e8d06a', c3:'#e8d06a', ft:['tailCurl']},  // 阿柏蛇
+  23: {c1:'#8f6fc0', c2:'#e8d06a', c3:'#e8d06a', ft:['earRoundL','earRoundR','tailCurl']},  // 阿柏怪
+  24: {c1:'#ffd83a', c2:'#c98a3a', c3:'#e53935', ft:['earL','earR','tailBolt']},  // 皮卡丘
+  25: {c1:'#f09a3a', c2:'#f4e3c0', c3:'#ffd83a', ft:['earL','earR','tailBolt']},  // 雷丘
+  26: {c1:'#e8d06a', c2:'#c98a3a', c3:'#e8d06a', ft:['earSmallL','earSmallR','tailPoint']},  // 穿山鼠
+  27: {c1:'#e8d06a', c2:'#c98a3a', c3:'#c98a3a', ft:['earSmallL','earSmallR','tailPoint']},  // 穿山王
+  28: {c1:'#6a9fd8', c2:'#4a7fb8', c3:'#6a9fd8', ft:['earRoundL','earRoundR','tailPoint']},  // 尼多蘭
+  29: {c1:'#6a9fd8', c2:'#4a7fb8', c3:'#6a9fd8', ft:['earRoundL','earRoundR','tailPoint']},  // 尼多娜
+  30: {c1:'#6a9fd8', c2:'#f4ecd2', c3:'#6a9fd8', ft:['earRoundL','earRoundR','tailPoint']},  // 尼多后
+  31: {c1:'#8a6fc0', c2:'#d8c8f0', c3:'#f4ecd2', ft:['earRoundL','earRoundR','horn']},  // 尼多朗
+  32: {c1:'#8a6fc0', c2:'#d8c8f0', c3:'#f4ecd2', ft:['earRoundL','earRoundR','horn','tailPoint']},  // 尼多力諾
+  33: {c1:'#8a6fc0', c2:'#d8c8f0', c3:'#f4ecd2', ft:['earRoundL','earRoundR','horn','tailPoint']},  // 尼多王
+  34: {c1:'#f4b8c8', c2:'#f4d8e0', c3:'#2b2b2b', ft:['earRoundL','earRoundR','tailCurl']},  // 皮皮
+  35: {c1:'#f4b8c8', c2:'#f4d8e0', c3:'#2b2b2b', ft:['earRoundL','earRoundR','wing','tailCurl']},  // 皮可西
+  36: {c1:'#d8683a', c2:'#f4e3c0', c3:'#d8683a', ft:['earL','earR','tailFluffy']},  // 六尾
+  37: {c1:'#f0d890', c2:'#f4ecd2', c3:'#e8643c', ft:['earL','earR','tailFluffy']},  // 九尾
+  38: {c1:'#f4b8c8', c2:'#f4d8e0', c3:'#f4b8c8', ft:['earL','earR','tailCurl']},  // 胖丁
+  39: {c1:'#f4b8c8', c2:'#f4d8e0', c3:'#f4b8c8', ft:['earL','earR','tailCurl']},  // 胖可丁
+  40: {c1:'#6a9fd8', c2:'#8f6fc0', c3:'#8f6fc0', ft:['earLongL','earLongR','wing']},  // 超音蝠
+  41: {c1:'#8f6fc0', c2:'#6a9fd8', c3:'#8f6fc0', ft:['earL','earR','wing']},  // 大嘴蝠
+  42: {c1:'#6a9fd8', c2:'#4a7fb8', c3:'#5bb04a', ft:['leaves']},  // 走路草
+  43: {c1:'#6a9fd8', c2:'#4a7fb8', c3:'#e8508a', ft:['flower']},  // 臭臭花
+  44: {c1:'#6a9fd8', c2:'#4a7fb8', c3:'#e8508a', ft:['flower']},  // 霸王花
+  45: {c1:'#e8884a', c2:'#f4d8a0', c3:'#e8643c', ft:['pincerL','pincerR']},  // 派拉斯
+  46: {c1:'#e8884a', c2:'#f4d8a0', c3:'#e8643c', ft:['pincerL','pincerR','bulb']},  // 派拉斯特
+  47: {c1:'#8f6fc0', c2:'#e8d06a', c3:'#8f6fc0', ft:['antenna']},  // 毛球
+  48: {c1:'#a888c8', c2:'#f4f4f4', c3:'#8f6fc0', ft:['antenna','wing']},  // 摩魯蛾
+  49: {c1:'#b8864b', c2:'#f4e3c0', c3:'#e8508a', ft:['earSmallL','earSmallR']},  // 地鼠
+  50: {c1:'#b8864b', c2:'#f4e3c0', c3:'#e8508a', ft:['earSmallL','earSmallR']},  // 三地鼠
+  51: {c1:'#f3dca0', c2:'#c9a24e', c3:'#e8c94a', ft:['earL','earR','tailCurl']},  // 喵喵
+  52: {c1:'#f3dca0', c2:'#c9a24e', c3:'#e8c94a', ft:['earL','earR','tailCurl']},  // 貓老大
+  53: {c1:'#f0d44a', c2:'#f4f4f4', c3:'#f0a030', ft:['crest','tailPoint']},  // 可達鴨
+  54: {c1:'#6a9fd8', c2:'#f4f4f4', c3:'#f0a030', ft:['crest','tailPoint']},  // 哥達鴨
+  55: {c1:'#f4e3c0', c2:'#c98a4b', c3:'#c98a4b', ft:['earRoundL','earRoundR','tailCurl']},  // 猴怪
+  56: {c1:'#f4e3c0', c2:'#c98a4b', c3:'#c98a4b', ft:['earRoundL','earRoundR','tailCurl']},  // 火爆猴
+  57: {c1:'#e8884a', c2:'#f4e3c0', c3:'#2b2b2b', ft:['earL','earR','tailFluffy']},  // 卡蒂狗
+  58: {c1:'#e8884a', c2:'#f4e3c0', c3:'#2b2b2b', ft:['earL','earR','tailFluffy']},  // 風速狗
+  59: {c1:'#4a88c7', c2:'#f4f4f4', c3:'#4a88c7', ft:['tailPoint']},  // 蚊香蝌蚪
+  60: {c1:'#4a88c7', c2:'#f4f4f4', c3:'#4a88c7', ft:['tailPoint']},  // 蚊香蛙
+  61: {c1:'#4a88c7', c2:'#f4f4f4', c3:'#f4f4f4', ft:['earSmallL','earSmallR']},  // 快泳蛙
+  62: {c1:'#e8c94a', c2:'#b8864b', c3:'#b8864b', ft:['earL','earR','tailPoint']},  // 凱西
+  63: {c1:'#e8c94a', c2:'#b8864b', c3:'#b8864b', ft:['earL','earR','tailPoint']},  // 勇吉拉
+  64: {c1:'#e8c94a', c2:'#b8864b', c3:'#b8864b', ft:['earL','earR','tailPoint']},  // 胡地
+  65: {c1:'#8fa8c0', c2:'#2b2b2b', c3:'#e8643c', ft:['earSmallL','earSmallR']},  // 腕力
+  66: {c1:'#8fa8c0', c2:'#2b2b2b', c3:'#e8643c', ft:['earSmallL','earSmallR']},  // 豪力
+  67: {c1:'#8fa8c0', c2:'#2b2b2b', c3:'#e8643c', ft:['earSmallL','earSmallR']},  // 怪力
+  68: {c1:'#e8d06a', c2:'#5bb04a', c3:'#5bb04a', ft:['leaves']},  // 喇叭芽
+  69: {c1:'#e8d06a', c2:'#5bb04a', c3:'#5bb04a', ft:['leaves']},  // 口呆花
+  70: {c1:'#e8d06a', c2:'#5bb04a', c3:'#5bb04a', ft:['leaves']},  // 大食花
+  71: {c1:'#6a9fd8', c2:'#e8508a', c3:'#6a9fd8', ft:['tentacles']},  // 瑪瑙水母
+  72: {c1:'#6a9fd8', c2:'#e8508a', c3:'#e8508a', ft:['tentacles']},  // 毒刺水母
+  73: {c1:'#a89880', c2:'#6e6050', c3:'#a89880', ft:['spikesTop']},  // 小拳石
+  74: {c1:'#a89880', c2:'#6e6050', c3:'#a89880', ft:['spikesTop','pincerL','pincerR']},  // 隆隆石
+  75: {c1:'#a89880', c2:'#6e6050', c3:'#a89880', ft:['spikesTop','pincerL','pincerR']},  // 隆隆岩
+  76: {c1:'#f0d890', c2:'#e8643c', c3:'#ff8a3a', ft:['flameTop','tailFlame']},  // 小火馬
+  77: {c1:'#f0d890', c2:'#e8643c', c3:'#ff8a3a', ft:['flameTop','tailFlame']},  // 烈焰馬
+  78: {c1:'#f4a8b8', c2:'#f4ecd2', c3:'#f4a8b8', ft:['earSmallL','earSmallR','tailFin']},  // 呆呆獸
+  79: {c1:'#f4a8b8', c2:'#f4ecd2', c3:'#c0c0c0', ft:['earSmallL','earSmallR','shell']},  // 呆殼獸
+  80: {c1:'#b8c4d0', c2:'#d8d8d8', c3:'#e53935', ft:['hornPair']},  // 小磁怪
+  81: {c1:'#b8c4d0', c2:'#d8d8d8', c3:'#e53935', ft:['hornPair']},  // 三合一磁怪
+  82: {c1:'#b8864b', c2:'#f4f4f4', c3:'#5bb04a', ft:['leaves']},  // 大蔥鴨
+  83: {c1:'#b8864b', c2:'#f4e3c0', c3:'#e8d06a', ft:['crest','tailPoint']},  // 嘟嘟
+  84: {c1:'#b8864b', c2:'#f4e3c0', c3:'#e8d06a', ft:['crest','tailPoint']},  // 嘟嘟利
+  85: {c1:'#f4f4f4', c2:'#a8c8e0', c3:'#f4f4f4', ft:['horn','tailFin']},  // 小海獅
+  86: {c1:'#f4f4f4', c2:'#a8c8e0', c3:'#f4f4f4', ft:['horn','tailFin']},  // 白海獅
+  87: {c1:'#a888c8', c2:'#8f6fc0', c3:'#a888c8', ft:['tentacles']},  // 臭泥
+  88: {c1:'#a888c8', c2:'#8f6fc0', c3:'#a888c8', ft:['tentacles']},  // 臭臭泥
+  89: {c1:'#8f6fc0', c2:'#d8c8f0', c3:'#8f6fc0', ft:['spikesTop']},  // 大舌貝
+  90: {c1:'#8f6fc0', c2:'#d8c8f0', c3:'#8f6fc0', ft:['spikesTop','pincerL','pincerR']},  // 刺甲貝
+  91: {c1:'#2b2b4a', c2:'#8f6fc0', c3:'#8f6fc0', ft:['spikesTop']},  // 鬼斯
+  92: {c1:'#2b2b4a', c2:'#8f6fc0', c3:'#8f6fc0', ft:['spikesTop','pincerL','pincerR']},  // 鬼斯通
+  93: {c1:'#6a4a9a', c2:'#a888c8', c3:'#e53935', ft:['earL','earR','tailPoint']},  // 耿鬼
+  94: {c1:'#a89880', c2:'#6e6050', c3:'#a89880', ft:['spikesTop','tailPoint']},  // 大岩蛇
+  95: {c1:'#e8c94a', c2:'#b8864b', c3:'#e8c94a', ft:['earSmallL','earSmallR','tailCurl']},  // 催眠貘
+  96: {c1:'#e8c94a', c2:'#b8864b', c3:'#e8c94a', ft:['earSmallL','earSmallR','tailCurl']},  // 引夢貘人
+  97: {c1:'#e8643c', c2:'#f4d8a0', c3:'#e8643c', ft:['pincerL','pincerR']},  // 大鉗蟹
+  98: {c1:'#e8643c', c2:'#f4d8a0', c3:'#e8643c', ft:['pincerL','pincerR']},  // 巨鉗蟹
+  99: {c1:'#e53935', c2:'#f4f4f4', c3:'#f4f4f4', ft:['spikesTop']},  // 霹靂電球
+  100: {c1:'#e53935', c2:'#f4f4f4', c3:'#f4f4f4', ft:['spikesTop']},  // 頑皮雷彈
+  101: {c1:'#f4b8c8', c2:'#f4ecd2', c3:'#5bb04a', ft:['earRoundL','earRoundR']},  // 蛋蛋
+  102: {c1:'#e8c94a', c2:'#5bb04a', c3:'#5bb04a', ft:['leaves']},  // 椰蛋樹
+  103: {c1:'#c98a4b', c2:'#f4e3c0', c3:'#f4f4f4', ft:['horn']},  // 卡拉卡拉
+  104: {c1:'#c98a4b', c2:'#f4e3c0', c3:'#f4f4f4', ft:['horn','tailPoint']},  // 嘎啦嘎啦
+  105: {c1:'#b8864b', c2:'#f4e3c0', c3:'#e53935', ft:['earSmallL','earSmallR']},  // 飛腿郎
+  106: {c1:'#b8864b', c2:'#f4e3c0', c3:'#e53935', ft:['earSmallL','earSmallR']},  // 快拳郎
+  107: {c1:'#f4b8c8', c2:'#e8508a', c3:'#e8508a', ft:['earSmallL','earSmallR','tailCurl']},  // 大舌頭
+  108: {c1:'#a888c8', c2:'#f4f4f4', c3:'#8f6fc0', ft:['spikesTop']},  // 瓦斯彈
+  109: {c1:'#a888c8', c2:'#f4f4f4', c3:'#8f6fc0', ft:['spikesTop']},  // 雙彈瓦斯
+  110: {c1:'#8fa0b0', c2:'#f4ecd2', c3:'#f4ecd2', ft:['earSmallL','earSmallR','horn','tailPoint']},  // 獨角犀牛
+  111: {c1:'#8fa0b0', c2:'#f4ecd2', c3:'#f4ecd2', ft:['earSmallL','earSmallR','horn','tailPoint']},  // 鑽角犀獸
+  112: {c1:'#f4b8c8', c2:'#f4d8e0', c3:'#f4ecd2', ft:['earRoundL','earRoundR']},  // 吉利蛋
+  113: {c1:'#4a78c0', c2:'#2b4a90', c3:'#4a78c0', ft:['tentacles']},  // 蔓藤怪
+  114: {c1:'#c98a4b', c2:'#f4e3c0', c3:'#c98a4b', ft:['earSmallL','earSmallR','tailFluffy']},  // 袋獸
+  115: {c1:'#6a9fd8', c2:'#f4f4f4', c3:'#6a9fd8', ft:['finTop','tailCurl']},  // 墨海馬
+  116: {c1:'#4a78c0', c2:'#f4f4f4', c3:'#4a78c0', ft:['finTop','tailCurl']},  // 海刺龍
+  117: {c1:'#f4f4f4', c2:'#e8643c', c3:'#e8643c', ft:['horn','tailFin']},  // 角金魚
+  118: {c1:'#f4f4f4', c2:'#e8643c', c3:'#e8643c', ft:['horn','tailFin']},  // 金魚王
+  119: {c1:'#c98a4b', c2:'#e8c94a', c3:'#e8c94a', ft:['horn','pincerL','pincerR']},  // 海星星
+  120: {c1:'#8f6fc0', c2:'#e8c94a', c3:'#e53935', ft:['horn','pincerL','pincerR']},  // 寶石海星
+  121: {c1:'#f4b8c8', c2:'#6a9fd8', c3:'#6a9fd8', ft:['crest']},  // 魔牆人偶
+  122: {c1:'#8fd04a', c2:'#f4f4f4', c3:'#b8c8f0', ft:['pincerL','pincerR','wing']},  // 飛天螳螂
+  123: {c1:'#e8508a', c2:'#f4d8a0', c3:'#e8d06a', ft:['crest']},  // 迷唇姐
+  124: {c1:'#e8c94a', c2:'#2b2b2b', c3:'#2b2b2b', ft:['earL','earR','tailBolt']},  // 電擊獸
+  125: {c1:'#e8643c', c2:'#f4d27a', c3:'#ff8a3a', ft:['flameTop','tailPoint']},  // 鴨嘴火獸
+  126: {c1:'#8f6a4a', c2:'#f4ecd2', c3:'#f4ecd2', ft:['hornPair']},  // 凱羅斯
+  127: {c1:'#b8864b', c2:'#f4e3c0', c3:'#f4ecd2', ft:['hornPair','tailFluffy']},  // 肯泰羅
+  128: {c1:'#e8643c', c2:'#f4d27a', c3:'#e8643c', ft:['finTop','tailFin']},  // 鯉魚王
+  129: {c1:'#4a78c0', c2:'#f4e3c0', c3:'#e8c94a', ft:['finTop','tailFin']},  // 暴鯉龍
+  130: {c1:'#6a9fd8', c2:'#f4ecd2', c3:'#b8864b', ft:['horn','shell','tailFin']},  // 拉普拉斯
+  131: {c1:'#c8a0d8', c2:'#b080c8', c3:'#c8a0d8', ft:['tentacles']},  // 百變怪
+  132: {c1:'#c98a4b', c2:'#f4e3c0', c3:'#c98a4b', ft:['earLongL','earLongR','tailFluffy']},  // 伊布
+  133: {c1:'#6a9fd8', c2:'#f4ecd2', c3:'#6a9fd8', ft:['earLongL','earLongR','tailFin']},  // 水伊布
+  134: {c1:'#e8c94a', c2:'#f4ecd2', c3:'#e8c94a', ft:['earLongL','earLongR','tailFluffy']},  // 雷伊布
+  135: {c1:'#e8643c', c2:'#f4ecd2', c3:'#e8643c', ft:['earLongL','earLongR','tailFluffy']},  // 火伊布
+  136: {c1:'#e8508a', c2:'#6a9fd8', c3:'#e8508a', ft:['horn','tailPoint']},  // 多邊獸
+  137: {c1:'#6a9fd8', c2:'#e8d8a0', c3:'#6a9fd8', ft:['shell','tentacles']},  // 菊石獸
+  138: {c1:'#6a9fd8', c2:'#e8d8a0', c3:'#6a9fd8', ft:['shell','tentacles','spikesTop']},  // 多刺菊石獸
+  139: {c1:'#a89880', c2:'#6e6050', c3:'#a89880', ft:['shell','tailPoint']},  // 化石盔
+  140: {c1:'#a89880', c2:'#6e6050', c3:'#e8d8a0', ft:['shell','pincerL','pincerR']},  // 鐮刀盔
+  141: {c1:'#a888c8', c2:'#d8c8f0', c3:'#8f6fc0', ft:['earL','earR','wing','tailPoint']},  // 化石翼龍
+  142: {c1:'#7fb0bd', c2:'#f4ead2', c3:'#7fb0bd', ft:['earSmallL','earSmallR','clawFootL','clawFootR']},  // 卡比獸
+  143: {c1:'#6a9fd8', c2:'#f4f4f4', c3:'#b8e8f8', ft:['crest','wing','tailPoint']},  // 急凍鳥
+  144: {c1:'#e8c94a', c2:'#2b2b2b', c3:'#e8c94a', ft:['crest','wing','tailBolt']},  // 閃電鳥
+  145: {c1:'#e8643c', c2:'#f4d27a', c3:'#ff8a3a', ft:['flameTop','wing','tailFlame']},  // 火焰鳥
+  146: {c1:'#6a9fd8', c2:'#f4f4f4', c3:'#f4f4f4', ft:['horn','tailPoint']},  // 迷你龍
+  147: {c1:'#6a9fd8', c2:'#f4f4f4', c3:'#f4f4f4', ft:['antenna','tailPoint']},  // 哈克龍
+  148: {c1:'#f0b050', c2:'#f4e0a0', c3:'#7bb0d8', ft:['horn','wing','tailPoint']},  // 快龍
+  149: {c1:'#d8c8e0', c2:'#8f6fc0', c3:'#8f6fc0', ft:['earSmallL','earSmallR','tailLong']},  // 超夢
+  150: {c1:'#f4b8c8', c2:'#f4d8e0', c3:'#f4b8c8', ft:['earRoundL','earRoundR','tailLong']}  // 夢幻
 };
