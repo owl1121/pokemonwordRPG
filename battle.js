@@ -526,11 +526,11 @@ function frameKey(m){
 }
 /* ---------- 寶可夢特徵（疊在玩家選的邊框後面） ----------
    邊框一律照個人檔案的選擇（含限定的超級球／高級球／大師球）；各寶可夢的特徵（耳朵、尾巴…）再疊在框後面。
-   零件庫與每隻的設定在 mon-parts.js（MON_FEATURES、MON_PARTS）。 */
+   有專屬手繪圖的寶可夢在 mon-art.js（MON_ART）；沒有的退回 mon-parts.js 的零件組（MON_FEATURES、MON_PARTS）。 */
 function monParts(m){ return (m && MON_PARTS[m.dex]) || null; }
 function frameClass(m){ return 'fr-' + frameKey(m); }
-function frameStyle(m){ const f = monParts(m); return f ? ` style="--c1:${f.c1};--c2:${f.c2};--c3:${f.c3}"` : ''; }
-function frameFeatures(m){ const f = monParts(m); return f ? f.ft.map(k => MON_FEATURES[k] || '').join('') : ''; }
+function frameStyle(m){ if(typeof MON_ART!=='undefined' && m && MON_ART[m.dex]) return ''; const f = monParts(m); return f ? ` style="--c1:${f.c1};--c2:${f.c2};--c3:${f.c3}"` : ''; }
+function frameFeatures(m){ if(typeof monArtHtml==='function' && m && MON_ART[m.dex]) return monArtHtml(m.dex); const f = monParts(m); return f ? f.ft.map(k => MON_FEATURES[k] || '').join('') : ''; }
 // 訓練家／館主的隊伍進度：✖ 已倒下、● 還能戰鬥（含目前場上那隻）
 function teamDots(b, w){
   const f = (b.foeFainted||[]).length, left = (b.foes?b.foes.length:0) + (w.hp>0?1:0);
