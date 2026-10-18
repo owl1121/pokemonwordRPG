@@ -23,7 +23,7 @@ console.log('檢查通過');
 // 檢查 mon-art.js：DEX 索引 0~(ART_DONE-1) 每隻都要有專屬圖（一代全做完；二代做到哪就把 ART_DONE 改到哪），每個 piece 的 s 要是 t/b/l/r 且有 svg
 {
   const { MON_ART } = new Function(read('mon-art.js') + ';return {MON_ART};')();
-  const ART_DONE = 493; // 已完成專屬圖的隻數（索引 0~492 = 一代～四代全部，到 #493 阿爾宙斯）
+  const ART_DONE = 0; // 已完成專屬圖的隻數（一～四代已清空，等使用者提供新圖）
   const e2 = [];
   for (let i = 0; i < ART_DONE; i++) {
     const arts = MON_ART[i];
