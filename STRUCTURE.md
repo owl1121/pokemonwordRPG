@@ -8,7 +8,7 @@
 | 檔案 | 內容 |
 |---|---|
 | `data.js`（約 1100 行） | 純資料表：`DEX`（圖鑑，`[名稱,屬性1,屬性2,tier]`，依世代排）、`EVO`/`STONE_EVO`/`TIME_EVO`（進化）、`CHART`（屬性相剋）、`MOVES`、`STATUS_FX`、`ITEMS`、`GYMS`、`TRAINERS`、`QUESTS`、`MILESTONES`、`MEGAS`、`CHECKIN_*`、`MAP_NAMES` |
-| `mon-art.js` | 每隻寶可夢「專屬手繪」外框裝飾：`MON_ART[DEX索引]` = 一串 piece（`s` 貼哪一邊 t/b/l/r、`x`/`xr`/`xc`/`y`/`yb`/`yc` 位置、`svg` 自己畫的圖），`monArtHtml(dex)` 組成 HTML。有專屬圖就用這個，沒有的退回 `mon-parts.js` 零件組。目前做完索引 0~39（妙蛙種子～胖可丁，皆照官方圖鑑圖畫；官方圖可從 raw.githubusercontent.com/PokeAPI/sprites 下載對照），一代其餘仍用零件組，要逐隻改成專屬圖 |
+| `mon-art.js` | 每隻寶可夢「專屬手繪」外框裝飾：`MON_ART[DEX索引]` = 一串 piece（`s` 貼哪一邊 t/b/l/r、`x`/`xr`/`xc`/`y`/`yb`/`yc` 位置、`svg` 自己畫的圖），`monArtHtml(dex)` 組成 HTML。有專屬圖就用這個，沒有的退回 `mon-parts.js` 零件組。目前做完索引 0~49（妙蛙種子～地鼠，皆照官方圖鑑圖畫；官方圖可從 raw.githubusercontent.com/PokeAPI/sprites 下載對照），一代其餘仍用零件組，要逐隻改成專屬圖 |
 | `mon-parts.js` | 寶可夢外觀的 SVG 零件庫：`MON_FEATURES`（零件，共 77 種；成對零件用 `sidePair` 產生左右鏡射；零件位置 CSS 在 index.html 的 `.ft-xxx`）、`MON_PARTS`（每隻的顏色 c1~c3 與零件清單 ft，key 為 DEX 索引）。一代 151 隻（索引 0~150）已全部設定完成，二代起尚未做 |
 | `battle.js`（約 1420 行） | 音效 `SFX`、屬性相剋 `eff`、傷害 `dmg`/`attackCore`、回合流程 `playerMove`/`enemyTurn`/`endOfTurn`、捕捉 `tryCatch`、換人、進化 `evoTarget`/`evolveTo`、經驗 `grantExp`、戰鬥結算 `winBattle`/`loseBattle`、對戰畫面 `renderStage`/`screenBattle`、擊倒與捕捉動畫 `koFx`/`catchFx`、球框 `FRAME_*` |
 | `features.js`（約 550 行） | 性格 `NATURES`、特性 `ABILITIES`、攜帶道具 `HELD`（含商店 `screenHeldShop`）、每日活動 `DAILY_EVENTS`、天氣 `WEATHER`、戰鬥中各種效果掛勾（`afterHitFx`、`endTurnFx`、`onEntry` 等） |
