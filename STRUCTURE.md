@@ -8,7 +8,7 @@
 | 檔案 | 內容 |
 |---|---|
 | `data.js`（約 1100 行） | 純資料表：`DEX`（圖鑑，`[名稱,屬性1,屬性2,tier]`，依世代排）、`EVO`/`STONE_EVO`/`TIME_EVO`（進化）、`CHART`（屬性相剋）、`MOVES`、`STATUS_FX`、`ITEMS`、`GYMS`、`TRAINERS`、`QUESTS`、`MILESTONES`、`MEGAS`、`CHECKIN_*`、`MAP_NAMES` |
-| `mon-art.js` | 每隻寶可夢「專屬手繪」外框裝飾：`MON_ART[DEX索引]` = 一串 piece（`s` 貼哪一邊 t/b/l/r、`x`/`xr`/`xc`/`y`/`yb`/`yc` 位置、`svg` 自己畫的圖），`monArtHtml(dex)` 組成 HTML。有專屬圖就用這個，沒有的退回 `mon-parts.js` 零件組。目前 MON_ART 是空的（一～四代手畫外框已全部刪除，之後由使用者提供圖再照著做；沒有專屬圖的就不畫特徵）（皆照官方圖鑑圖畫；mon-parts.js 零件組目前只當備援；官方圖可從 raw.githubusercontent.com/PokeAPI/sprites 的 official-artwork/<圖鑑編號>.png 下載對照，注意索引 = 圖鑑編號 − 1）。檔案尾端 `/*__NEXT__*/` 是新增下一隻的插入點（前一隻結尾要補逗號）。新增的專屬圖請逐隻手畫 SVG（有陰影/高光），不使用共用零件；只用基本函式 S/P/RP/RF/L/E/R/T/SC |
+| `mon-art.js` | 每隻寶可夢「專屬手繪」外框裝飾：`MON_ART[DEX索引]` = 一串 piece（`s` 貼哪一邊 t/b/l/r、`x`/`xr`/`xc`/`y`/`yb`/`yc` 位置、`svg` 自己畫的圖），`monArtHtml(dex)` 組成 HTML。有專屬圖就用這個，沒有的退回 `mon-parts.js` 零件組。目前只有索引 0~2（妙蛙種子／妙蛙草／妙蛙花）有圖，其餘由使用者畫草圖後再照著做（每隻只做一個主要特徵，貼在卡片上方、蓋進卡片邊框 2px，不要有縫；沒有專屬圖的就不畫特徵）（皆照官方圖鑑圖畫；mon-parts.js 零件組目前只當備援；官方圖可從 raw.githubusercontent.com/PokeAPI/sprites 的 official-artwork/<圖鑑編號>.png 下載對照，注意索引 = 圖鑑編號 − 1）。檔案尾端 `/*__NEXT__*/` 是新增下一隻的插入點（前一隻結尾要補逗號）。新增的專屬圖請逐隻手畫 SVG（有陰影/高光），不使用共用零件；只用基本函式 S/P/RP/RF/L/E/R/T/SC |
 | `battle.js`（約 1420 行） | 音效 `SFX`、屬性相剋 `eff`、傷害 `dmg`/`attackCore`、回合流程 `playerMove`/`enemyTurn`/`endOfTurn`、捕捉 `tryCatch`、換人、進化 `evoTarget`/`evolveTo`、經驗 `grantExp`、戰鬥結算 `winBattle`/`loseBattle`、對戰畫面 `renderStage`/`screenBattle`、擊倒與捕捉動畫 `koFx`/`catchFx`、球框 `FRAME_*` |
 | `features.js`（約 550 行） | 性格 `NATURES`、特性 `ABILITIES`、攜帶道具 `HELD`（含商店 `screenHeldShop`）、每日活動 `DAILY_EVENTS`、天氣 `WEATHER`、戰鬥中各種效果掛勾（`afterHitFx`、`endTurnFx`、`onEntry` 等） |
 | `index.html`（約 2960 行） | 見下 |
