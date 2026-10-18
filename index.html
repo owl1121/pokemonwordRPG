@@ -337,77 +337,8 @@ button,input,textarea,select{font-family:inherit;}
   content:"";position:absolute;top:50%;border-radius:50%;background:#fff;border:3px solid #1b1b1b;}
 .card.me[class*="fr-"]::before,.card.me[class*="fr-"]::after{width:18px;height:18px;margin-top:-9px;}
 .card.me[class*="fr-"]::before{left:-12px;} .card.me[class*="fr-"]::after{right:-12px;}
-/* ---- 寶可夢特徵（耳朵、尾巴…）：疊在玩家選的邊框後面，只露出框外的部分；顏色用該寶可夢的 --c1/--c2/--c3 ---- */
 #stage{isolation:isolate;}
-.ft{--ink:#1b1b1b;position:absolute;z-index:-1;pointer-events:none;overflow:visible}
-.ft svg{display:block;overflow:visible}
-.ft .c1{fill:var(--c1)}.ft .c2{fill:var(--c2)}.ft .c3{fill:var(--c3)}.ft .ink{fill:var(--ink)}
-.ft-earL{left:7%;top:-42px;width:31px;height:39px;transform:rotate(-16deg);transform-origin:50% 100%}
-.ft-earR{left:37%;top:-42px;width:31px;height:39px;transform:rotate(16deg);transform-origin:50% 100%}
-.ft-earSmallL{left:9%;top:-30px;width:25px;height:32px;transform:rotate(-12deg);transform-origin:50% 100%}
-.ft-earSmallR{left:40%;top:-30px;width:25px;height:32px;transform:rotate(12deg);transform-origin:50% 100%}
-.ft-clawFootL{left:-29px;bottom:-29px;width:80px;height:80px}
-.ft-clawFootR{right:-29px;bottom:-29px;width:80px;height:80px}
-.ft-earRoundL{left:6%;top:-35px;width:34px;height:37px;transform:rotate(-10deg);transform-origin:50% 100%}
-.ft-earRoundR{left:38%;top:-35px;width:34px;height:37px;transform:rotate(10deg);transform-origin:50% 100%}
-.ft-earLongL{left:6%;top:-48px;width:30px;height:52px;transform:rotate(-14deg);transform-origin:50% 100%}
-.ft-earLongR{left:37%;top:-48px;width:30px;height:52px;transform:rotate(14deg);transform-origin:50% 100%}
-.ft-horn{left:calc(50% - 12px);top:-38px;width:24px;height:40px}
-.ft-bulb{left:calc(50% - 26px);top:-40px;width:52px;height:44px}
-.ft-finTop{left:calc(50% - 38px);top:-32px;width:76px;height:34px}
-.ft-wing{right:-44px;top:-12px;width:58px;height:52px}
-.ft-shell{right:-27px;top:18px;width:34px;height:64px}
-.ft-tail{right:-51px;bottom:14px;width:50px;height:58px}
-.ft-tailFlame{right:-41px;bottom:14px;width:40px;height:48px}
-.ft-tailCurl{right:-43px;bottom:8px;width:46px;height:50px}
-.ft-tailFluffy{right:-47px;bottom:10px;width:48px;height:58px}
-.ft-tailFin{right:-47px;bottom:6px;width:48px;height:60px}
-.ft-tailPoint{right:-47px;bottom:8px;width:50px;height:50px}
-.ft-antenna{left:calc(50% - 25px);top:-30px;width:50px;height:34px}
-.ft-crest{left:calc(50% - 20px);top:-34px;width:40px;height:36px}
-.ft-flower{left:calc(50% - 22px);top:-34px;width:44px;height:36px}
-.ft-leaves{left:calc(50% - 22px);top:-32px;width:44px;height:34px}
-.ft-pincerL{left:-26px;top:24%;width:30px;height:33px}
-.ft-pincerR{right:-30px;top:24%;width:30px;height:33px}
-.ft-tentacles{left:calc(50% - 30px);bottom:-30px;width:60px;height:34px}
-.ft-spikesTop{left:calc(50% - 35px);top:-15px;width:70px;height:18px}
-.ft-hornPair{left:calc(50% - 35px);top:-30px;width:70px;height:34px}
-.ft-tailLong{right:-50px;bottom:8px;width:54px;height:54px}
 .art{position:absolute;z-index:-1;pointer-events:none;line-height:0}.art svg{display:block;overflow:visible}
-.ft-flameTop{left:calc(50% - 20px);top:-36px;width:40px;height:40px}
-.ft-wingFeatherL,.ft-wingBatL,.ft-wingBugL{left:-30px;top:-12px;width:44px;height:41px}
-.ft-wingFeatherR,.ft-wingBatR,.ft-wingBugR{right:-34px;top:-12px;width:48px;height:44px}
-.ft-armL{left:-25px;top:14%;width:30px;height:41px}.ft-armR{right:-27px;top:14%;width:30px;height:41px}
-.ft-armLowL{left:-25px;top:50%;width:30px;height:41px}.ft-armLowR{right:-27px;top:50%;width:30px;height:41px}
-.ft-footL{left:12%;bottom:-18px;width:38px;height:22px}.ft-footR{right:12%;bottom:-18px;width:38px;height:22px}
-.ft-whiskersL{left:-26px;top:calc(50% - 13px);width:30px;height:26px}.ft-whiskersR{right:-28px;top:calc(50% - 13px);width:30px;height:26px}
-.ft-headBumpL{left:8%;top:-23px;width:30px;height:28px}.ft-headBumpR{right:8%;top:-23px;width:30px;height:28px}
-.ft-hairL{left:-16px;top:2px;width:22px;height:60px}.ft-hairR{right:-18px;top:2px;width:22px;height:60px}
-.ft-vinesL{left:-22px;top:10%;width:28px;height:50px}.ft-vinesR{right:-24px;top:10%;width:28px;height:50px}
-.ft-earFoxL{left:7%;top:-42px;width:31px;height:39px;transform:rotate(-16deg);transform-origin:50% 100%}
-.ft-earFoxR{left:37%;top:-42px;width:31px;height:39px;transform:rotate(16deg);transform-origin:50% 100%}
-.ft-earBatL{left:6%;top:-44px;width:30px;height:40px;transform:rotate(-14deg);transform-origin:50% 100%}
-.ft-earBatR{left:37%;top:-44px;width:30px;height:40px;transform:rotate(14deg);transform-origin:50% 100%}
-.ft-cannonL{left:9%;top:-30px;width:20px;height:31px;transform:rotate(-18deg);transform-origin:50% 100%}
-.ft-cannonR{left:58%;top:-30px;width:20px;height:31px;transform:rotate(18deg);transform-origin:50% 100%}
-.ft-starTop{left:calc(50% - 18px);top:-34px;width:36px;height:40px}
-.ft-starL{left:-24px;top:calc(50% - 20px);width:36px;height:40px;transform:rotate(-90deg)}
-.ft-starR{right:-24px;top:calc(50% - 20px);width:36px;height:40px;transform:rotate(90deg)}
-.ft-starBL{left:6%;bottom:-30px;width:36px;height:40px;transform:rotate(215deg)}
-.ft-starBR{right:6%;bottom:-30px;width:36px;height:40px;transform:rotate(145deg)}
-.ft-tailMulti3,.ft-tailMulti5{right:-50px;bottom:6px;width:56px;height:60px}
-.ft-bud{right:4%;top:-56px;width:56px;height:58px}
-.ft-bloom{right:3%;top:-46px;width:66px;height:49px}
-.ft-capDuo{left:calc(50% - 35px);top:-26px;width:70px;height:30px}
-.ft-capBig{left:calc(50% - 45px);top:-32px;width:90px;height:36px}
-.ft-beakL{left:-24px;top:calc(50% - 10px);width:30px;height:24px}
-.ft-billL{left:-28px;top:calc(50% - 10px);width:34px;height:22px}
-.ft-tailFeathers{right:-48px;bottom:6px;width:54px;height:56px}
-.ft-hood{left:calc(50% - 38px);top:-34px;width:76px;height:40px}
-.ft-tailThick{right:-52px;bottom:2px;width:58px;height:44px}
-.ft-curlTop{left:calc(50% - 15px);top:-30px;width:30px;height:34px}
-.ft-dome{left:calc(50% - 42px);top:-28px;width:84px;height:34px}
-.ft-mound{left:calc(50% - 50px);bottom:-26px;width:100px;height:30px}
 .frgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
 .frbtn{background:transparent;border:2px solid var(--line);border-radius:12px;padding:8px 2px 6px;color:var(--text);font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;}
 .frbtn.on{border-color:var(--accent);}
@@ -514,7 +445,6 @@ button,input,textarea,select{font-family:inherit;}
 </div>
 
 <script src="data.js"></script>
-<script src="mon-parts.js"></script>
 <script src="mon-art.js"></script>
 <script src="sounds/list.js" onerror="this.remove()"></script>
 <script src="battle.js"></script>
