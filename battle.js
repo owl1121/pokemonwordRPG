@@ -501,10 +501,11 @@ function catchFx(ballKey, caught, shakes){
   return total;
 }
 /* ---------- 對戰邊框：精靈球／超級球／高級球／大師球配色 ---------- */
-const FRAME_NAMES = {poke:'精靈球', great:'超級球', ultra:'高級球', master:'大師球'};
+const FRAME_NAMES = {none:'無框', poke:'精靈球', great:'超級球', ultra:'高級球', master:'大師球'};
 const BALL_TO_FRAME = {pokeball:'poke', greatball:'great', ultraball:'ultra', masterball:'master'};
 // 邊框解鎖條件：用該種球抓到的寶可夢數（精靈球預設解鎖；大師球也可以靠降服神獸解鎖）
 const FRAME_UNLOCK = {
+  none:   {need:0,  text:'預設解鎖'},
   poke:   {need:0,  text:'預設解鎖'},
   great:  {need:20, key:'cb_great',  text:'用超級球抓 20 隻寶可夢'},
   ultra:  {need:30, key:'cb_ultra',  text:'用高級球抓 30 隻寶可夢'},
@@ -528,7 +529,14 @@ function frameKey(m){
    邊框一律照個人檔案的選擇（含限定的超級球／高級球／大師球）；各寶可夢的特徵（耳朵、尾巴…）再疊在框後面。
    有專屬手繪圖的寶可夢在 mon-art.js（MON_ART）；沒有的就不畫特徵。 */
 function frameClass(m){ return 'fr-' + frameKey(m); }
-function frameStyle(m){ return ''; }
+// 「無框」：用這隻寶可夢的兩個代表色做上→下漸層（異色用異色的顏色；超進化中用超進化的顏色）
+function monColorKey(m){ return (m && m._mega && typeof MON_COLORS==='object' && MON_COLORS['M'+m._mega.id]) ? 'M'+m._mega.id : (m && m.dex); }
+function frameStyle(m){
+  if(frameKey(m) !== 'none' || typeof MON_COLORS !== 'object') return '';
+  const c = MON_COLORS[monColorKey(m)]; if(!c) return '';
+  const [a, b] = m.shiny ? [c[2], c[3]] : [c[0], c[1]];
+  return ` style="--fr:linear-gradient(180deg,${a},${b})"`;
+}
 function frameFeatures(m){ if(typeof monArtHtml!=='function' || !m) return ''; const k = (m._mega && MON_ART['M'+m._mega.id]) ? 'M'+m._mega.id : m.dex; const T = (m.shiny && typeof MON_ART_SHINY==='object' && MON_ART_SHINY[k]) ? MON_ART_SHINY : MON_ART; return T[k] ? monArtHtml(k, T) : ''; }
 // 訓練家／館主的隊伍進度：✖ 已倒下、● 還能戰鬥（含目前場上那隻）
 function teamDots(b, w){

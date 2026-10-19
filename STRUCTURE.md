@@ -1,6 +1,6 @@
 # 結構說明（給 AI 開新對話時先讀這份）
 
-純前端單頁遊戲，無建置流程。`index.html` 依序載入 `data.js` → `mon-art.js` → `mon-art-gen1.js`~`mon-art-gen9.js` → `mon-art-regional.js` → `mon-art-mega.js` → `mon-art-shiny.js` → `sounds/list.js`（可缺）→ `battle.js` → `features.js`，再跑 index.html 內的主程式。全域變數共用，不是 ES module。
+純前端單頁遊戲，無建置流程。`index.html` 依序載入 `data.js` → `mon-art.js` → `mon-art-gen1.js`~`mon-art-gen9.js` → `mon-art-regional.js` → `mon-art-mega.js` → `mon-art-shiny.js` → `mon-colors.js` → `sounds/list.js`（可缺）→ `battle.js` → `features.js`，再跑 index.html 內的主程式。全域變數共用，不是 ES module。
 存檔在 `localStorage`，key 為 `pkmn_tower_save_v2`（舊版 v1 會自動轉移）。行號會隨修改位移，僅供定位，請用 grep 函式名。
 
 ## 檔案
@@ -10,7 +10,8 @@
 | `data.js`（約 1100 行） | 純資料表：`DEX`（圖鑑，`[名稱,屬性1,屬性2,tier]`，依世代排）、`EVO`/`STONE_EVO`/`TIME_EVO`（進化）、`CHART`（屬性相剋）、`MOVES`、`STATUS_FX`、`ITEMS`、`GYMS`、`TRAINERS`、`QUESTS`、`MILESTONES`、`MEGAS`、`CHECKIN_*`、`MAP_NAMES` |
 | `mon-art.js` | 外框特徵的共用部分：宣告 `const MON_ART = {}`，和 `monArtHtml(dex)`（把 piece 組成 HTML）。`MON_ART[DEX索引]` = 一串 piece（`s` 貼哪一邊 t/b/l/r、`x`/`xr`/`xc`/`y`/`yb`/`yc` 位置、`svg` 是 HTML 字串）。沒有在 MON_ART 裡的寶可夢不畫特徵。 |
 | `mon-art-gen1.js`~`mon-art-gen9.js` | 外框特徵資料，依世代拆檔，各自 `Object.assign(MON_ART, {...})`：gen1 索引 0~150（#1~#151）、gen2 151~250、gen3 251~385、gen4 386~492（#387~#493）、gen5 493~648（#494~#649）、gen6 649~720（#650~#721）、gen7 721~808（#722~#809）、gen8 809~904（#810~#905，含洗翠的 #899~#905）、gen9 962~1081（#906~#1025；索引 905~961 是地區形態，所以第九代索引 = 編號 + 56）。全部是 base64 內嵌的像素圖 `<img>`：0~2 是使用者提供的像素圖，3~385 從 PokeAPI 第三代火紅葉綠（64×64）切出特徵，386~492 用 PokeAPI 白金版（80×80，火紅葉綠沒有第四代），493~648 用 PokeAPI 黑白版（96×96），649~904 和 962~1081 用 PokeAPI generation-v/black-white 資料夾裡社群補的第六~九代黑白風格像素圖（96×96，非官方）。每隻只做一個主要特徵，蓋進球框 2px。各檔尾端 `/*__NEXT__*/` 是該代新增下一隻的插入點（前一隻結尾要補逗號）。地區形態（DEX 索引 905~961）在 `mon-art-regional.js`；超進化在 `mon-art-mega.js`，key 是 `'M'+MEGAS.id`（例如 `'M6X'`），`battle.js` 的 `frameFeatures()` 在寶可夢超進化中（`p._mega`）時優先用這組，沒有才用一般形態。異色版在 `mon-art-shiny.js`（`const MON_ART_SHINY`，key 同 MON_ART，涵蓋全部 1175 組），`frameFeatures()` 在 `m.shiny` 時優先用它，`monArtHtml(key, table)` 第二個參數可指定用哪一組；這檔是用「一般圖→異色圖」逐像素顏色對照把 MON_ART 重新上色產生的，MON_ART 改了某隻就要重跑上色（工具見專案文件「外框工具腳本-異色」）。地區形態和超進化兩檔的圖源是 PokeAPI black-white 資料夾的形態圖（檔名 10xxx）；Mega基格爾德（10301）沒有像素圖，用 HOME 圖縮成 96×96。切圖規則見專案文件「畫外框規則」。 |
-| `battle.js`（約 1420 行） | 音效 `SFX`、屬性相剋 `eff`、傷害 `dmg`/`attackCore`、回合流程 `playerMove`/`enemyTurn`/`endOfTurn`、捕捉 `tryCatch`、換人、進化 `evoTarget`/`evolveTo`、經驗 `grantExp`、戰鬥結算 `winBattle`/`loseBattle`、對戰畫面 `renderStage`/`screenBattle`、擊倒與捕捉動畫 `koFx`/`catchFx`、球框 `FRAME_*` |
+| `mon-colors.js` | 每隻寶可夢的代表色 `MON_COLORS[key] = [一般主色, 一般副色, 異色主色, 異色副色]`（key 同 MON_ART，超進化是 `'M'+id`），從 PokeAPI 像素圖自動抓（略過黑色描邊）。給「無框」邊框用。 |
+| `battle.js`（約 1430 行） | 音效 `SFX`、屬性相剋 `eff`、傷害 `dmg`/`attackCore`、回合流程 `playerMove`/`enemyTurn`/`endOfTurn`、捕捉 `tryCatch`、換人、進化 `evoTarget`/`evolveTo`、經驗 `grantExp`、戰鬥結算 `winBattle`/`loseBattle`、對戰畫面 `renderStage`/`screenBattle`、擊倒與捕捉動畫 `koFx`/`catchFx`、球框 `FRAME_*`（`none` 無框：`frameStyle()` 用 MON_COLORS 做上→下雙色漸層，異色用異色色、超進化中用超進化色；其他球種照原本球的配色） |
 | `features.js`（約 550 行） | 性格 `NATURES`、特性 `ABILITIES`、攜帶道具 `HELD`（含商店 `screenHeldShop`）、每日活動 `DAILY_EVENTS`、天氣 `WEATHER`、戰鬥中各種效果掛勾（`afterHitFx`、`endTurnFx`、`onEntry` 等） |
 | `index.html`（約 2960 行） | 見下 |
 | `test-save.json` | 測試用存檔（約 600KB，不要整個讀進對話） |

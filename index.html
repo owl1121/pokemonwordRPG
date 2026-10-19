@@ -328,6 +328,8 @@ button,input,textarea,select{font-family:inherit;}
 .fr-master{--fr:radial-gradient(circle at 12% 23%,#ff7bbf 0 9%,transparent 10%) border-box,
                 radial-gradient(circle at 88% 23%,#ff7bbf 0 9%,transparent 10%) border-box,
                 linear-gradient(180deg,#7e3fc4 0 46%,#1b1b1b 46% 54%,#fff 54% 100%);}
+.fr-none  {--fr:linear-gradient(180deg,#f7ce4d,#dc3a2f);}
+.card.me.fr-none::before,.card.me.fr-none::after,.frchip.fr-none::before,.frchip.fr-none::after{display:none;}
 .fr-auto  {--fr:linear-gradient(90deg,#e53935 0 25%,#1e6fd9 25% 50%,#2b2b2b 50% 75%,#7e3fc4 75% 100%);}
 .card.me[class*="fr-"]{position:relative;border:5px solid transparent;
   background:linear-gradient(#dff6f8,#dff6f8) padding-box, var(--fr) border-box;
@@ -458,6 +460,7 @@ button,input,textarea,select{font-family:inherit;}
 <script src="mon-art-regional.js"></script>
 <script src="mon-art-mega.js"></script>
 <script src="mon-art-shiny.js"></script>
+<script src="mon-colors.js"></script>
 <script src="sounds/list.js" onerror="this.remove()"></script>
 <script src="battle.js"></script>
 <script src="features.js"></script>
@@ -2767,7 +2770,7 @@ function profileHtml(){
     + '</div>';
   h += `<button class="bigclaim" onclick="openDexFromProfile()">📖 開啟圖鑑（${state.caught.size} / ${DEX.length}）</button>`;
   h += '<div class="mh">🎴 對戰邊框（顯示在我方寶可夢的卡片上）</div><div class="frgrid">';
-  [['auto','依捕捉的球'],['poke','精靈球'],['great','超級球'],['ultra','高級球'],['master','大師球']].forEach(([k,n])=>{
+  [['auto','依捕捉的球'],['none','無框'],['poke','精靈球'],['great','超級球'],['ultra','高級球'],['master','大師球']].forEach(([k,n])=>{
     const open = k==='auto' || frameUnlocked(k), on = (p.frame||'auto')===k;
     const sub = open ? (on?' ✓':'') : (()=>{ const [c,need]=frameProgress(k); return ` 🔒${c}/${need}`; })();
     h += `<button class="frbtn${on?' on':''}${open?'':' lock'}" onclick="setFrame('${k}')"><span class="frchip fr-${k}"></span><small>${n}${sub}</small></button>`;
