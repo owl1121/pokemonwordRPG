@@ -1,6 +1,6 @@
 # 結構說明（給 AI 開新對話時先讀這份）
 
-純前端單頁遊戲，無建置流程。`index.html` 依序載入 `data.js` → `mon-art.js` → `mon-art-gen1.js`~`mon-art-gen8.js` → `sounds/list.js`（可缺）→ `battle.js` → `features.js`，再跑 index.html 內的主程式。全域變數共用，不是 ES module。
+純前端單頁遊戲，無建置流程。`index.html` 依序載入 `data.js` → `mon-art.js` → `mon-art-gen1.js`~`mon-art-gen9.js` → `sounds/list.js`（可缺）→ `battle.js` → `features.js`，再跑 index.html 內的主程式。全域變數共用，不是 ES module。
 存檔在 `localStorage`，key 為 `pkmn_tower_save_v2`（舊版 v1 會自動轉移）。行號會隨修改位移，僅供定位，請用 grep 函式名。
 
 ## 檔案
@@ -9,7 +9,7 @@
 |---|---|
 | `data.js`（約 1100 行） | 純資料表：`DEX`（圖鑑，`[名稱,屬性1,屬性2,tier]`，依世代排）、`EVO`/`STONE_EVO`/`TIME_EVO`（進化）、`CHART`（屬性相剋）、`MOVES`、`STATUS_FX`、`ITEMS`、`GYMS`、`TRAINERS`、`QUESTS`、`MILESTONES`、`MEGAS`、`CHECKIN_*`、`MAP_NAMES` |
 | `mon-art.js` | 外框特徵的共用部分：宣告 `const MON_ART = {}`，和 `monArtHtml(dex)`（把 piece 組成 HTML）。`MON_ART[DEX索引]` = 一串 piece（`s` 貼哪一邊 t/b/l/r、`x`/`xr`/`xc`/`y`/`yb`/`yc` 位置、`svg` 是 HTML 字串）。沒有在 MON_ART 裡的寶可夢不畫特徵。 |
-| `mon-art-gen1.js`~`mon-art-gen8.js` | 外框特徵資料，依世代拆檔，各自 `Object.assign(MON_ART, {...})`：gen1 索引 0~150（#1~#151）、gen2 151~250、gen3 251~385、gen4 386~492（#387~#493）、gen5 493~648（#494~#649）、gen6 649~720（#650~#721）、gen7 721~808（#722~#809）、gen8 809~904（#810~#905，含洗翠的 #899~#905）。全部是 base64 內嵌的像素圖 `<img>`：0~2 是使用者提供的像素圖，3~385 從 PokeAPI 第三代火紅葉綠（64×64）切出特徵，386~492 用 PokeAPI 白金版（80×80，火紅葉綠沒有第四代），493~648 用 PokeAPI 黑白版（96×96），649~904 用 PokeAPI generation-v/black-white 資料夾裡社群補的第六、七、八代黑白風格像素圖（96×96，非官方）。每隻只做一個主要特徵，蓋進球框 2px。各檔尾端 `/*__NEXT__*/` 是該代新增下一隻的插入點（前一隻結尾要補逗號）。之後做第九代就新增 `mon-art-gen9.js`，並在 index.html 的 gen8 後面加一行 `<script>`（DEX 索引 905 起是地區形態，不是第九代，要先查清楚編號）。切圖規則見專案文件「畫外框規則」。 |
+| `mon-art-gen1.js`~`mon-art-gen9.js` | 外框特徵資料，依世代拆檔，各自 `Object.assign(MON_ART, {...})`：gen1 索引 0~150（#1~#151）、gen2 151~250、gen3 251~385、gen4 386~492（#387~#493）、gen5 493~648（#494~#649）、gen6 649~720（#650~#721）、gen7 721~808（#722~#809）、gen8 809~904（#810~#905，含洗翠的 #899~#905）、gen9 962~1081（#906~#1025；索引 905~961 是地區形態，所以第九代索引 = 編號 + 56）。全部是 base64 內嵌的像素圖 `<img>`：0~2 是使用者提供的像素圖，3~385 從 PokeAPI 第三代火紅葉綠（64×64）切出特徵，386~492 用 PokeAPI 白金版（80×80，火紅葉綠沒有第四代），493~648 用 PokeAPI 黑白版（96×96），649~904 和 962~1081 用 PokeAPI generation-v/black-white 資料夾裡社群補的第六~九代黑白風格像素圖（96×96，非官方）。每隻只做一個主要特徵，蓋進球框 2px。各檔尾端 `/*__NEXT__*/` 是該代新增下一隻的插入點（前一隻結尾要補逗號）。DEX 索引 905~961（阿羅拉/伽勒爾/洗翠/帕底亞形態）目前沒有外框特徵；要做的話另開檔案，在 index.html 的 gen9 後面加一行 `<script>`。切圖規則見專案文件「畫外框規則」。 |
 | `battle.js`（約 1420 行） | 音效 `SFX`、屬性相剋 `eff`、傷害 `dmg`/`attackCore`、回合流程 `playerMove`/`enemyTurn`/`endOfTurn`、捕捉 `tryCatch`、換人、進化 `evoTarget`/`evolveTo`、經驗 `grantExp`、戰鬥結算 `winBattle`/`loseBattle`、對戰畫面 `renderStage`/`screenBattle`、擊倒與捕捉動畫 `koFx`/`catchFx`、球框 `FRAME_*` |
 | `features.js`（約 550 行） | 性格 `NATURES`、特性 `ABILITIES`、攜帶道具 `HELD`（含商店 `screenHeldShop`）、每日活動 `DAILY_EVENTS`、天氣 `WEATHER`、戰鬥中各種效果掛勾（`afterHitFx`、`endTurnFx`、`onEntry` 等） |
 | `index.html`（約 2960 行） | 見下 |
