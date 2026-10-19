@@ -79,10 +79,6 @@ const MON_ART = (() => {
     12: [
       { s: 't', x: '12%', svg: "<img alt='' width='35' height='30' style='display:block;image-rendering:pixelated;position:relative;top:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACMAAAAeCAYAAACmPacqAAAAcklEQVR42mM8e3YNA7lg27YX/9HFpk5twVC3desURmLMY2IYRGDUMUPCMSyUJNaammwMdV5elhhi3t7e/4lJ1KPRNOqYUceMOma0BCa2tCUWbN26lahSeTSaRh0z6phRx4ysEpjapS0lpfJoNI06hlQAAAHbInS7iGm3AAAAAElFTkSuQmCC'>" }
     ],
-    /* ===== #010 綠毛蟲：頭上紅觸角（底邊接卡片上緣）：像素圖（第三代火紅葉綠） ===== */
-    9: [
-      { s: 't', x: '10%', svg: "<img alt='' width='65' height='40' style='display:block;image-rendering:pixelated;position:relative;top:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEEAAAAoCAYAAAChDJfXAAABK0lEQVR42u2YIQ+CQBTHD5NRG0ZsRmzSlKaNj+BsRG3OaMNI02/gaNqwAUmJxotEjTaNTt/N3d6QOff/x9vBHb+999sbxvG4Fe+5zcK70Eg98A3xB6kJBBAAARCeMZJ+n0jQ8btaD6fh6adlqSt4VAIgAAIgvIhxPu4ReQxlXXBl2ZxsyFocr7VkGeV7cpdzmmmdO5Um+86oBEAABEBgiVGVjnPV2tcOJVkbeC228HTPVeWcNlAJaAdAAITPYlT9Y3TdCZHlzrZLlaVKUFW8D5UACIAACCwxqqKSpe91BHfarCKjPEcloB0AARC+J0ZVluGCyPIQFYI7bZYtvCBxUAloB0AAhO+JUSXBdeCRfVFBpSVXF/ZkubduZM2aNtkfLDMTlYB2AARA+JgHnCFZ39t296gAAAAASUVORK5CYII='>" }
-    ],
     /* ===== #014 金屬：尖尖的底部：像素圖（第三代火紅葉綠） ===== */
     13: [
       { s: 'b', x: '60%', svg: "<img alt='' width='63' height='54' style='display:block;image-rendering:pixelated;position:relative;top:-2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAD8AAAA2CAYAAABwUEEXAAABm0lEQVR42u2aoVIDMRCG9xgEMhJw4M5GIoOrvHsEJLwB2D5CZWVxV1nXewNi6w4HyMpzxZK9zOySpjMw+dddJrnLN9n959+01du2OdAJou/Xk7H5wojrnh/3wbNzDZ0qzqjgAHypcW7rWTDgd5ssNR6rVed+/5765mIyZ/c+iu/RrEPaAx7whQneavUSDDStSxKYK3MZPN+3vbhm27mkTcfETLNnvg5pD/gSa762d8HAYvkaMSdyc/G5/2L1LK+J64Jh3x5VNc9rPDaHsyHtAQ/4sqIyxog3Ofx2JXYj8+FnScYjRRRTv8XfhbQHfIkmx3tf/RzolrcTDeA1zjUgtSFZd9N6fpqPYvNzbTdik6RpfpD2gAd8YSZnGAZxEhfBWJfHDYRGFPntDxER7zKPMUM8uLgj7QFfosnRTGofBtEI8ZubXA2J9qdubnI0GoC0BzzgYXKSIiaCObpD7X9yuMBxQ4OTBzzg89a8Jqy1h2NND2oeaQ94wP8LwZMEMNadacRNK3A4ecADHoL3pzYUE8Ec4oaTBzzgiYjoG7trncbdsw0JAAAAAElFTkSuQmCC'>" }
@@ -131,6 +127,10 @@ const MON_ART = (() => {
     24: [
       { s: 't', x: '8%', svg: "<img alt='' width='21' height='36' style='display:block;image-rendering:pixelated;position:relative;top:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAkCAYAAABmMXGeAAAAn0lEQVR42mM8e3YLAzbg7BzzH8beu3cJIwMJgImBBoAmhjIiex/Zy7gAMUExdLw/wg1lwSURFRUFZy9btoykTDGEvI/sHWQvj4zYZxQQECDJ+8gpAVeZMAwSPy5wb+0HOFspWGC45n1kMLVl2nBN/Lgqvvf3PhDU/P48A9aUMERjf2v1h8Hr0lFDaRz7HE5bGBEJ2weeEQQNsSf4oe99AJAVMzBEhtZ9AAAAAElFTkSuQmCC'>" },
       { s: 't', x: '78%', svg: "<img alt='' width='25' height='35' style='display:block;image-rendering:pixelated;position:relative;top:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAAjCAYAAABhCKGoAAABjElEQVR42rVXy3GDMBB9yqiANR1ABx6XwJUbN48rSA05uoWkAg+33HylBCYdUIJRB8ohIyILtPoY9mSbnff03u7KC7BDEJG2v4u9gAFAKSUAQO4B7sZbDvAw3EFEOoYgWckw3Nnn5/MZANB13axSKSVkLnDf30RdX7QBzlISOnUsARFpmQrMPTc2uSFeBbfV+EikjyB06hir+v4m2BY2CWvgPgLf71EtHDq1z6boYYyxJVRLmVoL30E4NfIV8Fg1cs9aLLrL7qZpVFG14HJsvJmkVI2eRoVpVJvZNJOUqtGlajQATD//SZ/Xr83qIosa4tEjueix9VjMyeH4nJirxr0tJAAUNYR++NVc2z+yj+/3LNLgxBsC93NKzLI4JXZDVC0lWbVYiTiiuW4VJRFkbSs5c/REIorwsmdbF3u5LkB9lrngbm18ViXtXYfjkogDBoDTqVknEQU/M0YFR2DA2YV7jcSosG2yiVzgoF22Gq7QIfDgq4Pv0qxaml8Jom/hlOSihgC2+b8JqkmNX8SwvDOp4A1oAAAAAElFTkSuQmCC'>" }
+    ],
+    /* ===== #010 綠毛蟲：頭上兩根紅觸角（底邊接卡片上緣）：像素圖（第三代火紅葉綠） ===== */
+    9: [
+      { s: 't', x: '8%', svg: "<img alt='' width='119' height='63' style='display:block;image-rendering:pixelated;position:relative;top:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHcAAAA/CAYAAADaMleLAAABzklEQVR42u2coW7CUBRA6RRyuE0yV8ncOsVwm+snEFxlcctkHcg6+gdL3XDgKIpV1lGJZLKOfcG9ye7apiHn2Jdu8E7eS08erXM4fPYkqnl86RnoLwKnB7XN53pYiWN+EIpzfcOUXy/IRS4gF5ALyIV/4uzGY/H23AseTX80i7+vOpOsSaPN5znfimNFdmvKJFYu2zIgF5ALyAXkgphC79Mn8bb+teybbus1BrNEHNtsVqZMSvP1Rc6IvelzhuVd7d/dmo8ab3nOymVbBuQCcgG5gFxoL4U0XO/HdN1DXIpjL/597Ulj/Zwa2glOE5BCbMuAXEAuIBeQC6YU0p4VmkxmYiZ9jUatZpI1Mdr+f00kjYaWiKxctmVALiAXkAvIBVMKaWiZFPiueJ31pKlLWLNFY7HzWLmAXEAucgG5gFzofgppRPGHmEnb9CReZz1pajtprNlS7uUf61mfaWLlsi0DcgG5gFxALrSaQlrurBa+eF16kvOjXJ7FMetpkvaGtWE4qH1CtdwJjc87sXIBucgF5AJyAbnQmRTS3tpWFXJiuNNCHJs/Z+KY9cRIO/lp4nTHmjtRJCdbkshv3TseA1Yu2zIgF5ALyAXkwp/5BU8WjU1wru2hAAAAAElFTkSuQmCC'>" }
     ]
     /*__NEXT__*/
   };
