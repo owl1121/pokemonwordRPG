@@ -89,7 +89,7 @@ const MON_ART = (() => {
     ],
     /* ===== #015 大針蜂：尾針：像素圖（第三代火紅葉綠） ===== */
     14: [
-      { s: 'b', x: '60%', svg: "<img alt='' width='40' height='36' style='display:block;image-rendering:pixelated;position:relative;top:-2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAkCAYAAAD7PHgWAAAAtElEQVR42mO8t8XyP8MgAlYp91H4TAyDHIw6kFLAgi6wdv9xFH5J8xK8BvTUxqDwgx0tR6N41IEkpUH0cuf5vSUkGYCe5tDTMKVpcjSKR145SBC8WEbVuhYdbN06hXE0ikfTID5w/9p7vPK9SyXQ+PfxprHRKB5Ng5SWe+jlGqlpbDSKR9MgqeUerdPcaBSPpsH7+6bi7WNs3bqGcTQERx1IzTRYHP0CrZxjGNA0NxrFI86BAP6tNWvEW1LbAAAAAElFTkSuQmCC'>" }
+      { s: 'b', x: '58%', svg: "<img alt='' width='60' height='54' style='display:block;image-rendering:pixelated;position:relative;top:-2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA2CAYAAACbZ/oUAAAA6klEQVR42u3ZIQ7CMBTG8ZZwCK4yHGdAguQGYFFYcHCDgQJHLUhugFwlcxwBFK5foKFLWPk/+bZk++UtX18yWx2Lh8mw+hMf7HfMnxVgwIDbXV114XC+BPuzRRn1gOV8HOwPBwUTBgwYMOC3Ka12zltVJnmASmN1CjSd3nzSgAEDzmOXjq561+iLqtNElXNry4QBAwZMSr/KX+9R96+2PdH3UanLhAEDBkxKf7Mzqx04VeoyYcCAAZPSn+zMv5bGTBgwYMB5p7Q/bYJ99dfPub1lwoABAwacOqWno1rsxqbVacyEAQMGnEU9AQ+mNY905eXZAAAAAElFTkSuQmCC'>" }
     ],
     /* ===== #016 波波：頭上冠毛：像素圖（第三代火紅葉綠） ===== */
     15: [
@@ -125,7 +125,7 @@ const MON_ART = (() => {
     ],
     /* ===== #024 阿柏怪：兜帽頂：像素圖（第三代火紅葉綠） ===== */
     23: [
-      { s: 't', x: '10%', svg: "<img alt='' width='57' height='29' style='display:block;image-rendering:pixelated;position:relative;top:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADkAAAAdCAYAAAAQJcSlAAAB5UlEQVR42u2YoV/CQBTHf/PjHyBxcfFsrgFN2mzY0OSHhm1GojbXtGkTIklWTcwmCRYXiRhpM8jT3e3GjYMP5fYSHO/u8+G+7/3eb7Nms3dsGx8P01SV85XE3PdRHOZyJpM3CweIIxgQxzrkPO9cuYclDAAQx79EXYflcprN6xQA2swDAPgvHasiuSvJoDvM9RndfhlySbLgyFFP9p58Lq/Vav19vvf8g5A1gqQRf9K6qXdSALjy2ly5AQBjvFjQb+I6AAzCEQDgNRoAAGq1GgBguVxyebQuK1cx+mGQW9MpZbNIksjIbk8MIiAjKlLXiU3niueLpkNG2QySZOtIvh9PzpSbItsutGqqfstWCvWXaBTKkNwUpA9mklyt7FQc1mSgPy+CNEuQBvzz7T+VxmLBHXz3Pd2K8D76tDIDxnhX13U5MchGfexbABCt/S3lZoWnIQiWKGBF5Vs2ioyI49hKP20Wyfl8bK0HaS6JnlD6vR5nzcqMm11CNuiLQkaU1qo3A1pS78hvv73ylHtFS1lm3FCvyh4sKpLiux3qRR2CZYII6hoFFd3KDBgpPDRcpRJe4C1Ph9N1KbK9lKk4VmSvOiuSWbHJSjERvAy6nAngxUZ+ozKbqEONLGTRM6hsH+0xguQPxOXMExZBFFQAAAAASUVORK5CYII='>" }
+      { s: 't', x: '10%', svg: "<img alt='' width='91' height='46' style='display:block;image-rendering:pixelated;position:relative;top:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFsAAAAuCAYAAABH2WXrAAACQklEQVR42u2ar1MCQRTHOcc/QCLx4tm8BjRpZ8OGJoeG7YxEbV7Thk2IJKGawCYJLl4kYqRhW9+u7mPZ+zEyfL9pb/ZuuXnz9sN33ztnPn8rZa33h9nG5rnPJNbODeOxdm4yeXVKe6CjEoRgI9hQKh3nweUgOLda00s8MY5jmd++62mfq9evxbs0vUCaC3stB5kNjECFYiRqD7R4oFvZFhVJstSiglq/zlOoXaPRaEjX90G4F4hBZiPYCDaUUs5NtSUx+ipoapnqeXr7Re/l7uuPh2L8Mu1Lc+VyWYxXq5V2DXrfNmZz6o4j7Rzle1ZsR2YDIweCEWrvuG3GSd3WHFZ0KMpDpu+x7b246iSHHGQ2MIJgQ2mZrXZq6PH28eTMatFppSJdc10WGwun/pdQm8ZVB22ZvYuotUVmAyMHipH1uiIwolbXaGP14yLa6NChVuyeb3+2fW251L7M3dcsU9wUYQuR2cAIhGAXqF+dGt/3/7RUqqqjUDqWTkmHh66hWr8aYyc5q2nKc1vtUuF03YrxurQzhcwGRg4EI4vFSOAh7LW0D6qN4W6nI8Zqcd/2JJq3uOrdLuKwQueQ2cAIgg1lzewi5bnmzGyuA6vf4LpNtsd+1SZyzW4wGxgBRiTRz4Sp1csLHVlgI48KoS1ikNnACIIN/RfrR6tb7NHWsCNyOpgp7PWMOJ0Vo7mjPNdURmYDI8CI1uqppyMVG5dRW4zVKp9s98y2INe4yEoUFeq3LabfomzDD10XmQ2MINhQSn0DZl7MNZZyHN0AAAAASUVORK5CYII='>" }
     ],
     /* ===== #025 皮卡丘：兩隻黑尖耳朵：像素圖（第三代火紅葉綠） ===== */
     24: [
