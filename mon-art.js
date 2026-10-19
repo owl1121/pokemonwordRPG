@@ -1,5 +1,5 @@
 // mon-art.js — 每隻寶可夢的外框特徵（框外露出的一小塊特徵圖）。須在 battle.js 之前載入。
-// 資料依世代拆在 mon-art-gen1.js ~ mon-art-gen4.js，各自用 Object.assign 加進 MON_ART；index.html 要在本檔之後依序載入。
+// 資料依世代拆在 mon-art-gen1.js ~ mon-art-gen5.js，各自用 Object.assign 加進 MON_ART；index.html 要在本檔之後依序載入。
 // MON_ART[DEX索引] = 一串 piece；每個 piece 是一張獨立的圖，疊在玩家選的球框「後面」，只露出框外的部分。
 //   s：貼在卡片哪一邊  't' 上 / 'b' 下 / 'l' 左 / 'r' 右
 //   上、下邊用  x（距左）、xr（距右）、xc（水平置中於該位置）；左、右邊用  y（距上）、yb（距下）、yc（垂直置中於該位置）。
