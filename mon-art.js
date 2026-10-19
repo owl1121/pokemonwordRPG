@@ -82,6 +82,55 @@ const MON_ART = (() => {
     /* ===== #013 獨角蟲：頭上的角（底邊接卡片上緣）：像素圖（第三代火紅葉綠，照使用者的方式切出特徵） ===== */
     12: [
       { s: 't', x: '12%', svg: "<img alt='' width='35' height='30' style='display:block;image-rendering:pixelated;position:relative;top:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACMAAAAeCAYAAACmPacqAAAAcklEQVR42mM8e3YNA7lg27YX/9HFpk5twVC3desURmLMY2IYRGDUMUPCMSyUJNaammwMdV5elhhi3t7e/4lJ1KPRNOqYUceMOma0BCa2tCUWbN26lahSeTSaRh0z6phRx4ysEpjapS0lpfJoNI06hlQAAAHbInS7iGm3AAAAAElFTkSuQmCC'>" }
+    ],
+    /* ===== #014 金屬：尖尖的底部：像素圖（第三代火紅葉綠） ===== */
+    13: [
+      { s: 'b', x: '60%', svg: "<img alt='' width='42' height='36' style='display:block;image-rendering:pixelated;position:relative;top:-2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACoAAAAkCAYAAAD/yagrAAABXElEQVR42u2XoW7DMBCGk6mg0HArW1moYaHHCpNHKNzeYKN9hMLClqWwrHmDmZZlbCssDMvQvL/SnexGVjVPd8hOTrGV7//v7Pz9UPbZwGianRsvV4rMeX0+u7Ex5dClsrsskUhmoyNdzN3EHvdX4UaUxvjzi8exGx8/OjKfyxH00dFvNm9uUlbGi+ZB3bvxU9WQOYfaeBdGxBi4LuYI+ujoCz1zk9V66y3OX+cTIKZzLiWh4Jud1934HPcj6GNHrpTqfT0a+/innXvdygVKIuQ7mC/oo7veWpv/TOr1tKdwowxCCviu/kX2suzIRjDRe/I51wgEfXTXt21LvkAZYPFHJ3KSwPMANpSQaoCBshT00V3PvagWLVkNsL9fW8C5yyC6npOBoL+Z67lAGWCENAju6Ii40emC/k+h50Jr3Q89Cgr6pNFzMuDu+CG4BX1y6DkZcEe4f/VHk9noN6oFnaLOIwfnAAAAAElFTkSuQmCC'>" }
+    ],
+    /* ===== #015 大針蜂：尾針：像素圖（第三代火紅葉綠） ===== */
+    14: [
+      { s: 'b', x: '60%', svg: "<img alt='' width='30' height='48' style='display:block;image-rendering:pixelated;position:relative;top:-2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAwCAYAAAAGlsrkAAABDUlEQVR42mM8e3YNAwx4e+f8h7GPzVGEiytqCTJQGzAxDBAYMItZpk7dRlLwJrdIkGTB3JoXo0HNwMDAwMAoISGBNahb1mkOTx8PjqBGBl5eXqNBTZ+gRgbPjxmRZCiuQmbbtm2jQY0JqFUt3r/2Hs62Srk/koM6KSkJHtQ1QdeHv48HLqiJaeyNBjVVGnvEKFq7/zicXdK8BKuantoYODvY0XI0qPGnamSAnMKf3+shXCbvm4o1anAF+2iqJg28WEaS8pFdLVIU1MitC2TQu1QCiY0I3q1bpzCOBjXFKRk5xSIH6WhZTXZQ42onExO8o0FNdpW3desaxiHn48EX1MXRL5BSLwNVgndkBzUAxbJenTYMquEAAAAASUVORK5CYII='>" }
+    ],
+    /* ===== #016 波波：頭上冠毛：像素圖（第三代火紅葉綠） ===== */
+    15: [
+      { s: 't', x: '12%', svg: "<img alt='' width='40' height='32' style='display:block;image-rendering:pixelated;position:relative;top:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAgCAYAAABgrToAAAAAxklEQVR42mO8d+8eAzXBuZbo/8h8o5qljJSYx8QwyMGoAykFLNROc4qamlRNo6NRPJoGqZ3mCIG5NTn/R6N4RDmQ8d7RJNQ0IlmDUi7VRHujyBcHWeI18P7163jl113/gMJv6UE1T9EwejSKR1g5iB7n0c6kpTlCgNQ0NxrFo3UxqWkOvdxDT3NL904ZjeJRB+Kti6MsNUkq93rXHccrT3Ka+3AOhSuo1ToaxSO8HCRYrq1NIilNRQfPw6t82/Xno1E8sh0IALJKSVgHwYyGAAAAAElFTkSuQmCC'>" }
+    ],
+    /* ===== #017 比比鳥：頭冠羽：像素圖（第三代火紅葉綠） ===== */
+    16: [
+      { s: 't', x: '12%', svg: "<img alt='' width='50' height='26' style='display:block;image-rendering:pixelated;position:relative;top:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAaCAYAAAD1wA/qAAABf0lEQVR42u2YoVrDUAyFUz7EeIMhK4ucoxKJxdFHKG6ToEBujj5CHdhJHHVUMlnJHJK5Irqzj4ab5nZ12Y5Le29F/puT3AYf7y80RIvZQ01ENJ0/Bj7rNGnfkXRCRnQ6lEQ6Gntl/jkae333ju33JWSGSNC3RiQSSVW14vIqdO5fVe71ml7zeXAk4iKBs84zKxGYvLkzL63n5KBss+50t8Mhwkns3GW1droRJ6BlXiKgCYRAxj4RXxKIi6+fvc5+X/eC8jBskbHb2fuS2K2LlI7NyPHMSu4kudRNMqv/7rdbI5v7rCYiitNJc4YXyyZz0+tWrM1OIADxSaCvUEu8w+ME2SPCSRRZSV0x9L0snQQkYlK/kNyL1xA0ekptdva97yOcBGqIv9f6R3x+1jndwp3+I2yeY5+dGrm9jJz3C602tJoBAfQF3j+0+8Xxzi7VADIae5Lg028SXxARETcf378vB0dErBE+++A9YmkWC7epz4tPJxmuauteQ8mYIfIL/jjrduI3o2oAAAAASUVORK5CYII='>" }
+    ],
+    /* ===== #018 大比鳥：頭冠羽（左框）：像素圖（第三代火紅葉綠） ===== */
+    17: [
+      { s: 'l', yc: '50%', svg: "<img alt='' width='48' height='42' style='display:block;image-rendering:pixelated;position:relative;left:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAqCAYAAAD1T9h6AAABkUlEQVR42u2XIVDDMBSGEw4BDuRkZeQmN4eMnEQyXGVBbXJVo7JuxTE3ZNxww7GpUUdkHaAGrphd87hLL4UOmvber97lkneXe9/97z26efJSspM4vaCkZjogNVftP0DT7SJD6DkWpG44IUJWIQQ196MsloMhxQrgB36I0MenVI4UPPwaJ/52q82/L5dDhCpHaPs6zUp8fORoL8EGNwviLD4ZT6gJG8dh2pxlsESEbNJhnvNAfccgNiaN7xP11tMjtJbvCkV0oaYgVETnAInZ6Do1OdJf50GEKkcINhTunRkfQEdqO8ptSOSnOofh4K2UZgdzQJ7LUDXQ4WpJESErEcordxGxfkvbvELxqNxGMmMeeH+5GKi4r+Jep5fqcEKEKkcINg4RKAco4kj/qamrAF+DxocIWTUL7cuRXNk13oebncu72vM8jW8SbGT2LPWTl41xJoGOVGSeyUMFKkkS7Xl0hxtZQzYy6EisBDbQMVYCels7izpc4FLfPBeC8sEoC8fdItiMrlra8zKahwwRskZfhd+myIBUKHwAAAAASUVORK5CYII='>" }
+    ],
+    /* ===== #019 小拉達：捲尾：像素圖（第三代火紅葉綠） ===== */
+    18: [
+      { s: 't', x: '70%', svg: "<img alt='' width='30' height='42' style='display:block;image-rendering:pixelated;position:relative;top:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAqCAYAAACk2+sZAAAA7ElEQVR42mM8e3YNAwxsm3r/PwMJwCtbkZGBTMDEMEBgwCxmwRW8QUZeBDX3ptRi1Zs9J4pxNKgxgprU4EVR75SEVXxqyrz/hIJ95AU1Y5JhEDxYipObCWq4f/8+nL1u3zyCwY6sBjnYR2CqRvY+coGAK+hwpWpign20AKEKmHd+HdagRmYjFywjPKiRUzhysOBKpeffXx96Ph64shq5sYcLTE1Z9h9b6kUGZ8+uYcSmHjmakKNmtABhINR4y2aIItsyQ0HN0VRNO4ArhY+8oB61eNTi0cYeRWCEV4vOzinwsnTv3jmMo6maVgAA5w5VuhGKZlgAAAAASUVORK5CYII='>" }
+    ],
+    /* ===== #020 拉達：尾巴：像素圖（第三代火紅葉綠） ===== */
+    19: [
+      { s: 'r', yc: '45%', svg: "<img alt='' width='30' height='42' style='display:block;image-rendering:pixelated;position:relative;left:-2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAqCAYAAACk2+sZAAAA2klEQVR42mNcUm34nwEKNIOqGRnoBJgYBggMmMWM374tgQf1utZerIpoEQUjMKiRU3VQdTFWRbUhMXB2VPMaxtGgJiuoz55dA+csqw2BB3vzmiVYNSCnfEpS+wgPamTg7JwCD/Znz6ZQPbWPBjXdgn00qOkW7KNBTRIgpmzHFewjL6hZKNE895gAnN08Wi3SMlUTk8LvH78PZ8/rrWUYTdUUA1wpXNFSEauakRfUoxbTL1Ujtyj27p1DlZ7gjxfPR4MaM6ipFbzI4Pn9H3D2+X3rRoOagYGBgQEAuHBc8baibBQAAAAASUVORK5CYII='>" }
+    ],
+    /* ===== #021 烈雀：頭冠：像素圖（第三代火紅葉綠） ===== */
+    20: [
+      { s: 't', x: '12%', svg: "<img alt='' width='40' height='28' style='display:block;image-rendering:pixelated;position:relative;top:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAcCAYAAAATFf3WAAAAuklEQVR42mM8e3YNAy3B/WUp/5H5ilFzGEnRz8QwyMGoAykFLLROc+fPfWBATYOk6R+N4tE0SGqa83L0YkBNg8tIUq+Jxh+N4uGfBtHThKamJoqCH4bFjJRYMPe6BAr/XrETXvWtvctGo3iEl4OKEoqo5db5XpQ0umzpcRT56mL8leu9OU4UpdnRKB7+aRC9vaapeR9vmjQ0uk5Z3f3iPl75vS2Ko1E82h7Em2bQ62pCaWo0ikcdSAAAAEumPQHS5RbsAAAAAElFTkSuQmCC'>" }
+    ],
+    /* ===== #022 大嘴雀：翅膀：像素圖（第三代火紅葉綠） ===== */
+    21: [
+      { s: 'r', yc: '45%', svg: "<img alt='' width='34' height='28' style='display:block;image-rendering:pixelated;position:relative;left:-2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACIAAAAcCAYAAAAEN20fAAABrklEQVR42t2XrXLCQBSFTzoVlSCRlamjroOiOCSN2srWIVlHZHGxcVSyiuYNguugII7ISOroG2wFs9vtJtkkJZ1JOSr/c/Z89+bOWpvNEnUrYYxH20Cej7ylVfSOVaeRhDEOAA/E/nHdpTNpSDwDANeESIMXaIhqSyRhjOtJ6HLpDC/eVJ6/sVgmc/lXOLLQqCbUd1zq8MagOSmRgDpcX2URjiz5Uet3RgLqcACYTgh20QoAcNO9L4UjT+eBJvlI5PEuWslU2gMfh7A4ifbABwCE4bx61wTU4dMJSRlRP3wIx6VMhOHc+r9o1ALVkwCAHo3x7tkSk5BexCK1cfezvhoBgDjuAADmTx0A+9T9dO2Mlc46Lm7kLa3/hcZUoGLck8e7wu7Qi9iPWsepXGRErYssscU614BA9vy6KtVFzUej4tCRsMXaiIMt1ujejgBAdlJlI2Ksm0yYDHwb3J/BDy1hjA/7V5lJiOIzpWHqnKz5kjIicOSZAADb3pfAUW2+NLNrTDiKdCqOk2dNFRw9GksDeXuaZqGJtgGGfVIaS1kcPRrLcZ+15XCpw9Wt6BddwfTAwuJoeAAAAABJRU5ErkJggg=='>" }
+    ],
+    /* ===== #023 阿柏蛇：尾巴響環：像素圖（第三代火紅葉綠） ===== */
+    22: [
+      { s: 't', x: '75%', svg: "<img alt='' width='24' height='36' style='display:block;image-rendering:pixelated;position:relative;top:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAkCAYAAACTz/ouAAAA5UlEQVR42mM8e3YvAwxsaw3+D2N7Va9lZKACYGKgMaC5BYzNQQLwYKmZ0gOXaMkpYaBGcA2DIMKVimrWvoeLCwoKwtnFTgwkBd3QDyIWZA6yl1uCBeHB9f49IrieL0WkrrlEZMxhFkQ4wbVsOFMrZxlWJV7VIyIV4UxRtcFYUxRy0CGrQdY7UlIRjhT1/DwnnN27D3uKGmbFNTFA8vo2eGqZu24u1iBCLtJHYBCh1HrNUVjVCFovYxjJGQ0HQM50I7FGQw6Kc15wdrb3Bzi7pmVEB9H52mPwzFXSko09Ay7bN0yDCABL+1Nfk5gaawAAAABJRU5ErkJggg=='>" }
+    ],
+    /* ===== #024 阿柏怪：兜帽頭：像素圖（第三代火紅葉綠） ===== */
+    23: [
+      { s: 't', x: '10%', svg: "<img alt='' width='45' height='32' style='display:block;image-rendering:pixelated;position:relative;top:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAC0AAAAgCAYAAACGhPFEAAABr0lEQVR42u1YoVLDQBB9YfgAKisrD0dcW0ddcMUVFFMXXJCVxREHDhytrKK1qBZHVBsZGRlkXVCbbucu4WiHoddmVWazl8y8fe/23Vnz+Rs2jff7INWp+4xCKTcKJ1JuOn21dL53BAPjeBtUHedca62IBAAgDFeI2zUh1TWb1ykAtIWT5bznjrUXSJtND787VIqK2qhLhSiKJSqQEN1HT6pvtVrZc9/xtChjJNLWTb2TAsCV086SHCUh1gVT9A4ABpMRAOBlNshylUoFAJAkiVRP7/KQ3htOm00Pvm/2Jr7WYmqniiZ5lNo0+D/MRJq8B20tAPBwcqa1eFat5voIVUdUwbtK25pqWhqPtNn0WC6rqWpKkV38uPBTTgk+4Z5uVy1uxLH0k7uvYCPq7Kf3sG1bEgSP+tizAGDGPAqt4UJsKESsEnYR+uVE3Dl6LBZji50WpEKyrj3XlcyO7r5eIv0XIWrFfqO9dLS+o/JBpRB3hh50dcAFuA0tfksJ1cQ8DCHSaTsvagUHgtNhwBAUuQj/5EdKIf4rPfi9HZ0YiBaXflcyQuviy6eHyogdDNLf6d2aphzyaNcAAAAASUVORK5CYII='>" }
+    ],
+    /* ===== #025 皮卡丘：兩隻黑尖耳朵：像素圖（第三代火紅葉綠） ===== */
+    24: [
+      { s: 't', x: '8%', svg: "<img alt='' width='21' height='36' style='display:block;image-rendering:pixelated;position:relative;top:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAkCAYAAABmMXGeAAAAn0lEQVR42mM8e3YLAzbg7BzzH8beu3cJIwMJgImBBoAmhjIiex/Zy7gAMUExdLw/wg1lwSURFRUFZy9btoykTDGEvI/sHWQvj4zYZxQQECDJ+8gpAVeZMAwSPy5wb+0HOFspWGC45n1kMLVl2nBN/Lgqvvf3PhDU/P48A9aUMERjf2v1h8Hr0lFDaRz7HE5bGBEJ2weeEQQNsSf4oe99AJAVMzBEhtZ9AAAAAElFTkSuQmCC'>" },
+      { s: 't', x: '78%', svg: "<img alt='' width='27' height='27' style='display:block;image-rendering:pixelated;position:relative;top:2px' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABsAAAAbCAYAAACN1PRVAAAAkElEQVR42mM8e3YLAzWAs3PMf0JqmBjoCOhqGQu1gigqKgqr+LJly0ZaMOIKLlxBhAsgB93ISI2M7/YywINO0BAhkV2TRZWg27t3CeMISI3IQUcqwBV0I69sZPz/jgFrRn5/HsGuWZtFUtAhp8ARHozIQFBJgOygG+E1NXJqpCToRkgw4goupWABsoNr5AUjAB4gMIucrUCKAAAAAElFTkSuQmCC'>" }
     ]
     /*__NEXT__*/
   };
