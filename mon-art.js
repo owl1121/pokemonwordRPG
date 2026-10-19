@@ -8,8 +8,8 @@
 const MON_ART = {};
 
 /* 把某隻的 piece 組成 HTML（疊在 .card.me 裡面；沒有專屬圖就回傳空字串） */
-function monArtHtml(dex) {
-  const list = MON_ART[dex];
+function monArtHtml(dex, table) {
+  const list = (table || MON_ART)[dex];
   if (!list) return '';
   return list.map(p => {
     let st = '';
