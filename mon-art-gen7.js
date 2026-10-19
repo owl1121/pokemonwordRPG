@@ -1,5 +1,5 @@
 // mon-art-gen7.js — 第七代 #722~#809（MON_ART 索引 721~808）的外框特徵，圖源：PokeAPI generation-v/black-white 資料夾的第七代 96×96 黑白風格像素圖（社群補的，非官方）。
-// 須在 mon-art.js 之後、battle.js 之前載入。尾端 /*__NEXT__*/ 是本代新增下一隻的插入點（前一隻結尾要補逗號）。
+// 由 mon-art.js 的 loadArtFile() 用到才載入（不寫在 index.html）。尾端 /*__NEXT__*/ 是本代新增下一隻的插入點（前一隻結尾要補逗號）。
 Object.assign(MON_ART, {
     /* ===== #722 木木梟：圓臉和綠色領結：像素圖（黑白風格） ===== */
     721: [

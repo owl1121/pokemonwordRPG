@@ -1,5 +1,5 @@
 // mon-art-gen8.js — 第八代 #810~#905（MON_ART 索引 809~904）的外框特徵，圖源：PokeAPI generation-v/black-white 資料夾的第八代 96×96 黑白風格像素圖（社群補的，非官方）。
-// 須在 mon-art.js 之後、battle.js 之前載入。尾端 /*__NEXT__*/ 是本代新增下一隻的插入點（前一隻結尾要補逗號）。
+// 由 mon-art.js 的 loadArtFile() 用到才載入（不寫在 index.html）。尾端 /*__NEXT__*/ 是本代新增下一隻的插入點（前一隻結尾要補逗號）。
 Object.assign(MON_ART, {
     /* ===== #810 敲音猴：頭和頭上的嫩芽：像素圖（黑白風格） ===== */
     809: [

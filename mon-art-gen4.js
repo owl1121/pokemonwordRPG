@@ -1,5 +1,5 @@
 // mon-art-gen4.js — 第四代 #387~#493（MON_ART 索引 386~492）的外框特徵，圖源：PokeAPI 第四代白金 80×80。
-// 須在 mon-art.js 之後、battle.js 之前載入。尾端 /*__NEXT__*/ 是本代新增下一隻的插入點（前一隻結尾要補逗號）。
+// 由 mon-art.js 的 loadArtFile() 用到才載入（不寫在 index.html）。尾端 /*__NEXT__*/ 是本代新增下一隻的插入點（前一隻結尾要補逗號）。
 Object.assign(MON_ART, {
     /* ===== #387 草苗龜：頭上的嫩芽：像素圖（第四代白金） ===== */
     386: [

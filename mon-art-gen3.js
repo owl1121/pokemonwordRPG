@@ -1,5 +1,5 @@
 // mon-art-gen3.js — 第三代 #252~#386（MON_ART 索引 251~385）的外框特徵，圖源：PokeAPI 第三代火紅葉綠 64×64。
-// 須在 mon-art.js 之後、battle.js 之前載入。尾端 /*__NEXT__*/ 是本代新增下一隻的插入點（前一隻結尾要補逗號）。
+// 由 mon-art.js 的 loadArtFile() 用到才載入（不寫在 index.html）。尾端 /*__NEXT__*/ 是本代新增下一隻的插入點（前一隻結尾要補逗號）。
 Object.assign(MON_ART, {
     /* ===== #252 木守宮：大尾巴：像素圖（第三代火紅葉綠） ===== */
     251: [

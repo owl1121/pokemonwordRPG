@@ -1,5 +1,5 @@
 // mon-art-gen9.js — 第九代 #906~#1025（MON_ART 索引 962~1081；DEX 索引 905~961 是地區形態，所以這代索引 = 編號 + 56）的外框特徵，圖源：PokeAPI generation-v/black-white 資料夾的第九代 96×96 黑白風格像素圖（社群補的，非官方）。
-// 須在 mon-art.js 之後、battle.js 之前載入。尾端 /*__NEXT__*/ 是本代新增下一隻的插入點（前一隻結尾要補逗號）。
+// 由 mon-art.js 的 loadArtFile() 用到才載入（不寫在 index.html）。尾端 /*__NEXT__*/ 是本代新增下一隻的插入點（前一隻結尾要補逗號）。
 Object.assign(MON_ART, {
     /* ===== #906 新葉喵：頭：像素圖（黑白風格） ===== */
     962: [

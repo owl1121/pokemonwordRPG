@@ -1,5 +1,5 @@
 // mon-art-regional.js — 地區形態（阿羅拉/伽勒爾/洗翠/帕底亞，DEX 索引 905~961）的外框特徵，圖源：PokeAPI generation-v/black-white 資料夾的形態圖（檔名 10xxx，96×96 黑白風格）。
-// 須在 mon-art.js 之後、battle.js 之前載入。
+// 由 mon-art.js 的 loadArtFile() 用到才載入（不寫在 index.html）。
 Object.assign(MON_ART, {
     /* ===== 阿羅拉小拉達：頭和耳朵：像素圖（PokeAPI 10091） ===== */
     905: [

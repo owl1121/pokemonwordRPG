@@ -1,5 +1,5 @@
 // mon-art-gen5.js — 第五代 #494~#649（MON_ART 索引 493~648）的外框特徵，圖源：PokeAPI 第五代黑白 96×96。
-// 須在 mon-art.js 之後、battle.js 之前載入。尾端 /*__NEXT__*/ 是本代新增下一隻的插入點（前一隻結尾要補逗號）。
+// 由 mon-art.js 的 loadArtFile() 用到才載入（不寫在 index.html）。尾端 /*__NEXT__*/ 是本代新增下一隻的插入點（前一隻結尾要補逗號）。
 Object.assign(MON_ART, {
     /* ===== #494 比克提尼：V 字大耳朵：像素圖（第五代黑白） ===== */
     493: [

@@ -537,7 +537,23 @@ function frameStyle(m){
   const [a, b] = m.shiny ? [c[2], c[3]] : [c[0], c[1]];
   return ` style="--fr:linear-gradient(180deg,${a},${b})"`;
 }
-function frameFeatures(m){ if(typeof monArtHtml!=='function' || !m) return ''; const k = (m._mega && MON_ART['M'+m._mega.id]) ? 'M'+m._mega.id : m.dex; const T = (m.shiny && typeof MON_ART_SHINY==='object' && MON_ART_SHINY[k]) ? MON_ART_SHINY : MON_ART; return T[k] ? monArtHtml(k, T) : ''; }
+function frameFeatures(m){
+  if(typeof monArtHtml!=='function' || !m) return '';
+  // 外框圖是用到才載入（mon-art.js 的 loadArtFile）；還沒載好就先不畫，載完再補進對戰卡片
+  const need = artFilesFor(m).filter(f => !artLoaded(f));
+  if(need.length){ Promise.all(need.map(loadArtFile)).then(()=> refreshFrameFeatures(m, 3)); return ''; }
+  const k = (m._mega && MON_ART['M'+m._mega.id]) ? 'M'+m._mega.id : m.dex;
+  const T = (m.shiny && MON_ART_SHINY[k]) ? MON_ART_SHINY : MON_ART;
+  return T[k] ? monArtHtml(k, T) : '';
+}
+// 圖載完後，若這隻還在場上就把特徵補進玩家卡片（卡片可能還在動畫中沒換上，晚一點再試幾次）
+function refreshFrameFeatures(m, tries){
+  const b = state.battle; if(!b || state.party[b.playerIdx] !== m) return;
+  const c = stageEl.querySelector('.card.me');
+  if(!c || (typeof stageLatest!=='undefined' && stageLatest)){ if(tries>0) setTimeout(()=> refreshFrameFeatures(m, tries-1), 400); return; }
+  if(c.querySelector('.art')) return;
+  const h = frameFeatures(m); if(h) c.insertAdjacentHTML('afterbegin', h);
+}
 // 訓練家／館主的隊伍進度：✖ 已倒下、● 還能戰鬥（含目前場上那隻）
 function teamDots(b, w){
   const f = (b.foeFainted||[]).length, left = (b.foes?b.foes.length:0) + (w.hp>0?1:0);

@@ -1,6 +1,6 @@
 // mon-art-mega.js — 超進化的外框特徵，key 是 'M'+MEGAS.id（例如 'M6X'）。battle.js 的 frameFeatures() 在寶可夢超進化中（p._mega）時優先用這組。
 // 圖源：PokeAPI generation-v/black-white 資料夾的超進化圖（檔名 10xxx，96×96）；Mega基格爾德（10301）沒有像素圖，用 PokeAPI HOME 圖縮成 96×96。
-// 須在 mon-art.js 之後、battle.js 之前載入。
+// 由 mon-art.js 的 loadArtFile() 用到才載入（不寫在 index.html）。
 Object.assign(MON_ART, {
     /* ===== Mega妙蛙花：花：像素圖（PokeAPI 10033） ===== */
     'M3': [

@@ -448,18 +448,6 @@ button,input,textarea,select{font-family:inherit;}
 
 <script src="data.js"></script>
 <script src="mon-art.js"></script>
-<script src="mon-art-gen1.js"></script>
-<script src="mon-art-gen2.js"></script>
-<script src="mon-art-gen3.js"></script>
-<script src="mon-art-gen4.js"></script>
-<script src="mon-art-gen5.js"></script>
-<script src="mon-art-gen6.js"></script>
-<script src="mon-art-gen7.js"></script>
-<script src="mon-art-gen8.js"></script>
-<script src="mon-art-gen9.js"></script>
-<script src="mon-art-regional.js"></script>
-<script src="mon-art-mega.js"></script>
-<script src="mon-art-shiny.js"></script>
 <script src="mon-colors.js"></script>
 <script src="sounds/list.js" onerror="this.remove()"></script>
 <script src="battle.js"></script>
@@ -2901,6 +2889,7 @@ try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persis
 
 /* ---------- BOOT ---------- */
 loadGame();
+preloadArtFor(state.party);   // 隊伍的外框圖趁空閒先載（其他的對戰時用到才載）
 applyFestTheme();
 screenCover();
 showInAppNotice();
