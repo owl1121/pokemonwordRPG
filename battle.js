@@ -529,7 +529,7 @@ function frameKey(m){
    有專屬手繪圖的寶可夢在 mon-art.js（MON_ART）；沒有的就不畫特徵。 */
 function frameClass(m){ return 'fr-' + frameKey(m); }
 function frameStyle(m){ return ''; }
-function frameFeatures(m){ return (typeof monArtHtml==='function' && m && MON_ART[m.dex]) ? monArtHtml(m.dex) : ''; }
+function frameFeatures(m){ if(typeof monArtHtml!=='function' || !m) return ''; const k = (m._mega && MON_ART['M'+m._mega.id]) ? 'M'+m._mega.id : m.dex; return MON_ART[k] ? monArtHtml(k) : ''; }
 // 訓練家／館主的隊伍進度：✖ 已倒下、● 還能戰鬥（含目前場上那隻）
 function teamDots(b, w){
   const f = (b.foeFainted||[]).length, left = (b.foes?b.foes.length:0) + (w.hp>0?1:0);
