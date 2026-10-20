@@ -5,8 +5,8 @@
 // key：DEX 索引（數字，0~1081；905~961 是地區形態）或超進化 'M'+MEGAS.id（例如 'M6X'）。
 // 瀏覽器只會在卡片顯示時才下載那一張圖，不用自己做延遲載入。
 
-// 沒有官方異色圖的（用一般版底圖代替）
-const ART_SHINY_MISSING = new Set(['570', 'M445Z', 'M978']);
+// 沒有異色圖的 key（用一般版底圖代替）；目前全部都有（M445Z、M978 的異色用 PokeAPI HOME 圖，因為沒有官方圖鑑異色圖）
+const ART_SHINY_MISSING = new Set([]);
 
 /* 某隻寶可夢（m：有 dex、shiny、_mega）的底圖網址 */
 function monBgSrc(m){
