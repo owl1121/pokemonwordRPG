@@ -819,25 +819,7 @@ const MAP_NAMES = [
 '圓模鎮','深缽鎮','釀光市','玻瓶市','錦匯鎮','冰櫃鎮','焙固鎮','霜抹山','北上鄉','藍莓學園','帕底亞大洞窟','寶可夢聯盟'
 ];
 
-/* ---------- 招式 / 招式附加效果 ---------- */
-const MOVES = {
-"一般":{q:"撞擊",s:"終極衝擊"}, "火":{q:"火花",s:"大字爆炎"}, "水":{q:"水槍",s:"水炮"},
-"電":{q:"電擊",s:"十萬伏特"}, "草":{q:"藤鞭",s:"葉刃"}, "冰":{q:"冰凍拳",s:"冰凍光束"},
-"格鬥":{q:"近身拳",s:"動員衝擊"}, "毒":{q:"毒液",s:"毒液噴射"}, "地面":{q:"泥巴射擊",s:"地震"},
-"飛行":{q:"翼擊",s:"燕返"}, "超能力":{q:"念力",s:"精神強念"}, "蟲":{q:"蟲咬",s:"蟲鳴"},
-"岩石":{q:"落石",s:"岩崩"}, "幽靈":{q:"影子偷襲",s:"影子球"}, "龍":{q:"龍息",s:"逆鱗"},
-"惡":{q:"咬碎",s:"惡意波動"}, "鋼":{q:"金屬爪",s:"鋼刃"}, "妖精":{q:"魔法閃光",s:"月亮之力"}
-};
-// secondary effect carried by a type's own moves (not the generic Tackle / 全力一擊, both 一般-type)
-const STATUS_FX = {
-"火":{kind:"burn", chance:0.3}, "電":{kind:"paralyze", chance:0.25},
-"草":{kind:"drain", chance:1.0}, "冰":{kind:"defDown", chance:0.3},
-"格鬥":{kind:"defDown", chance:0.3}, "毒":{kind:"poison", chance:0.3},
-"超能力":{kind:"atkDown", chance:0.3}, "蟲":{kind:"poison", chance:0.2},
-"岩石":{kind:"defDown", chance:0.2}, "幽靈":{kind:"atkDown", chance:0.3},
-"惡":{kind:"atkDown", chance:0.2}, "鋼":{kind:"selfDefUp", chance:1.0},
-"妖精":{kind:"atkDown", chance:0.3}
-};
+/* ---------- 招式：資料在 moves-data.js，效果在 moves.js ---------- */
 
 /* ---------- 道具 ---------- */
 /* ---------- ITEMS / SHOP ---------- */
@@ -850,9 +832,12 @@ potion: {label:'藥水', desc:'回復 20 HP', price:100, heal:20},
 superpotion: {label:'好傷藥', desc:'回復 100 HP', price:400, heal:100},
 maxpotion: {label:'全滿藥', desc:'HP 全部回復', price:1500, heal:Infinity},
 ether: {label:'PP補給', desc:'回復全招式 PP', price:300, pp:true},
-antidote: {label:'解毒藥', desc:'治療中毒', price:100, cure:'poison'},
+antidote: {label:'解毒藥', desc:'治療中毒、劇毒', price:100, cure:'poison'},
 burnheal: {label:'灼傷藥', desc:'治療灼傷', price:100, cure:'burn'},
 paralyzeheal:{label:'麻痺藥', desc:'治療麻痺', price:100, cure:'paralyze'},
+awakening: {label:'解眠藥', desc:'治療睡眠', price:100, cure:'sleep'},
+iceheal: {label:'解凍藥', desc:'治療冰凍', price:100, cure:'freeze'},
+fullheal: {label:'萬能藥', desc:'治療所有異常狀態', price:400, cure:'any'},
 firestone: {label:'火之石', desc:'讓特定寶可夢進化', price:2000, stone:true},
 waterstone: {label:'水之石', desc:'讓特定寶可夢進化', price:2000, stone:true},
 thunderstone:{label:'雷之石', desc:'讓特定寶可夢進化', price:2000, stone:true},

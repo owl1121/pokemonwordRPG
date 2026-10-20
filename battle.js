@@ -240,33 +240,19 @@ function eff(atkType, defTypes){
   return m;
 }
 
-/* ---------- 狀態效果（灼傷／中毒／麻痺） ---------- */
-function applyMoveEffect(atkMon, defMon, move){
-  const fx = STATUS_FX[move.type];
-  if(!fx || Math.random() > fx.chance) return '';
-  if(hasAb(atkMon,'sheerforce') && hasSecondary(move)) return '';                       // 強行：不觸發附加效果
-  if(fx.kind !== 'selfDefUp' && hasAb(defMon,'shielddust')) return '';                  // 鱗粉：不受附加效果
-  if(statusImmune(defMon, fx.kind)) return '';                                           // 免疫／柔軟／水幕
-  switch(fx.kind){
-    case 'burn': if(defMon.status) return ''; defMon.status='burn'; return `<span class="bad">${nm(defMon)} 陷入了灼傷！</span>`;
-    case 'poison': if(defMon.status) return ''; defMon.status='poison'; return `<span class="bad">${nm(defMon)} 中毒了！</span>`;
-    case 'paralyze': if(defMon.status) return ''; defMon.status='paralyze'; return `<span class="bad">${nm(defMon)} 被麻痺了！</span>`;
-    case 'atkDown': defMon.atkMul = Math.max(0.4, (defMon.atkMul||1)*0.75); return `<span class="bad">${nm(defMon)} 的攻擊下降了！</span>`;
-    case 'defDown': defMon.defMul = Math.max(0.4, (defMon.defMul||1)*0.75); return `<span class="bad">${nm(defMon)} 的防禦下降了！</span>`;
-    case 'selfDefUp': atkMon.defMul = Math.min(2, (atkMon.defMul||1)*1.3); return `<span class="good">${nm(atkMon)} 的防禦提升了！</span>`;
-  }
-  return '';
-}
+/* ---------- 狀態效果：每回合的中毒／劇毒／灼傷傷害（招式的附加效果在 moves.js） ---------- */
 function tickStatus(mon){
   if(!mon.status || mon.hp<=0 || hasAb(mon,'magicguard')) return '';
   if(mon.status==='poison'){ const d=Math.max(1,Math.floor(mon.maxhp/8)); mon.hp=Math.max(0,mon.hp-d); return `<span class="bad">${nm(mon)} 因中毒損失了 ${d} 點HP。</span>`; }
+  if(mon.status==='toxic'){ const n = Math.min(15, mon._tox||1), d=Math.max(1,Math.floor(mon.maxhp*n/16)); mon._tox = n+1; mon.hp=Math.max(0,mon.hp-d); return `<span class="bad">${nm(mon)} 因劇毒損失了 ${d} 點HP。</span>`; }
   if(mon.status==='burn'){ const d=Math.max(1,Math.floor(mon.maxhp/16)); mon.hp=Math.max(0,mon.hp-d); return `<span class="bad">${nm(mon)} 因灼傷損失了 ${d} 點HP。</span>`; }
   return '';
 }
 
 /* ---------- 對戰卡片畫面 ---------- */
 function pctHp(m){ return Math.max(0, Math.round(100*m.hp/m.maxhp)); }
-function stChip(m){ const t={burn:'🔥灼傷',poison:'☠️中毒',paralyze:'⚡麻痺'}[m.status]; return t ? ' · '+t : ''; }
+const STATUS_CHIP = {burn:'🔥灼傷', poison:'☠️中毒', toxic:'☠️劇毒', paralyze:'⚡麻痺', sleep:'💤睡眠', freeze:'🧊冰凍'};
+function stChip(m){ const t=STATUS_CHIP[m.status]; return (t ? ' · '+t : '') + (state.battle ? stagesChip(m) + sideChip(m) : ''); }
 // 對戰卡片：at = 幾毫秒後才更新（讓血條跟著文字一起變），換了寶可夢則立即更新
 let stageTimers = [], stageLatest = null, stageKey = null;
 let stageDetail = null;   // 非對戰時要顯示在上方畫面的內容（例如寶可夢的能力六邊形）；只在下一次 setOptions 生效一次
@@ -556,9 +542,9 @@ function renderStage(at, hit, power){   // hit：'foe' 或 'me'，該張卡片�
   const nmx = m => (m.shiny?'✨':'')+esc(m.name);
   const xp = p.level>=MAX_LEVEL ? 100 : Math.min(100, Math.round(100*p.exp/p.expNext));
   const html =
-    `<div${monBgAttr(w,'foe')}><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${dexNo(w.dex)} · ${esc(typeStr(w))}${b.mode==='wild' ? (state.caught.has(w.dex) ? ' · ✔已抓過' : ' · ★未抓過') : ''}${stChip(w)}${teamDots(b,w)}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
-    `<div${monBgAttr(p,'me',frameStyle(p))}><div class="r1"><span>${nmx(p)}</span><span>Lv.${p.level}</span></div><div class="r2">${esc(typeStr(p))} · 速度 ${p.spd}${stChip(p)}</div><div class="bar${pctHp(p)<30?' low':''}"><i style="width:${pctHp(p)}%"></i></div><div class="hpt">HP: ${p.hp}/${p.maxhp}</div><div class="xp"><i style="width:${xp}%"></i></div></div>`;
-  const turnHtml = `<div>回合<br><b>${b.turn||1}</b></div><div>狀態<br><b>${b.phase||'選擇行動'}</b></div>${weatherChip() ? `<div>天氣<br><b>${weatherChip()}</b></div>` : ''}`;
+    `<div${monBgAttr(w,'foe')}><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${dexNo(w.dex)} · ${esc(typesOf(w).filter(Boolean).join('／'))}${b.mode==='wild' ? (state.caught.has(w.dex) ? ' · ✔已抓過' : ' · ★未抓過') : ''}${stChip(w)}${teamDots(b,w)}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
+    `<div${monBgAttr(p,'me',frameStyle(p))}><div class="r1"><span>${nmx(p)}</span><span>Lv.${p.level}</span></div><div class="r2">${esc(typesOf(p).filter(Boolean).join('／'))} · 速度 ${p.spd}${stChip(p)}</div><div class="bar${pctHp(p)<30?' low':''}"><i style="width:${pctHp(p)}%"></i></div><div class="hpt">HP: ${p.hp}/${p.maxhp}</div><div class="xp"><i style="width:${xp}%"></i></div></div>`;
+  const turnHtml = `<div>回合<br><b>${b.turn||1}</b></div><div>狀態<br><b>${b.phase||'選擇行動'}</b></div>${weatherChip() ? `<div>天氣<br><b>${weatherChip()}</b></div>` : ''}${fieldChip() ? `<div>場地<br><b>${fieldChip()}</b></div>` : ''}`;
   const apply = ()=>{
     stageEl.innerHTML = html; turnEl.innerHTML = turnHtml;
     if(hit){ const c = stageEl.querySelector('.card.'+hit); if(c){ c.classList.add('hit'); if(power) c.classList.add(power); } }
@@ -589,7 +575,7 @@ function syncBattleUI(phase){
 /* ---------- BATTLE ---------- */
 function statusTag(m){
   if(!m.status) return '';
-  const tag = {burn:'🔥灼傷', poison:'☠️中毒', paralyze:'⚡麻痺'}[m.status] || '';
+  const tag = STATUS_CHIP[m.status] || '';
   return tag ? ` <span class="bad">[${tag}]</span>` : '';
 }
 function who(m){
@@ -601,21 +587,26 @@ function screenBattle(){
   const b = state.battle, p = state.party[b.playerIdx];
   renderBar();
   entryCheck();   // 天氣、出場特性（威嚇、乾旱……）
-  const FX={burn:'灼傷',poison:'中毒',paralyze:'麻痺',drain:'吸血',atkDown:'降攻',defDown:'降防',selfDefUp:'升防'};
-  const lock = holds(p,'choicescarf') && p._lock;   // 講究圍巾：只能用第一個選的招式
+  if((b.wild && b.wild.hp<=0) || (p && p.hp<=0)){ if(checkBattleEnd()) return; }   // 換上場時被撒菱類打倒
+  const busy = p._force || p._rch;   // 蓄力、需要休息、忍耐中：這回合只能繼續
+  if(busy){
+    const t = p._rch ? '需要休息' : (p._bide ? '正在忍耐' : `正在蓄力：${p._force.mv.name}`);
+    print(`<span class="sys">${nm(p)} ${esc(t)}……</span>`);
+    return setOptions([{label:`▶ 繼續（${t}）`, action:()=>playerMove(-2)}], '繼續');
+  }
   const mk = (mv,i)=>{
-    const off = !mv.struggle && (!(mv.pp>0) || (lock && mv.name !== lock)), fx = STATUS_FX[mv.type];
+    const why = mv.struggle ? '' : moveBlockReason(p, mv), off = !!why;
     const ppTxt = mv.struggle ? 'PP ∞' : `PP ${mv.pp}/${mv.maxpp}`;
     const ppCls = mv.struggle ? '' : (mv.pp<=0 ? ' zero' : mv.pp <= Math.ceil(mv.maxpp/4) ? ' low' : '');
-    const sub = `威力 ${mv.power}` + (fx?` · ✦${FX[fx.kind]}`:'') + (mv.recoil?' · ⚠反作用力':'');
-    return { label:`${mv.name}（${mv.type}／威力${mv.power}／${ppTxt}）`, half:!mv.struggle, cls:'mv'+(off?' off':''),
-      html:`<span class="mvn">${esc(mv.name)}</span><span class="mvt" style="background:${TYPE_COLOR[mv.type]||'#2b3a8c'}">${mv.type}</span><span class="mvpp${ppCls}">${ppTxt}</span><span class="mvp">${sub}</span>`,
+    const sub = (why && why !== 'PP 用完了') ? `🚫${why}` : moveShort(mv);
+    return { label:`${mv.name}（${mv.type}／${mv.cls===2?'變化':'威力'+mv.power}／${ppTxt}）`, half:!mv.struggle, cls:'mv'+(off?' off':''),
+      html:`<span class="mvn">${esc(mv.name)}</span><span class="mvt" style="background:${TYPE_COLOR[mv.type]||'#2b3a8c'}">${mv.type}</span><span class="mvpp${ppCls}">${ppTxt}</span><span class="mvp">${esc(sub)}</span>`,
       action: off ? ()=>screenBattle() : ()=>playerMove(i) };
   };
+  const lock = holds(p,'choicescarf') && p._lock;   // 講究圍巾：只能用第一個選的招式
   let opts;
-  if(lock && p.moves.some(m=>m.name===lock && m.pp>0)){ opts = p.moves.map(mk); print(`<span class="sys">〔講究圍巾〕只能使用 ${esc(lock)}。</span>`); }
-  else if(!lock && p.moves.some(m=>m.pp>0)) opts = p.moves.map(mk);
-  else { print(lock ? `<span class="bad">${esc(lock)} 的 PP 用完了，只能使用「掙扎」。</span>` : '<span class="bad">所有招式的 PP 都用完了！只能使用「掙扎」。</span>'); opts = [mk(STRUGGLE,-1)]; }
+  if(usableMoves(p).length){ opts = p.moves.map(mk); if(lock) print(`<span class="sys">〔講究圍巾〕只能使用 ${esc(lock)}。</span>`); if(p._enc) print(`<span class="sys">被再來一次，只能使用 ${esc(p._enc.name)}。</span>`); }
+  else { print('<span class="bad">沒有能用的招式了！只能使用「掙扎」。</span>'); opts = [mk(STRUGGLE,-1)]; }
   if(b.mode !== 'run') opts.push({label:'🎒 道具', cls:'q', action:screenItemSelect});   // 連戰試煉不能用道具
   if(state.party.filter(m=>m.hp>0).length>1) opts.push({label:'🔄 換上場', cls:'q', action:screenSwitch});
   if(b.mode !== 'run' && !b.megaUsed && !p._mega && megaFormsFor(p).length) opts.push({label:'✨ Mega 進化', cls:'q', action:screenMegaEvolve});
@@ -675,21 +666,7 @@ function normalizeLegend(w){
   Object.assign(w, {maxhp:fresh.maxhp, hp:fresh.maxhp, atk:fresh.atk, def:fresh.def, spa:fresh.spa, sdf:fresh.sdf, spd:fresh.spd, moves:fresh.moves, exp:0, expNext:fresh.expNext});
   delete w.legend;
 }
-function randomWildMove(w){
-  // 傳說寶可夢：有 55% 機率挑「威力 × 屬性相剋 × 本系加成」最高的招，其餘隨機
-  if(w.legend && state.battle){
-    const p = state.party[state.battle.playerIdx];
-    if(p && Math.random() < 0.55){
-      let best = null, bs = -1;
-      w.moves.forEach(m=>{
-        const s = (m.power||0) * moveEff(m, p) * ((m.type===w.t1 || m.type===w.t2) ? 1.2 : 1);
-        if(s > bs){ bs = s; best = m; }
-      });
-      if(best) return best;
-    }
-  }
-  return w.moves[Math.floor(Math.random()*w.moves.length)];
-}
+function randomWildMove(w){ return chooseFoeMove(w); }   // 對手選招在 moves.js
 function clearBattleModifiers(){ state.party.forEach(m=>{ m.status=null; m.atkMul=1; m.defMul=1; resetBattleFlags(m); }); }
 function effText(mult){
   if(mult === 0) return ' <span class="bad">沒有效果……</span>';
@@ -702,14 +679,30 @@ function dmg(atkMon, defMon, move){
   const e = moveEff(move, defMon);
   if(e === 0) return 0;
   const variance = 0.85 + Math.random()*0.3;
-  const phys = PHYS_MOVES.has(move.name);   // 物理招式吃攻擊／防禦，屬性招式吃特攻／特防
-  const atkStat = (phys ? atkMon.atk : (atkMon.spa ?? atkMon.atk)) * (atkMon.atkMul||1);
-  const defStat = Math.max(1, (phys ? defMon.def : (defMon.sdf ?? defMon.def)) * (defMon.defMul||1) * fxDefStat(defMon, phys));
+  const phys = isPhys(move);   // 物理招式吃攻擊／防禦，特殊招式吃特攻／特防
+  const L = fxList(move), wr = bf().wroom;   // 奇妙空間：防禦、特防對調
+  const src = L.includes('foul') ? defMon : atkMon;
+  const atkStat = L.includes('bpress') ? atkMon.def*(atkMon.defMul||1)
+    : phys ? src.atk*(src.atkMul||1) : (atkMon.spa ?? atkMon.atk)*(atkMon.spaMul||1);
+  const useDef = phys || L.includes('psyshock');
+  const dRaw = (useDef !== !!wr) ? defMon.def : (defMon.sdf ?? defMon.def);
+  const dMul = useDef ? (defMon.defMul||1) : (defMon.sdfMul||1);
+  const defStat = Math.max(1, dRaw * dMul * fxDefStat(defMon, useDef));
   const raw = ((2*atkMon.level/5+2)*move.power*(atkStat/defStat)/50 + 2);
-  return Math.max(1, Math.floor(raw*stab*e*variance*fxDmgMul(atkMon, defMon, move, e)));   // 天氣、特性、攜帶道具
+  return Math.max(1, Math.floor(raw*stab*e*variance*fxDmgMul(atkMon, defMon, move, e)*fieldDmgMul(atkMon, defMon, move)));   // 天氣、特性、攜帶道具、場地
 }
-function moveEff(move, defMon){ return move.struggle ? 1 : eff(move.type, typesOf(defMon)); }
-function effSpd(m){ return m.spd * fxSpd(m) * (m.status==='paralyze' ? 0.5 : 1); }
+function moveEff(move, defMon){
+  if(move.struggle) return 1;
+  let t = typesOf(defMon).filter(Boolean);
+  if((move.type === '一般' || move.type === '格鬥') && defMon._foresight) t = t.filter(x=>x !== '幽靈');
+  if(move.type === '地面' && state.battle){
+    if(bf().grav) t = t.filter(x=>x !== '飛行');
+    else if(defMon._mrise || defMon._tkin) return 0;
+  }
+  if(move.cls === 2) return 1;   // 變化招不看屬性相剋（電磁波、粉末類另外判斷）
+  return eff(move.type, t);
+}
+function effSpd(m){ return m.spd * fxSpd(m) * (m.status==='paralyze' ? 0.5 : 1) * (state.battle && sideOf(m).tailw ? 2 : 1); }
 // 單次出招：處理麻痺、傷害、反作用力、吸血、附加效果
 function doAttack(att, def, move){
   const t0 = curDelay(), hpBefore = def.hp;
@@ -721,44 +714,13 @@ function doAttack(att, def, move){
 }
 function attackCore(att, def, move){
   if(!beforeMoveFx(att, move)) return;   // 畏縮、節拍器
-  if(att.status==='paralyze' && Math.random()<0.25){
-    print(`<span class="bad">${who(att)} 因麻痺而無法動彈！</span>`);
-    return;
-  }
-  if(att !== state.battle.wild && move.maxpp !== undefined){ move.pp = Math.max(0, move.pp - 1); leppaCheck(att, move); }
-  const isEnemy = att === state.battle.wild;
-  const e = moveEff(move, def);
-  if(e === 0){
-    print(`${who(att)} 使用了 ${esc(move.name)}！但是對 ${who(def)} 沒有效果……`);
-    return;
-  }
-  const absorbed = absorbCheck(att, def, move);   // 飄浮、蓄電、儲水、食草、引火
-  if(absorbed){ print(`${who(att)} 使用了 ${esc(move.name)}！`); print(absorbed); return; }
-  fxNotes = [];
-  const [d, endureMsg] = endureCheck(def, dmg(att, def, move));   // 氣勢披帶／結實／氣勢頭帶
-  def.hp = Math.max(0, def.hp - d);
-  if(!isEnemy) trackDmg(att, d);   // 寶可夢稱號：累計我方每隻寶可夢打出的傷害
-  print(`${who(att)} 使用了 ${esc(move.name)}！造成 <span class="${isEnemy?'bad':'em'}">${d}</span> 點傷害。${effText(e)}`);
-  flushFxNotes();   // 會心一擊、抗性樹果、一般寶石
-  if(endureMsg) print(endureMsg);
-  if(move.recoil && (move.struggle || !(hasAb(att,'rockhead') || hasAb(att,'magicguard')))){
-    const rec = Math.max(1, Math.floor(d*move.recoil));
-    att.hp = Math.max(0, att.hp-rec);
-    print(`<span class="bad">${who(att)} 因反作用力受到了 ${rec} 點傷害！</span>`);
-  }
-  const fx = STATUS_FX[move.type];
-  if(fx && fx.kind==='drain'){
-    const heal = Math.floor(d*0.5*(holds(att,'bigroot') ? 1.3 : 1));
-    if(heal>0 && att.hp>0 && att.hp<att.maxhp){ att.hp=Math.min(att.maxhp, att.hp+heal); print(`<span class="good">${who(att)} 吸取了 ${heal} 點 HP！</span>`); }
-  } else if(def.hp>0 || (fx && fx.kind==='selfDefUp')){
-    const msg = applyMoveEffect(att, def, move);
-    if(msg){ print(msg); lumCheck(def); herbCheck(def); herbCheck(att); }
-  }
-  afterHitFx(att, def, move, d);   // 生命寶珠、貝殼之鈴、凸凸頭盔、靜電等、自信過度
+  useMove(att, def, move);               // 招式效果都在 moves.js
 }
 // 回傳 true 代表戰鬥已結束或已切換畫面
 function checkBattleEnd(){
-  const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
+  const b = state.battle; if(!b) return true;
+  if(b._ended) return finishEarly();   // 被吹走、瞬間移動
+  const p = state.party[b.playerIdx]; const w = b.wild;
   if(w.hp<=0){
     koFx();
     if(p.hp<=0) print(`<span class="bad">${nm(p)} 也在同一擊中倒下了！</span>`);
@@ -768,34 +730,57 @@ function checkBattleEnd(){
   return false;
 }
 function enemyTurn(){
-  const b = state.battle;
-  doAttack(b.wild, state.party[b.playerIdx], randomWildMove(b.wild));
+  const b = state.battle, w = b.wild;
+  w._choice = chooseFoeMove(w);
+  doAttack(w, state.party[b.playerIdx], w._choice);
   return checkBattleEnd();
 }
 function endOfTurn(){
-  const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
+  const b = state.battle; let p = state.party[b.playerIdx]; const w = b.wild;
   const tW = tickStatus(w); if(tW) print(tW);
-  endTurnFx(w);
-  if(w.hp<=0){ koFx(); return winBattle(); }
+  endTurnFx(w); moveEndTurn(w);
   const tP = tickStatus(p); if(tP) print(tP);
-  endTurnFx(p);
+  endTurnFx(p); moveEndTurn(p);
+  fieldEndTurn();
   weatherTick();
+  if(b._ended) return finishEarly();
+  if(w.hp<=0){ koFx(); if(p.hp<=0) print(`<span class="bad">${nm(p)} 也倒下了！</span>`); return winBattle(); }
   if(afterFaintCheck(p)) return;
+  if(b._foePivot) doFoePivot();
+  if(b._pivot) return screenPivot();
   b.turn = (b.turn||1) + 1;
   screenBattle();
+}
+// 出招順序：先比先制度，再比速度（戲法空間反過來）
+function turnOrder(p, pm, w, wm){
+  const pp = pm.pri||0, wp = wm.pri||0;
+  let first;
+  if(pp !== wp) first = pp > wp;
+  else {
+    const ps = effSpd(p), ws = effSpd(w);
+    first = ps === ws ? Math.random() < 0.5 : (bf().troom ? ps < ws : ps > ws);
+    if(!first && holds(p,'quickclaw') && Math.random() < 0.2){ first = true; print(`<span class="good">〔先制之爪〕${nm(p)} 搶先行動了！</span>`); }
+  }
+  return first ? [[p,pm],[w,wm]] : [[w,wm],[p,pm]];
 }
 function playerMove(moveIdx){
   const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
   clearLog();
-  if(moveIdx>=0 && (!(p.moves[moveIdx].pp>0) || (holds(p,'choicescarf') && p._lock && p.moves[moveIdx].name !== p._lock))) return screenMoveSelect();
-  const pm = moveIdx<0 ? STRUGGLE : p.moves[moveIdx], wm = randomWildMove(w);
+  let pm;
+  if(p._force) pm = p._force.mv;
+  else if(p._rch) pm = p.moves[0] || STRUGGLE;
+  else {
+    if(moveIdx >= 0 && moveBlockReason(p, p.moves[moveIdx])) return screenMoveSelect();
+    if(moveIdx < 0 && usableMoves(p).length) return screenMoveSelect();
+    pm = moveIdx < 0 ? STRUGGLE : p.moves[moveIdx];
+  }
+  const wm = chooseFoeMove(w);
   if(holds(p,'choicescarf') && !pm.struggle && !p._lock) p._lock = pm.name;
-  const ps = effSpd(p), ws = effSpd(w);
-  let playerFirst = ps > ws || (ps === ws && Math.random() < 0.5);
-  if(!playerFirst && holds(p,'quickclaw') && Math.random() < 0.2){ playerFirst = true; print(`<span class="good">〔先制之爪〕${nm(p)} 搶先行動了！</span>`); }
-  const order = playerFirst ? [[p,w,pm],[w,p,wm]] : [[w,p,wm],[p,w,pm]];
-  for(const [a,d,m] of order){
-    if(a.hp<=0 || d.hp<=0) continue;
+  p._choice = pm; w._choice = wm;
+  for(const [a, m] of turnOrder(p, pm, w, wm)){
+    const active = a === b.wild || a === state.party[b.playerIdx];   // 被吹走換下場的就不能出招了
+    const d = active ? activeFoeOf(a) : null;
+    if(!active || a.hp<=0 || !d || d.hp<=0) continue;
     doAttack(a, d, m);
     if(checkBattleEnd()) return;
   }
@@ -846,7 +831,7 @@ function screenItemSelect(){
   Object.keys(ITEMS).forEach(kind=>{
     const it = ITEMS[kind];
     if(it.ball!==undefined || it.stone || !(state.bag[kind] > 0)) return;
-    const relevant = it.pp ? p.moves.some(m=>m.pp<m.maxpp) : it.heal ? p.hp < p.maxhp : p.status === it.cure;
+    const relevant = it.pp ? p.moves.some(m=>m.pp<m.maxpp) : it.heal ? p.hp < p.maxhp : statusMatch(p.status, it.cure);
     if(relevant){ print(`<b>${esc(it.label)}</b> ×${state.bag[kind]}　<span class="sys">${esc(it.desc)}</span>`); opts.push({label:it.label, half:true, action:()=>useItem(kind)}); }
   });
   if(opts.length===0) print('<span class="sys">（目前沒有能用的道具）</span>');
@@ -875,9 +860,12 @@ function useItem(kind){
 }
 function tryFlee(){
   clearLog();
+  const fp = state.party[state.battle.playerIdx];
+  if(!canEscape(fp)){ print(`<span class="bad">${nm(fp)} 被困住了，逃不掉！</span>`); return screenBattle(); }
   if(Math.random()<0.75){
     print('你成功逃跑了。');
-    state.battle=null;
+    bump('flees');
+    state.battle=null; megaRevertAll(); state.party.forEach(resetBattleFlags);
     return screenField();
   }
   print('<span class="bad">沒能逃脫！</span>');
@@ -887,6 +875,8 @@ function tryFlee(){
 function screenSwitch(){
   const b = state.battle;
   clearLog();
+  const cur = state.party[b.playerIdx];
+  if(!canEscape(cur)){ print(`<span class="bad">${nm(cur)} 被困住了，不能換下場！</span>`); return screenBattle(); }
   print('<span class="em">選擇要換上場的寶可夢：</span>');
   const opts = state.party.map((m,i)=>{
     const tag = i===b.playerIdx ? '（目前上場）' : (m.hp<=0 ? '（已無法戰鬥）' : `HP ${m.hp}/${m.maxhp}`);
@@ -953,6 +943,10 @@ const evoSkip = new WeakMap();   // 玩家選了「不進化」：同一等級�
 let evoQueue = [];
 function evoTarget(p){           // 回傳進化後的圖鑑索引；現在還不能進化則回傳 null
   const te = TIME_EVO[p.dex];
+  if(FRIEND_EVO.has(p.dex) && friendOf(p) >= FRIEND_EVO_MIN){   // 親密度夠高：不用等到等級
+    if(te){ const h = nowFn().getHours(); return (h>=6 && h<18) ? te.day : te.night; }
+    const r = EVO[p.dex]; if(r) return Array.isArray(r[0]) ? r[0][Math.floor(Math.random()*r[0].length)] : r[0];
+  }
   if(te){
     if(p.level < te.lvl) return null;
     const h = nowFn().getHours();
@@ -970,14 +964,14 @@ function queueEvolution(p){      // 達成進化條件就排進詢問佇列
   if(!evoQueue.includes(p)) evoQueue.push(p);
 }
 function evolveTo(p, toIdx){
-  const oldName = esc(monName(p));
+  const oldName = esc(monName(p)), oldDex = p.dex;
   const e = DEX[toIdx];
   p.dex = toIdx; p.name = e[0]; p.t1 = e[1]; p.t2 = e[2]; p.tier = e[3];
   const st = monStats(p);
   const hpGain = st.hp - p.maxhp;
   p.maxhp = st.hp; p.hp = Math.max(1, Math.min(p.maxhp, p.hp + hpGain));
   setNonHpStats(p, st);
-  p.moves = buildMoves(e);
+  learnOnEvolve(p, oldDex);   // 招式保留；學會新形態的進化招式
   state.caught.add(toIdx); state.seen.add(toIdx);
   if(p.shiny) state.shinyCaught.add(toIdx);
   print(`<span class="em">「${oldName}」正在進化…</span>`);
@@ -1016,7 +1010,7 @@ function grantExp(p, oppLevel, mult, verb, quiet){
     if(!quiet) print(`<span class="sys">${nm(p)} 已經是 Lv.${MAX_LEVEL}，經驗值無法再增加。</span>`);
     return;
   }
-  const gained = Math.max(1, Math.floor((10 + oppLevel*4) * mult * expMulFor(p)));   // 修行日、幸運蛋
+  const gained = Math.max(1, Math.floor((10 + oppLevel*4) * mult * expMulFor(p) * (friendOf(p) >= 255 ? 1.2 : 1)));   // 修行日、幸運蛋、親密度滿
   p.exp += gained;
   if(!quiet) print(`<span class="good">${nm(p)} ${verb} ${gained} 經驗值。</span>`);
   while(p.level < MAX_LEVEL && p.exp >= p.expNext){
@@ -1025,6 +1019,8 @@ function grantExp(p, oppLevel, mult, verb, quiet){
     const gainHp = st.hp-p.maxhp;
     p.maxhp=st.hp; p.hp=Math.min(p.hp+gainHp, p.maxhp); setNonHpStats(p, st);
     print(`<span class="em">${nm(p)} 升到了 Lv.${p.level}！</span>`);
+    addFriend(p, 2);
+    learnOnLevel(p);
     queueEvolution(p);
   }
   if(p.level >= MAX_LEVEL){ p.exp = 0; print(`<span class="em">${nm(p)} 達到等級上限 Lv.${MAX_LEVEL}！</span>`); }
@@ -1051,6 +1047,7 @@ function winBattle(){
   const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
   const mode = b.mode;
   bump('wins'); if(mode==='tower'){ bump('floors'); if(b.boss) bump('bosses'); }
+  { const act = state.party[b.playerIdx]; state.party.forEach(m=>{ if(m.hp > 0) addFriend(m, m === act ? 2 : 1); }); }   // 親密度：上場的 +2、其他 +1
   if(mode==='wild'){ pityResolve(w, false); addZoneWin(); }
   print(`<span class="good">擊敗了${mode==='wild'?'野生的 ':' '}${nm(w)}！</span>`);
   const expMul = (mode==='tower') ? TOWER_EXP_MUL : 1;
@@ -1137,6 +1134,7 @@ function winBattle(){
 }
 function loseBattle(){
   if(state.battle && state.battle.mode === 'run') return svEnd();   // 連戰試煉：全隊倒下＝挑戰結束
+  bump('losses');
   print('<span class="bad">你的隊伍全部失去戰鬥能力了……你被送回了補給站。</span>');
   state.party.forEach(m=>{ m.hp=Math.max(1, Math.floor(m.maxhp*0.5)); m.status=null; restorePP(m); });
   const mode = state.battle && state.battle.mode;

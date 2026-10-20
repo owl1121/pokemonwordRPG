@@ -65,6 +65,8 @@ const ABILITIES = {
   waterabsorb: {name:'儲水',     desc:'水屬性招式無效，並回復 1/4 HP'},
   sapsipper:   {name:'食草',     desc:'草屬性招式無效，並回復 1/4 HP'},
   flashfire:   {name:'引火',     desc:'火屬性招式無效，之後自己的火屬性招式威力 ×1.5'},
+  insomnia:    {name:'不眠',     desc:'不會睡著（煩惱種子給的）'},
+  simple:      {name:'單純',     desc:'能力變化加倍（單純光束給的）'},
   sheerforce:  {name:'強行',     desc:'有附加效果的招式威力 ×1.3，但不會觸發附加效果'}
 };
 const AB_POOL = {
@@ -92,7 +94,7 @@ function abPoolFor(t1, t2){ return [...new Set([...(AB_POOL[t1]||[]), ...(AB_POO
 function rollAbility(entry){ const pool = abPoolFor(entry[1], entry[2]); return pool.length ? pool[Math.floor(Math.random()*pool.length)] : 'technician'; }
 function ensureAbility(m){ if(!m.ab || !ABILITIES[m.ab]) m.ab = rollAbility(DEX[m.dex] || ['', '一般', null, 1]); return m.ab; }
 function abName(m){ return m && ABILITIES[m.ab] ? ABILITIES[m.ab].name : '—'; }
-function hasAb(m, k){ return !!m && m.ab === k; }
+function hasAb(m, k){ return !!m && !m._noab && m.ab === k; }   // _noab：被胃液封住
 function abTag(m){ return `<span class="ab">〔${esc(abName(m))}〕</span>`; }
 
 /* ========== 3. 攜帶道具：一隻帶一個，從背包裝上／卸下（道具名稱、效果參考寶可夢冠軍） ==========
@@ -153,9 +155,10 @@ const HELD = {
  ['babiriberry','霹霹果','鋼'],['roseliberry','洛玫果','妖精'],['chilanberry','燈漿果','一般']]
  .forEach(([k,label,t])=>{ HELD[k] = {cat:'resist', label, price:1000, resist:t, desc: t==='一般' ? '受到一般屬性招式時，傷害減半（每場一次）' : `受到效果絕佳的${t}屬性招式時，傷害減半（每場一次）`}; });
 const HELD_KEYS = Object.keys(HELD);
-function holds(m, k){ return !!m && m.held === k; }
+function heldOn(m){ return !!m && !m._knock && !m._emb && !(state.battle && state.battle.field && state.battle.field.mroom); }   // 被打落、查封、魔法空間時道具沒效果
+function holds(m, k){ return heldOn(m) && m.held === k; }
 function heldName(m){ return m && HELD[m.held] ? HELD[m.held].label : '無'; }
-function heldIt(m){ return m && HELD[m.held]; }
+function heldIt(m){ return heldOn(m) && HELD[m.held]; }
 
 /* ========== 7. 每日隨機事件（以日期決定，同一天大家都一樣） ========== */
 const DAILY_EVENTS = [
@@ -217,8 +220,9 @@ function biasPool(pool){
 
 /* ========== 對戰中的效果 ========== */
 function resetBattleFlags(m){
-  if(!m) return; m.spdMul = 1;
-  ['_bSash','_bSturdy','_bBerry','_bFF','_bGem','_bBalloon','_bHerb','_lock','_metro','_flinch'].forEach(k=>{ delete m[k]; });
+  if(!m) return;
+  ['_bSash','_bSturdy','_bBerry','_bFF','_bGem','_bBalloon','_bHerb','_lock','_metro','_flinch','_rfist'].forEach(k=>{ delete m[k]; });
+  if(typeof clearVolatile === 'function') clearVolatile(m); else m.spdMul = 1;   // 招式造成的暫時狀態、能力變化（moves.js）
 }
 let fxNotes = [];   // 傷害計算中產生的訊息（會心一擊、抗性樹果……），印在攻擊訊息後面
 function flushFxNotes(){ fxNotes.forEach(t=>print(t)); fxNotes = []; }
@@ -237,8 +241,13 @@ function entryCheck(){
     b._foeIn = w; ensureAbility(w);
     print(`<span class="sys">${who(w)} 的特性：${esc(abName(w))}</span>`);
     onEntry(w, p);
+    entryHazards(w);
   }
-  if(p && p.hp > 0 && b._meIn !== p){ b._meIn = p; ensureAbility(p); onEntry(p, w); }
+  if(p && p.hp > 0 && b._meIn !== p){
+    b._meIn = p; ensureAbility(p); onEntry(p, w);
+    const pu = state.stats.pu && typeof state.stats.pu === 'object' ? state.stats.pu : (state.stats.pu = {}); pu[p.dex] = (pu[p.dex]||0) + 1;   // 統計：上場次數
+    entryHazards(p);
+  }
 }
 function onEntry(m, foe){
   const b = state.battle;
@@ -279,7 +288,7 @@ function fxDefStat(def, phys){
 const PIKACHU = 24;
 // 傷害倍率：天氣、特性、道具、會心一擊（只在真正出招時呼叫一次，會消耗一次性道具）
 function fxDmgMul(att, def, move, e){
-  let k = 1; const w = battleWeather(), t = move.type, phys = PHYS_MOVES.has(move.name);
+  let k = 1; const w = battleWeather(), t = move.type, phys = isPhys(move);
   if(w === 'sun'){ if(t === '火') k *= 1.5; else if(t === '水') k *= 0.5; }
   if(w === 'rain'){ if(t === '水') k *= 1.5; else if(t === '火') k *= 0.5; }
   if(PINCH_AB[att.ab] === t && att.hp*3 <= att.maxhp) k *= 1.5;
@@ -301,8 +310,12 @@ function fxDmgMul(att, def, move, e){
     if(att.held === 'metronome' && att._metro && att._metro.name === move.name) k *= Math.min(2, 1 + 0.2*att._metro.n);
     if(att.held === 'normalgem' && t === '一般' && !att._bGem && !move.struggle){ att._bGem = true; k *= 1.3; fxNotes.push(`<span class="good">〔一般寶石〕${who(att)} 的招式威力提升了！</span>`); }
   }
-  // 會心一擊：1/24，帶焦點鏡 1/8
-  if(Math.random() < (holds(att,'scopelens') ? 1/8 : 1/24)){ k *= 1.5; fxNotes.push('<span class="em">會心一擊！</span>'); }
+  // 會心一擊：等級 0 1/24、1 1/8、2 1/2、3 必定（招式、聚氣、焦點鏡、親密度；幸運咒語擋下）；calcHit 會先算好 move._crit
+  const cs = move._crit === undefined ? (holds(att,'scopelens') ? 1 : 0) : move._crit;
+  if(cs >= 0 && Math.random() < [1/24, 1/8, 1/2, 1][Math.min(3, cs)]){
+    k *= 1.5; move._didCrit = true; fxNotes.push('<span class="em">會心一擊！</span>');
+    if(state.battle && att !== state.battle.wild) bump('crits');
+  }
   // 防禦方抗性樹果
   const di = heldIt(def);
   if(di && di.resist === t && !def._bBerry && !move.struggle && (t === '一般' || e >= 2)){
@@ -311,7 +324,7 @@ function fxDmgMul(att, def, move, e){
   }
   return k;
 }
-function hasSecondary(move){ const fx = !move.struggle && STATUS_FX[move.type]; return !!fx && fx.kind !== 'drain' && fx.kind !== 'selfDefUp'; }
+function hasSecondary(move){ return !move.struggle && move.cls !== 2 && fxList(move).some(c=>/^a[a-z]{3}\d|^fl\d|^sf/.test(c) || (/^su/.test(c) && !/_100$/.test(c))); }   // 強行會吃掉的附加效果
 // 出招前：畏縮、節拍器計數
 function beforeMoveFx(att, move){
   if(att._flinch){ att._flinch = false; print(`<span class="bad">${who(att)} 畏縮了，無法行動！</span>`); return false; }
@@ -342,6 +355,8 @@ function endureCheck(def, d){
   if(full && holds(def,'focussash') && !def._bSash){ def._bSash = true; return [def.hp - 1, `<span class="good">〔氣勢披帶〕${who(def)} 撐住了這一擊！</span>`]; }
   if(full && hasAb(def,'sturdy') && !def._bSturdy){ def._bSturdy = true; return [def.hp - 1, `${abTag(def)}<span class="good">${who(def)} 撐住了這一擊！</span>`]; }
   if(holds(def,'focusband') && Math.random() < 0.1) return [def.hp - 1, `<span class="good">〔氣勢頭帶〕${who(def)} 撐住了這一擊！</span>`];
+  if(def._endure) return [def.hp - 1, `<span class="good">${who(def)} 挺住了這一擊！</span>`];
+  if(state.battle && def !== state.battle.wild && (def.friend||0) >= 200 && Math.random() < 0.1) return [def.hp - 1, `<span class="good">${who(def)} 為了不讓你難過，撐住了這一擊！</span>`];   // 親密度
   return [d, ''];
 }
 function statusImmune(m, kind){
@@ -350,14 +365,15 @@ function statusImmune(m, kind){
 // 狀態樹果：木子果治全部、櫻子果／桃桃果／莓莓果治對應狀態
 function lumCheck(m){
   const it = heldIt(m);
-  if(!m.status || !it || m._bBerry || !(m.held === 'lumberry' || it.cure === m.status)) return;
+  if(!m.status || !it || m._bBerry || !(m.held === 'lumberry' || statusMatch(m.status, it.cure))) return;
   m._bBerry = true; m.status = null;
   print(`<span class="good">〔${it.label}〕${who(m)} 的異常狀態治好了！</span>`);
 }
 // 白色香草：能力被降低時恢復
 function herbCheck(m){
-  if(!holds(m,'whiteherb') || m._bHerb || !((m.atkMul||1) < 1 || (m.defMul||1) < 1)) return;
-  m._bHerb = true; if((m.atkMul||1) < 1) m.atkMul = 1; if((m.defMul||1) < 1) m.defMul = 1;
+  const ks = ['atkMul','defMul','spaMul','sdfMul','spdMul','accMul','evaMul'];
+  if(!holds(m,'whiteherb') || m._bHerb || !ks.some(k=>(m[k]||1) < 1)) return;
+  m._bHerb = true; ks.forEach(k=>{ if((m[k]||1) < 1) m[k] = 1; });
   print(`<span class="good">〔白色香草〕${who(m)} 降低的能力恢復了！</span>`);
 }
 // HP 下降後：文柚果、橙橙果、枝荔果、龍睛果、沙鱗果
@@ -383,7 +399,7 @@ function leppaCheck(m, move){
   m._bBerry = true; move.pp = Math.min(move.maxpp, 10);
   print(`<span class="good">〔蘋野果〕${who(m)} 的 ${esc(move.name)} 回復了 PP！</span>`);
 }
-const STATUS_WORD = {burn:'陷入了灼傷', poison:'中毒了', paralyze:'被麻痺了'};
+const STATUS_WORD = {burn:'陷入了灼傷', poison:'中毒了', toxic:'中了劇毒', paralyze:'被麻痺了', sleep:'睡著了', freeze:'被凍住了'};
 // 攻擊命中後：氣球、王者之證、生命寶珠、貝殼之鈴、凸凸頭盔、接觸型特性、自信過度、HP 樹果
 function afterHitFx(att, def, move, d){
   if(d <= 0) return;
@@ -397,12 +413,12 @@ function afterHitFx(att, def, move, d){
     const l = Math.max(1, Math.floor(att.maxhp/10)); att.hp = Math.max(0, att.hp - l);
     print(`<span class="bad">〔生命寶珠〕${who(att)} 損失了 ${l} 點 HP。</span>`);
   }
-  if(holds(def,'rockyhelmet') && att.hp > 0 && !hasAb(att,'magicguard')){
+  if(holds(def,'rockyhelmet') && isPhys(move) && att.hp > 0 && !hasAb(att,'magicguard')){
     const l = Math.max(1, Math.floor(att.maxhp/6)); att.hp = Math.max(0, att.hp - l);
     print(`<span class="bad">〔凸凸頭盔〕${who(att)} 受到了 ${l} 點傷害！</span>`);
   }
   const contact = {static:'paralyze', flamebody:'burn', poisonpoint:'poison'}[def.ab];
-  if(contact && att.hp > 0 && !att.status && !statusImmune(att, contact) && Math.random() < 0.3){
+  if(contact && isPhys(move) && att.hp > 0 && !att.status && !statusImmune(att, contact) && Math.random() < 0.3){
     att.status = contact;
     print(`${abTag(def)}<span class="bad">${who(att)} ${STATUS_WORD[contact]}！</span>`);
     lumCheck(att);
@@ -437,6 +453,7 @@ function endTurnFx(m){
 function switchOutFx(m){
   if(!m) return;
   delete m._lock; delete m._metro;   // 講究圍巾、節拍器：換下場就重新計算
+  clearVolatile(m);                  // 能力變化、混亂、寄生種子等只在場上有效的狀態（moves.js）
   if(m.hp > 0 && hasAb(m,'regenerator') && m.hp < m.maxhp){
     const h = Math.max(1, Math.floor(m.maxhp/3)); m.hp = Math.min(m.maxhp, m.hp + h);
     print(`${abTag(m)}<span class="good">${nm(m)} 回復了 ${h} 點 HP。</span>`);

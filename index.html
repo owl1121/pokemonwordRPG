@@ -155,7 +155,7 @@ header{display:flex;justify-content:space-between;align-items:center;gap:8px;}
 #modal.open{display:flex;}
 .mbox{width:100%;max-width:460px;max-height:86vh;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
 .mhead{display:flex;flex-wrap:wrap;gap:6px;padding:10px;border-bottom:1px solid var(--line);}
-.mhead .tab.wide{flex:1 1 100%;order:5;}
+.mhead .tab.wide{flex:1 1 40%;order:5;}
 .mhead .x{order:4;}
 .ptbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;}
 .ptbar .claim.off{background:transparent;color:var(--text);border:1px solid var(--line);}
@@ -446,7 +446,7 @@ button,input,textarea,select{font-family:inherit;}
   <div id="opts"></div>
   <div id="turnbar"></div>
   <div id="modal" onclick="if(event.target===this)closeMenu()"><div class="mbox">
-    <div class="mhead"><button class="tab" id="tabProfile" onclick="openMenu('profile')">👤 檔案</button><button class="tab" id="tabQuest" onclick="openMenu('quest')">📜 任務</button><button class="tab" id="tabAch" onclick="openMenu('ach')">🏆 成就</button><button class="tab" id="tabCheckin" onclick="openMenu('checkin')">📅 簽到</button><button class="x" onclick="closeMenu()">✕</button><button class="tab wide" id="tabPTitle" onclick="openMenu('ptitle')">🏅 寶可夢稱號</button></div>
+    <div class="mhead"><button class="tab" id="tabProfile" onclick="openMenu('profile')">👤 檔案</button><button class="tab" id="tabQuest" onclick="openMenu('quest')">📜 任務</button><button class="tab" id="tabAch" onclick="openMenu('ach')">🏆 成就</button><button class="tab" id="tabCheckin" onclick="openMenu('checkin')">📅 簽到</button><button class="x" onclick="closeMenu()">✕</button><button class="tab wide" id="tabPTitle" onclick="openMenu('ptitle')">🏅 寶可夢稱號</button><button class="tab wide" id="tabStats" onclick="openMenu('stats')">📊 統計</button></div>
     <div id="mbody"></div></div></div>
   <div id="hub" onclick="if(event.target===this)closeHub()"><div class="mbox">
     <div class="mhead"><div id="hubTitle" class="htitle"></div><button class="x" onclick="closeHub()">✕</button></div>
@@ -455,11 +455,13 @@ button,input,textarea,select{font-family:inherit;}
 </div>
 
 <script src="data.js"></script>
+<script src="moves-data.js"></script>
 <script src="mon-art.js"></script>
 <script src="mon-colors.js"></script>
 <script src="sounds/list.js" onerror="this.remove()"></script>
 <script src="battle.js"></script>
 <script src="features.js"></script>
+<script src="moves.js"></script>
 <script>
 /* =====================================================
    events.js — 節日活動系統
@@ -810,18 +812,6 @@ function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
 function monName(m){ return (m.shiny ? '✨' : '') + m.name; }
 function nm(m){ return m.shiny ? `<span class="shiny">${esc(monName(m))}</span>` : esc(m.name); }
 
-function buildMoves(entry){
-  const t1=entry[1], t2=entry[2];
-  const m1 = MOVES[t1] || MOVES["一般"];
-  const fourth = t2 ? {name:(MOVES[t2]||MOVES["一般"]).q, type:t2, power:45, pp:25, maxpp:25}
-                     : {name:"捨身衝撞", type:"一般", power:65, recoil:0.25, pp:15, maxpp:15};
-  return [
-    {name:"撞擊", type:"一般", power:40, pp:35, maxpp:35},
-    {name:m1.q, type:t1, power:45, pp:25, maxpp:25},
-    fourth,
-    {name:m1.s, type:t1, power:75, pp:10, maxpp:10}
-  ];
-}
 function statsFor(entry, level){
   const tier = entry[3];
   const base = 28 + tier*11;
@@ -865,7 +855,7 @@ function makeMon(dexIndex, level, opts){
     dex: dexIndex, name:e[0], t1:e[1], t2:e[2], tier:e[3],
     level, hp:st.hp, maxhp:st.hp, atk:st.atk, def:st.def, spa:st.spa, sdf:st.sdf, spd:st.spd,
     iv, ivCap: opts.ivCap || ivSum(iv), nature, ab: (opts.ab && ABILITIES[opts.ab]) ? opts.ab : rollAbility(e),
-    exp:0, expNext: 18 + level*9, moves: buildMoves(e),
+    exp:0, expNext: 18 + level*9, moves: defaultMoves(dexIndex, level), xm:[], friend:70,
     status:null, atkMul:1, defMul:1, shiny, got:++gotSeq
   };
 }
@@ -892,9 +882,9 @@ function unboostMon(m){            // 抓到之後還原成一般數值
   m.hp = Math.max(1, Math.round(st.hp*ratio));
   delete m.boost;
 }
-const STRUGGLE = {name:'掙扎', type:'一般', power:50, recoil:0.25, struggle:true};
+const STRUGGLE = {name:'掙扎', type:'一般', cls:0, power:50, acc:0, pri:0, fx:'', recoil:0.25, struggle:true};
 function restorePP(m){ (m.moves||[]).forEach(mv=>{ if(mv.maxpp) mv.pp = mv.maxpp; }); }
-function typesOf(m){ return [m.t1, m.t2]; }
+function typesOf(m){ return m._types || [m.t1, m.t2]; }   // _types：對戰中被浸水、變身等改掉的屬性
 function typeStr(m){ return m.t2 ? m.t1+"／"+m.t2 : m.t1; }
 function isFinalForm(dexIdx){ return !EVO[dexIdx] && !STONE_EVO[dexIdx] && !TIME_EVO[dexIdx]; }
 
@@ -989,7 +979,7 @@ let state = {
   stats:{}, quest:{base:{}}, ach:{done:[],claimed:[]}, meta:defaultMeta(), checkin:{ym:'',days:[]},
   profile:{name:'', titleId:'', frame:'auto'},
   fest:{joined:{}, themes:[], theme:'default'},
-  mail:{box:[], seen:[]}
+  mail:{box:[], seen:[]}, tms:{}
 };
 
 const hdrLeft = document.getElementById('hdrleft');
@@ -1063,7 +1053,7 @@ function saveGame(){
       v:2, party:(typeof svRun!=='undefined' && svRun) ? svRun.backup : state.party, box:state.box,   // 連戰試煉中存檔，存的是原本的隊伍
       seen:Array.from(state.seen), caught:Array.from(state.caught), shinyCaught:Array.from(state.shinyCaught), mega:state.mega,
       bag:state.bag, money:state.money, zone:state.zone, maxZone:state.maxZone, tower:state.tower,
-      stats:state.stats, quest:state.quest, ach:state.ach, meta:state.meta, checkin:state.checkin, profile:state.profile, fest:state.fest, mail:state.mail
+      stats:state.stats, quest:state.quest, ach:state.ach, meta:state.meta, checkin:state.checkin, profile:state.profile, fest:state.fest, mail:state.mail, tms:state.tms
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     return true;
@@ -1072,11 +1062,10 @@ function saveGame(){
 function fixMon(m){
   if(!m) return m;
   const fixed = Object.assign({status:null, atkMul:1, defMul:1, shiny:false}, m);
-  if(!Array.isArray(fixed.moves) || fixed.moves.length!==4){ fixed.moves = buildMoves(DEX[fixed.dex]); }
-  fixed.moves.forEach((mv,i)=>{ if(mv.maxpp===undefined){ mv.maxpp = i===0?35 : i===3?10 : mv.recoil?15 : 25; mv.pp = mv.maxpp; } });
   if(fixed.level > MAX_LEVEL) fixed.level = MAX_LEVEL;
   if(fixed.level >= MAX_LEVEL) fixed.exp = 0;
   if(fixed._mega) megaRevert(fixed);   // 存檔時剛好在 Mega 進化中：還原成原本的樣子
+  migrateMoves(fixed);                 // 舊存檔的招式換成本傳招式；補上親密度
   const needNature = !(fixed.nature >= 0 && fixed.nature < NATURES.length);   // 舊存檔：補上性格、特性
   if(needNature) fixed.nature = rollNature();
   ensureAbility(fixed);
@@ -1117,6 +1106,7 @@ function loadGame(){
     state.profile = Object.assign({name:'',titleId:'',frame:'auto'}, d.profile||{});
     state.fest = Object.assign({joined:{},themes:[],theme:'default'}, d.fest||{});
     state.mail = Object.assign({box:[],seen:[]}, d.mail||{});
+    state.tms = Object.assign({}, d.tms||{});
     state.stats = Object.assign({}, d.stats||{});
     state.quest = Object.assign({base:{}}, d.quest||{});
     state.ach = Object.assign({done:[],claimed:[]}, d.ach||{});
@@ -1132,7 +1122,7 @@ function resetGame(){
   state.tower=defaultTower();
   state.stats={}; state.quest={base:{}}; state.ach={done:[],claimed:[]}; state.meta=defaultMeta(); state.checkin={ym:'',days:[]};
   state.profile={name:'',titleId:'',frame:'auto'};
-  state.fest={joined:{},themes:[],theme:'default'}; state.mail={box:[],seen:[]}; applyFestTheme();
+  state.fest={joined:{},themes:[],theme:'default'}; state.mail={box:[],seen:[]}; state.tms={}; applyFestTheme();
   screenNamePrompt(screenTitle);
 }
 function screenContinue(){
@@ -1578,6 +1568,7 @@ function firstAlive(){
 function afterFaintCheck(p){
   if(p.hp>0) return false;
   print(`<span class="bad">${nm(p)} 倒下了！</span>`);
+  bump('faints'); addFriend(p, -1);
   if(state.party.every(m=>m.hp<=0)){ loseBattle(); return true; }
   screenForcedSwitch();
   return true;
@@ -1604,6 +1595,7 @@ function screenShop(msg){
   print('<span class="sys">點道具看說明。</span>');
   const opts = Object.keys(ITEMS).filter(k=>ITEMS[k].price>0).map(k=>({label:`${ITEMS[k].label} $${priceOf(k)}`, half:true, action:()=>screenShopItem(k)}));
   opts.push({label:"🧷 攜帶道具", half:true, action:()=>screenHeldShop(null, null)});
+  opts.push({label:"💿 招式學習器", half:true, action:()=>{ tmShopPage = 0; screenTmShop(); }});
   opts.push({label:"💎 Mega 商店", half:true, action:()=>screenMegaShop(screenShop)});
   opts.push({label:"離開", action:toField});
   setOptions(opts);
@@ -1667,21 +1659,18 @@ function makeMegaFoe(m, lvl){
   f.name = m.name; f.t1 = m.t1; f.t2 = m.t2; f.megaId = m.id;
   f.maxhp = Math.round(f.maxhp*MEGA_FOE_MUL.hp); f.hp = f.maxhp;
   scaleAD(f, MEGA_FOE_MUL.atk, MEGA_FOE_MUL.def); f.spd = Math.round(f.spd*MEGA_FOE_MUL.spd);
-  f.moves = buildMoves(megaEntry(m));
   return f;
 }
 function megaFormsFor(p){ const st = megaState().stones; return MEGAS.filter(m=>m.base===p.dex && st[m.id]); }
 function megaEvolve(p, m){
-  p._mega = {id:m.id, moves:JSON.parse(JSON.stringify(p.moves))};
+  p._mega = {id:m.id};   // 招式不變（跟本傳一樣）
   p.name = m.name; p.t1 = m.t1; p.t2 = m.t2;
   scaleAD(p, MEGA_ME_MUL.atk, MEGA_ME_MUL.def); p.spd = Math.round(p.spd*MEGA_ME_MUL.spd);
-  p.moves = buildMoves(megaEntry(m));
 }
 function megaRevert(p){
   if(!p || !p._mega) return;
-  const e = DEX[p.dex], st = monStats(p), saved = p._mega.moves;
+  const e = DEX[p.dex], st = monStats(p);
   p.name = e[0]; p.t1 = e[1]; p.t2 = e[2]; setNonHpStats(p, st);
-  if(Array.isArray(saved) && saved.length === 4) p.moves = saved;
   delete p._mega;
 }
 function megaRevertAll(){ (state.party||[]).forEach(megaRevert); (state.box||[]).forEach(megaRevert); }
@@ -1936,7 +1925,7 @@ function startLegendaryChallenge(){
   wild.maxhp = Math.floor(wild.maxhp*lh); wild.hp = wild.maxhp;
   scaleAD(wild, lm, lm, Math.floor); wild.spd = Math.floor(wild.spd*lm);
   wild.moves = wild.moves.map(m => Object.assign({}, m, {power: Math.round((m.power||0)*1.25)}));
-  wild.moves.push({name:'神獸之力', type:DEX[dexIdx][1], power:110, pp:8, maxpp:8});
+  wild.moves.push({name:'神獸之力', type:DEX[dexIdx][1], cls:1, power:110, acc:0, pri:0, fx:'', pp:8, maxpp:8});
   wild.legend = true;   // 讓對方出招時會挑對你最有效的招（見 battle.js 的 randomWildMove）
   state.seen.add(dexIdx);
   clearBattleModifiers();
@@ -1990,8 +1979,11 @@ function screenMember(i, back){
   print(`性格：${esc(natureText(m))}`);
   print(`特性：${esc(abName(m))}<span class="sys">　${esc(ABILITIES[ensureAbility(m)].desc)}</span>`);
   print(`攜帶：${esc(heldName(m))}${m.held && HELD[m.held] ? `<span class="sys">　${esc(HELD[m.held].desc)}</span>` : ''}`);
+  print(`親密度：${friendText(m)}`);
+  print(`招式：${m.moves.map(mv=>esc(mv.name)).join('、')}`);
   stageDetail = hexPanel(m.iv, null, m.ivCap, null);
   const opts = [];
+  opts.push({label:'⚔️ 招式', action:()=>screenMoves(i, back)});
   opts.push({label:"📊 調整能力點", half:true, action:()=>screenIvEdit(i, back)});
   opts.push({label:'🧷 攜帶道具', half:true, action:()=>screenHeld(i, back)});
   if(i>0) opts.push({label:"★ 設為隊長", action:()=>setLeader(i, back)});
@@ -2203,7 +2195,7 @@ function healItemKeys(){ return Object.keys(ITEMS).filter(k=>{ const it = ITEMS[
 function needsItem(m, it){
   if(it.pp) return (m.moves||[]).some(mv=>mv.pp < mv.maxpp);
   if(it.heal) return m.hp < m.maxhp;
-  return m.status === it.cure;
+  return statusMatch(m.status, it.cure);
 }
 function screenHealItems(msg){
   clearLog();
@@ -2841,6 +2833,8 @@ function openMenu(tab){
     h = profileHtml();
   } else if(menuTab==='ptitle'){
     h = ptitleHtml();
+  } else if(menuTab==='stats'){
+    h = statsHtml();
   } else if(menuTab==='checkin'){
     h = checkinHtml();
   } else if(menuTab==='quest'){
@@ -2868,6 +2862,7 @@ function openMenu(tab){
   document.getElementById('tabAch').className = 'tab' + (menuTab==='ach'?' on':'');
   document.getElementById('tabCheckin').className = 'tab' + (menuTab==='checkin'?' on':'');
   document.getElementById('tabPTitle').className = 'tab wide' + (menuTab==='ptitle'?' on':'');
+  document.getElementById('tabStats').className = 'tab wide' + (menuTab==='stats'?' on':'');
   modalEl.classList.add('open');
 }
 
