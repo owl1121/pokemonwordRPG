@@ -527,7 +527,7 @@ function frameKey(m){
 }
 /* ---------- 寶可夢特徵（疊在玩家選的邊框後面） ----------
    邊框一律照個人檔案的選擇（含限定的超級球／高級球／大師球）；各寶可夢的特徵（耳朵、尾巴…）再疊在框後面。
-   有專屬手繪圖的寶可夢在 mon-art.js（MON_ART）；沒有的就不畫特徵。 */
+   卡片底圖（官方圖扭曲版）在 mon-art.js 的 monBgSrc。 */
 function frameClass(m){ return 'fr-' + frameKey(m); }
 // 「無框」：用這隻寶可夢的兩個代表色做上→下漸層（異色用異色的顏色；超進化中用超進化的顏色）
 function monColorKey(m){ return (m && m._mega && typeof MON_COLORS==='object' && MON_COLORS['M'+m._mega.id]) ? 'M'+m._mega.id : (m && m.dex); }
@@ -537,29 +537,13 @@ function frameStyle(m){
   const [a, b] = m.shiny ? [c[2], c[3]] : [c[0], c[1]];
   return `--fr:linear-gradient(180deg,${a},${b});`;
 }
-// 卡片底圖（馬賽克，玩家和對手都有）：回傳 data URL；圖檔是用到才載入，還沒載好就先回空字串，載完再補上
-function monBg(m, side){
-  if(typeof monBgSrc!=='function' || !m) return '';
-  const need = artFilesFor(m).filter(f => !artLoaded(f));
-  if(need.length){ Promise.all(need.map(loadArtFile)).then(()=> refreshMonBg(m, side, 3)); return ''; }
-  const k = (m._mega && MON_ART['M'+m._mega.id]) ? 'M'+m._mega.id : m.dex;
-  return (m.shiny && monBgSrc(k, MON_ART_SHINY)) || monBgSrc(k, MON_ART);
-}
+// 卡片底圖（官方圖扭曲版，玩家和對手都有）：mon-art.js 的 monBgSrc 給圖片網址，瀏覽器顯示時才下載
 function monBgAttr(m, side, extra){
-  const u = monBg(m, side);
+  const u = (typeof monBgSrc==='function') ? monBgSrc(m) : '';
   const st = (extra||'') + (u ? `--mzimg:url(${u});` : '');
   return ` class="card ${side}${u?' mz':''}` + (side==='me' ? ' '+frameClass(m) : '') + `"` + (st ? ` style="${st}"` : '');
 }
-// 圖載完後，若這隻還在場上就把底圖補上（卡片可能還在動畫中沒換上，晚一點再試幾次）
-function refreshMonBg(m, side, tries){
-  const b = state.battle; if(!b) return;
-  if((side==='me' ? state.party[b.playerIdx] : b.wild) !== m) return;
-  const c = stageEl.querySelector('.card.'+side);
-  if(!c || (typeof stageLatest!=='undefined' && stageLatest)){ if(tries>0) setTimeout(()=> refreshMonBg(m, side, tries-1), 400); return; }
-  if(c.classList.contains('mz')) return;
-  const u = monBg(m, side); if(!u) return;
-  c.style.setProperty('--mzimg', `url(${u})`); c.classList.add('mz');
-}
+
 
 
 // 訓練家／館主的隊伍進度：✖ 已倒下、● 還能戰鬥（含目前場上那隻）

@@ -340,9 +340,9 @@ button,input,textarea,select{font-family:inherit;}
 .card.me[class*="fr-"]::before,.card.me[class*="fr-"]::after{width:18px;height:18px;margin-top:-9px;}
 .card.me[class*="fr-"]::before{left:-12px;} .card.me[class*="fr-"]::after{right:-12px;}
 #stage{isolation:isolate;}
-/* 卡片底圖：寶可夢的馬賽克鋪滿卡片，文字各自墊 60% 底色 */
-.card.foe.mz{background:var(--mzimg) center/100% 100% no-repeat padding-box,#ffe9ec;image-rendering:pixelated;--half:rgba(255,233,236,.6);}
-.card.me.mz[class*="fr-"]{background:var(--mzimg) center/100% 100% no-repeat padding-box,linear-gradient(#dff6f8,#dff6f8) padding-box,var(--fr) border-box;image-rendering:pixelated;}
+/* 卡片底圖：寶可夢官方圖扭曲版鋪滿卡片，文字各自墊 60% 底色 */
+.card.foe.mz{background:var(--mzimg) center/cover no-repeat padding-box,#ffe9ec;--half:rgba(255,233,236,.6);}
+.card.me.mz[class*="fr-"]{background:var(--mzimg) center/cover no-repeat padding-box,linear-gradient(#dff6f8,#dff6f8) padding-box,var(--fr) border-box;}
 .card.me.mz{--half:rgba(223,246,248,.6);}
 .card.mz .r1>span,.card.mz .r2,.card.mz .hpt{background:var(--half);border-radius:6px;padding:0 5px;}
 .card.mz .r2,.card.mz .hpt{width:fit-content;max-width:100%;box-sizing:border-box;}
