@@ -20,7 +20,7 @@
 
 ## index.html 內部分段
 
-- 第 18~435 行：CSS（卡片底圖是 `.card.mz`：`--mzimg` 鋪滿 padding-box，`.r1>span`/`.r2`/`.hpt` 各自墊 `--half` 50% 底色）
+- 第 18~435 行：CSS（卡片底圖是 `.card.mz`：`--mzimg` 鋪滿 padding-box，`.r1>span`/`.r2`/`.hpt` 各自墊 `--half` 60% 底色）
 - 第 430~445 行：HTML 骨架（`#stage` 對戰畫面、`#log` 文字、`#bar` 狀態列、`#opts` 選項按鈕、`#modal` 選單、`#hub` 活動/信箱）
 - 約 466~846 行：節日活動 `EVENTS`、背景主題、信箱 `mail*`、`openHub`
 - 約 848 行起：主程式。常數、`makeMon`（產生寶可夢）、能力值/個體值計算、塔與傳說挑戰規則、`state`（全部遊戲狀態）、`print`（文字輸出）、`setOptions`（選項按鈕）

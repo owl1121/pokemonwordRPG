@@ -1,5 +1,5 @@
 // mon-art.js — 每隻寶可夢的對戰卡片底圖（高 8 格的馬賽克，鋪滿玩家和對手的卡片）。須在 battle.js 之前載入。
-// 資料依組別拆檔，「用到才載入」（loadArtFile），不在 index.html 一次全載（全部約 4MB）：
+// 資料依組別拆檔，「用到才載入」（loadArtFile），不在 index.html 一次全載（全部約 1.1MB）：
 //   一般版 mon-art-gen1.js ~ mon-art-gen9.js、mon-art-regional.js、mon-art-mega.js → Object.assign(MON_ART, …)
 //   異色版 mon-art-shiny-gen1.js ~ …-gen9.js、…-regional.js、…-mega.js        → Object.assign(MON_ART_SHINY, …)
 // MON_ART[key] = PNG data URL（高 8 格馬賽克，由原本的外框特徵圖套旋渦後縮小而成）。沒有在 MON_ART 裡的寶可夢就用原本的純色卡片。
