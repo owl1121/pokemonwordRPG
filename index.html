@@ -340,7 +340,14 @@ button,input,textarea,select{font-family:inherit;}
 .card.me[class*="fr-"]::before,.card.me[class*="fr-"]::after{width:18px;height:18px;margin-top:-9px;}
 .card.me[class*="fr-"]::before{left:-12px;} .card.me[class*="fr-"]::after{right:-12px;}
 #stage{isolation:isolate;}
-.nicon{height:22px;width:auto;max-width:44px;object-fit:contain;image-rendering:pixelated;vertical-align:-5px;margin-left:5px;}
+/* 卡片底圖：寶可夢的馬賽克鋪滿卡片，文字各自墊 50% 底色 */
+.card.foe.mz{background:var(--mzimg) center/100% 100% no-repeat padding-box,#ffe9ec;image-rendering:pixelated;--half:rgba(255,233,236,.5);}
+.card.me.mz[class*="fr-"]{background:var(--mzimg) center/100% 100% no-repeat padding-box,linear-gradient(#dff6f8,#dff6f8) padding-box,var(--fr) border-box;image-rendering:pixelated;}
+.card.me.mz{--half:rgba(223,246,248,.5);}
+.card.mz .r1>span,.card.mz .r2,.card.mz .hpt{background:var(--half);border-radius:6px;padding:0 5px;}
+.card.mz .r2,.card.mz .hpt{width:fit-content;max-width:100%;box-sizing:border-box;}
+.card.mz .hpt{margin-left:auto;}
+.card.mz .bar,.card.mz .xp{background:rgba(255,255,255,.55);}
 .art{position:absolute;z-index:-1;pointer-events:none;line-height:0}.art svg{display:block;overflow:visible}
 .frgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
 .frbtn{background:transparent;border:2px solid var(--line);border-radius:12px;padding:8px 2px 6px;color:var(--text);font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;}

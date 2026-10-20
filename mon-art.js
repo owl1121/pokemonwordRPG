@@ -1,12 +1,8 @@
-// mon-art.js — 每隻寶可夢的外框特徵（框外露出的一小塊特徵圖）。須在 battle.js 之前載入。
+// mon-art.js — 每隻寶可夢的對戰卡片底圖（高 8 格的馬賽克，鋪滿玩家和對手的卡片）。須在 battle.js 之前載入。
 // 資料依組別拆檔，「用到才載入」（loadArtFile），不在 index.html 一次全載（全部約 4MB）：
 //   一般版 mon-art-gen1.js ~ mon-art-gen9.js、mon-art-regional.js、mon-art-mega.js → Object.assign(MON_ART, …)
 //   異色版 mon-art-shiny-gen1.js ~ …-gen9.js、…-regional.js、…-mega.js        → Object.assign(MON_ART_SHINY, …)
-// MON_ART[DEX索引] = 一串 piece；每個 piece 是一張獨立的圖，疊在玩家選的球框「後面」，只露出框外的部分。
-//   s：貼在卡片哪一邊  't' 上 / 'b' 下 / 'l' 左 / 'r' 右
-//   上、下邊用  x（距左）、xr（距右）、xc（水平置中於該位置）；左、右邊用  y（距上）、yb（距下）、yc（垂直置中於該位置）。
-//   svg：HTML 字串（目前都是 base64 內嵌的像素圖 <img>）。左側突出量盡量 ≤ 28px（卡片靠畫面左邊）。
-// 沒有在 MON_ART 裡的寶可夢就不畫特徵。
+// MON_ART[key] = PNG data URL（高 8 格馬賽克，由原本的外框特徵圖套旋渦後縮小而成）。沒有在 MON_ART 裡的寶可夢就用原本的純色卡片。
 const MON_ART = {};
 const MON_ART_SHINY = {};
 
@@ -51,38 +47,8 @@ function preloadArtFor(list){
   if(window.requestIdleCallback) requestIdleCallback(go, {timeout: 3000}); else setTimeout(go, 500);
 }
 
-/* 名字旁的小圖示：取這隻最大的那塊特徵圖（旋渦變形過），縮小放在名字後面 */
-function monIconHtml(key, table) {
-  const list = (table || MON_ART)[key];
-  if (!list || !list.length) return '';
-  let best = null, area = -1;
-  for (const p of list) {
-    const w = +(p.svg.match(/width=['"](\d+)/) || [])[1] || 0, h = +(p.svg.match(/height=['"](\d+)/) || [])[1] || 0;
-    if (w * h > area) { area = w * h; best = p; }
-  }
-  const src = (best.svg.match(/src=['"](data:[^'"]+)['"]/) || [])[1];
-  return src ? `<img class="nicon" alt="" src="${src}">` : '';
-}
-
-/* 把某隻的 piece 組成 HTML（舊的「貼在外框邊緣」畫法，目前沒用到）（疊在 .card.me 裡面；沒有專屬圖就回傳空字串） */
-function monArtHtml(dex, table) {
-  const list = (table || MON_ART)[dex];
-  if (!list) return '';
-  return list.map(p => {
-    let st = '';
-    if (p.s === 't') st += 'bottom:calc(100% - 2px);';
-    else if (p.s === 'b') st += 'top:calc(100% - 2px);';
-    else if (p.s === 'l') st += 'right:calc(100% - 2px);';
-    else st += 'left:calc(100% - 2px);';
-    if (p.s === 't' || p.s === 'b') {
-      if (p.x) st += `left:${p.x};`;
-      if (p.xr) st += `right:${p.xr};`;
-      if (p.xc) st += `left:${p.xc};transform:translateX(-50%);`;
-    } else {
-      if (p.y) st += `top:${p.y};`;
-      if (p.yb) st += `bottom:${p.yb};`;
-      if (p.yc) st += `top:${p.yc};transform:translateY(-50%);`;
-    }
-    return `<span class="art" style="${st}">${p.svg}</span>`;
-  }).join('');
+/* 卡片底圖（馬賽克）的 data URL；沒有就回傳空字串 */
+function monBgSrc(key, table) {
+  const v = (table || MON_ART)[key];
+  return typeof v === 'string' ? v : '';
 }
