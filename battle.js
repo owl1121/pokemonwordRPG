@@ -538,22 +538,23 @@ function frameStyle(m){
   return ` style="--fr:linear-gradient(180deg,${a},${b})"`;
 }
 function frameFeatures(m){
-  if(typeof monArtHtml!=='function' || !m) return '';
-  // 外框圖是用到才載入（mon-art.js 的 loadArtFile）；還沒載好就先不畫，載完再補進對戰卡片
+  if(typeof monIconHtml!=='function' || !m) return '';
+  // 圖檔是用到才載入（mon-art.js 的 loadArtFile）；還沒載好就先不畫，載完再補到名字旁
   const need = artFilesFor(m).filter(f => !artLoaded(f));
   if(need.length){ Promise.all(need.map(loadArtFile)).then(()=> refreshFrameFeatures(m, 3)); return ''; }
   const k = (m._mega && MON_ART['M'+m._mega.id]) ? 'M'+m._mega.id : m.dex;
   const T = (m.shiny && MON_ART_SHINY[k]) ? MON_ART_SHINY : MON_ART;
-  return T[k] ? monArtHtml(k, T) : '';
+  return T[k] ? monIconHtml(k, T) : '';
 }
-// 圖載完後，若這隻還在場上就把特徵補進玩家卡片（卡片可能還在動畫中沒換上，晚一點再試幾次）
+// 圖載完後，若這隻還在場上就把小圖示補到玩家卡片的名字旁（卡片可能還在動畫中沒換上，晚一點再試幾次）
 function refreshFrameFeatures(m, tries){
   const b = state.battle; if(!b || state.party[b.playerIdx] !== m) return;
-  const c = stageEl.querySelector('.card.me');
-  if(!c || (typeof stageLatest!=='undefined' && stageLatest)){ if(tries>0) setTimeout(()=> refreshFrameFeatures(m, tries-1), 400); return; }
-  if(c.querySelector('.art')) return;
-  const h = frameFeatures(m); if(h) c.insertAdjacentHTML('afterbegin', h);
+  const nameEl = stageEl.querySelector('.card.me .r1 > span');
+  if(!nameEl || (typeof stageLatest!=='undefined' && stageLatest)){ if(tries>0) setTimeout(()=> refreshFrameFeatures(m, tries-1), 400); return; }
+  if(nameEl.querySelector('.nicon')) return;
+  const h = frameFeatures(m); if(h) nameEl.insertAdjacentHTML('beforeend', h);
 }
+
 // 訓練家／館主的隊伍進度：✖ 已倒下、● 還能戰鬥（含目前場上那隻）
 function teamDots(b, w){
   const f = (b.foeFainted||[]).length, left = (b.foes?b.foes.length:0) + (w.hp>0?1:0);
@@ -565,7 +566,7 @@ function renderStage(at, hit, power){   // hit：'foe' 或 'me'，該張卡片�
   const xp = p.level>=MAX_LEVEL ? 100 : Math.min(100, Math.round(100*p.exp/p.expNext));
   const html =
     `<div class="card foe"><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${dexNo(w.dex)} · ${esc(typeStr(w))}${b.mode==='wild' ? (state.caught.has(w.dex) ? ' · ✔已抓過' : ' · ★未抓過') : ''}${stChip(w)}${teamDots(b,w)}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
-    `<div class="card me ${frameClass(p)}"${frameStyle(p)}>${frameFeatures(p)}<div class="r1"><span>${nmx(p)}</span><span>Lv.${p.level}</span></div><div class="r2">${esc(typeStr(p))} · 速度 ${p.spd}${stChip(p)}</div><div class="bar${pctHp(p)<30?' low':''}"><i style="width:${pctHp(p)}%"></i></div><div class="hpt">HP: ${p.hp}/${p.maxhp}</div><div class="xp"><i style="width:${xp}%"></i></div></div>`;
+    `<div class="card me ${frameClass(p)}"${frameStyle(p)}><div class="r1"><span>${nmx(p)}${frameFeatures(p)}</span><span>Lv.${p.level}</span></div><div class="r2">${esc(typeStr(p))} · 速度 ${p.spd}${stChip(p)}</div><div class="bar${pctHp(p)<30?' low':''}"><i style="width:${pctHp(p)}%"></i></div><div class="hpt">HP: ${p.hp}/${p.maxhp}</div><div class="xp"><i style="width:${xp}%"></i></div></div>`;
   const turnHtml = `<div>回合<br><b>${b.turn||1}</b></div><div>狀態<br><b>${b.phase||'選擇行動'}</b></div>${weatherChip() ? `<div>天氣<br><b>${weatherChip()}</b></div>` : ''}`;
   const apply = ()=>{
     stageEl.innerHTML = html; turnEl.innerHTML = turnHtml;

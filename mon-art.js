@@ -51,7 +51,20 @@ function preloadArtFor(list){
   if(window.requestIdleCallback) requestIdleCallback(go, {timeout: 3000}); else setTimeout(go, 500);
 }
 
-/* 把某隻的 piece 組成 HTML（疊在 .card.me 裡面；沒有專屬圖就回傳空字串） */
+/* 名字旁的小圖示：取這隻最大的那塊特徵圖（旋渦變形過），縮小放在名字後面 */
+function monIconHtml(key, table) {
+  const list = (table || MON_ART)[key];
+  if (!list || !list.length) return '';
+  let best = null, area = -1;
+  for (const p of list) {
+    const w = +(p.svg.match(/width=['"](\d+)/) || [])[1] || 0, h = +(p.svg.match(/height=['"](\d+)/) || [])[1] || 0;
+    if (w * h > area) { area = w * h; best = p; }
+  }
+  const src = (best.svg.match(/src=['"](data:[^'"]+)['"]/) || [])[1];
+  return src ? `<img class="nicon" alt="" src="${src}">` : '';
+}
+
+/* 把某隻的 piece 組成 HTML（舊的「貼在外框邊緣」畫法，目前沒用到）（疊在 .card.me 裡面；沒有專屬圖就回傳空字串） */
 function monArtHtml(dex, table) {
   const list = (table || MON_ART)[dex];
   if (!list) return '';
