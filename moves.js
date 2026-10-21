@@ -6,14 +6,17 @@
    效果碼說明見產生腳本，各效果的處理在本檔 runFx / dmgPower / 各個 case。 */
 
 const MV_CLS_NAME = ['物理', '特殊', '變化'];
-function makeMove(id){
+function makeMove(id, ppUp){
   const d = MOVE_DB[id]; if(!d) return null;
-  return {id:+id, name:d[0], type:d[1], cls:d[2], power:d[3], pp:d[4], maxpp:d[4], acc:d[5], pri:d[6], fx:d[7]||'', self:!!d[8]};
+  const mx = d[4] + Math.floor(d[4]*(ppUp||0)/5);   // PP 提升劑
+  const o = {id:+id, name:d[0], type:d[1], cls:d[2], power:d[3], pp:mx, maxpp:mx, acc:d[5], pri:d[6], fx:d[7]||'', self:!!d[8], flags:d[9]||0};
+  if(ppUp) o.ppUp = ppUp;
+  return o;
 }
 // 存檔讀回來時：用最新資料重建，PP 保留
 function refreshMove(mv){
   if(!mv || !mv.id || !MOVE_DB[mv.id]) return mv;
-  const n = makeMove(mv.id);
+  const n = makeMove(mv.id, mv.ppUp);
   if(typeof mv.pp === 'number') n.pp = Math.max(0, Math.min(n.maxpp, mv.pp));
   return n;
 }
@@ -205,16 +208,22 @@ function stagesChip(m){
   return t.length ? ' · ' + t.join(' ') : '';
 }
 // 能力變化：k = a/d/c/e/s/h/v，n = 等級（±）；byFoe = 是對方造成的（白霧擋得住）
-function statChange(m, k, n, byFoe){
+function statChange(m, k, n, byFoe, src){
   if(!m || m.hp <= 0 || !n) return '';
-  if(hasAb(m,'simple')) n *= 2;
-  if(n < 0 && byFoe && sideOf(m).mist) return `<span class="sys">${who(m)} 受到白霧保護！</span>`;
+  if(byFoe && !src && state.battle) src = activeFoeOf(m);
+  const [n2, blocked] = abStatChange(m, k, n, byFoe, src);   // 唱反調、單純、恆淨之軀……（abilities.js）
+  if(blocked) return blocked;
+  n = n2; if(!n) return '';
+  if(n < 0 && byFoe && sideOf(m).mist && !(src && hasAb(src,'infiltrator'))) return `<span class="sys">${who(m)} 受到白霧保護！</span>`;
   const key = ST_KEY[k], acc = (k === 'h' || k === 'v');
   const cur = stageOf(m[key], acc), nx = Math.max(-6, Math.min(6, cur + n));
   if(nx === cur) return `<span class="sys">${who(m)} 的${ST_NAME[k]}已經無法再${n > 0 ? '提升' : '降低'}了！</span>`;
   m[key] = mulOf(nx, acc);
   const amt = Math.abs(nx - cur) >= 3 ? '極大幅' : Math.abs(nx - cur) === 2 ? '大幅' : '';
-  return `<span class="${n > 0 ? 'good' : 'bad'}">${who(m)} 的${ST_NAME[k]}${amt}${n > 0 ? '提升' : '下降'}了！</span>`;
+  const out = `<span class="${n > 0 ? 'good' : 'bad'}">${who(m)} 的${ST_NAME[k]}${amt}${n > 0 ? '提升' : '下降'}了！</span>`;
+  if(n < 0 && byFoe){ const x = abAfterDrop(m, byFoe); return out + (x ? '<br>' + x : ''); }   // 不服輸、好勝
+  if(n > 0 && !byFoe && state.battle && !m._opp){ const o = activeFoeOf(m); if(o && o !== m && hasAb(o,'opportunist') && o.hp > 0){ o._opp = true; const t = statChange(o, k, nx - cur); delete o._opp; return out + (t ? '<br>' + abTag(o) + t : ''); } }   // 跟風
+  return out;
 }
 function resetStages(m){ Object.values(ST_KEY).forEach(k=>{ m[k] = 1; }); }
 
@@ -230,7 +239,7 @@ function setStatus(m, kind, src, quiet){
   const t = typesOf(m);
   if((kind === 'burn' && t.includes('火')) || (kind === 'paralyze' && t.includes('電')) || ((kind === 'poison' || kind === 'toxic') && (t.includes('毒') || t.includes('鋼'))) || (kind === 'freeze' && t.includes('冰')))
     return fail(`對 ${who(m)} 好像沒有效果……`);
-  if(statusImmune(m, kind === 'toxic' ? 'poison' : kind) || (kind === 'sleep' && hasAb(m,'insomnia'))) return fail(`${who(m)} 的特性讓牠不會${STATUS_NAME[kind]}。`);
+  if(statusImmune(m, kind, src)) return fail(`${who(m)} 的特性讓牠不會${STATUS_NAME[kind]}。`);
   if(src && src !== m && sideOf(m).safeg) return fail(`${who(m)} 受到神秘守護的保護！`);
   if(grounded(m) && terrain() === 'm') return fail(`${who(m)} 受到薄霧場地的保護！`);
   if(kind === 'sleep' && grounded(m) && terrain() === 'e') return fail(`${who(m)} 在電氣場地上睡不著！`);
@@ -239,12 +248,14 @@ function setStatus(m, kind, src, quiet){
   if(kind === 'toxic') m._tox = 1;
   const msg = {burn:'陷入了灼傷', poison:'中毒了', toxic:'中了劇毒', paralyze:'被麻痺了', sleep:'睡著了', freeze:'被凍住了'}[kind];
   const out = `<span class="bad">${who(m)} ${msg}！</span>`;
-  if(quiet) return out;
-  print(out); lumCheck(m);
+  if(quiet){ if(src && src !== m) setTimeout0(()=>abOnStatus(m, kind, src)); return out; }
+  print(out); lumCheck(m); abOnStatus(m, kind, src);
   return '';
 }
+function setTimeout0(f){ f(); }
 function setConfuse(m, src){
   if(!m || m.hp <= 0) return;
+  if(hasAb(m,'owntempo') && !(src && src !== m && moldBreaks(src))) return print(`${abTag(m)}<span class="sys">${who(m)} 不會混亂！</span>`);
   if(m._cnf > 0) return print(`<span class="sys">${who(m)} 已經混亂了。</span>`);
   if(grounded(m) && terrain() === 'm') return print(`<span class="sys">${who(m)} 受到薄霧場地的保護！</span>`);
   if(src && src !== m && sideOf(m).safeg) return print(`<span class="sys">${who(m)} 受到神秘守護的保護！</span>`);
@@ -265,7 +276,7 @@ function moveBlockReason(m, mv){
   const foe = state.battle && activeFoeOf(m);
   if(foe && foe._impr && (foe.moves||[]).some(x=>x.name === mv.name)) return '被封印';
   if(hasFx(mv,'snore') && m.status !== 'sleep') return '沒睡著';
-  if(holds(m,'choicescarf') && m._lock && mv.name !== m._lock) return '講究圍巾';
+  if((holds(m,'choicescarf') || hasAb(m,'gorillatactics')) && m._lock && mv.name !== m._lock && !m._dmax) return holds(m,'choicescarf') ? '講究圍巾' : '一猩一意';
   return '';
 }
 function usableMoves(m){ return (m.moves||[]).filter(mv=>!moveBlockReason(m, mv)); }
@@ -326,6 +337,8 @@ function chooseFoeMove(w){
 /* ---------- 出招 ---------- */
 function moveTypeNow(att, mv){
   let t = mv.type;
+  if(mv.id === TERA_BLAST && att._tera) t = att._tera;
+  const ab = abMoveType(att, mv); if(ab){ t = ab.type; if(ab.ate) mv._ate = true; }
   if(hasFx(mv,'wball')){ t = {sun:'火', rain:'水', sand:'岩石', snow:'冰'}[battleWeather()] || t; }
   if(att._elec) t = '電';
   else if(t === '一般' && state.battle && state.battle._ion) t = '電';
@@ -372,15 +385,16 @@ function moveFail(t){ print(`<span class="sys">${t || '但是失敗了！'}</spa
 // 命中判定
 function hitCheck(att, def, mv){
   if(mv.self || !mv.acc) return true;
-  if(att._lockon === def || def._tkin){ return true; }
+  if(att._lockon === def || def._tkin || abNoGuard(att, def)){ return true; }
   let acc = mv.acc;
+  if(mv.cls === 2 && dAb(att, def,'wonderskin')) acc = Math.min(acc, 50);
   const w = battleWeather();
   if(w === 'rain' && (mv.id === 87 || mv.id === 542)) return true;   // 打雷、暴風
   if(w === 'snow' && mv.id === 59) return true;                       // 暴風雪
   if(w === 'sun' && (mv.id === 87 || mv.id === 542)) acc = 50;
   if(hasFx(mv,'ohko')){ if(def.level > att.level) return false; return Math.random()*100 < 30 + att.level - def.level; }
-  const ev = def._foresight ? 1 : (def.evaMul||1);
-  acc = acc * (att.accMul||1) / ev * (bf().grav ? 5/3 : 1);
+  const ev = (def._foresight || hasAb(att,'keeneye') || hasAb(att,'unaware')) ? Math.min(1, def.evaMul||1) : (def.evaMul||1);
+  acc = acc * (dAb(att, def,'unaware') ? 1 : (att.accMul||1)) / ev * (bf().grav ? 5/3 : 1) * abAccMul(att, def, mv);
   return Math.random()*100 < acc;
 }
 // 主要入口（battle.js 的 attackCore 呼叫）
@@ -390,7 +404,9 @@ function useMove(att, def, mv, opt){
   if(!opt.called){
     const forced = !!(att._force && att._force.mv === mv);
     if(!preMoveChecks(att, def, mv)){ clearForce(att); delete att._bide; return; }
-    if(!forced && !isFoeMon(att) && mv.maxpp !== undefined && !mv.struggle){ mv.pp = Math.max(0, mv.pp - 1); leppaCheck(att, mv); if(def._pressure) mv.pp = Math.max(0, mv.pp - 1); }
+    const ppm = mv._base || mv;   // Z 招式、極巨招式扣原本那招的 PP
+    if(!forced && !isFoeMon(att) && ppm.maxpp !== undefined && !mv.struggle){ ppm.pp = Math.max(0, ppm.pp - 1); if(hasAb(def,'pressure') && def !== att) ppm.pp = Math.max(0, ppm.pp - 1); leppaCheck(att, ppm); }
+    if(!abBeforeMove(att, mv)){ clearForce(att); return; }   // 懶惰、變幻自如
     if(!isFoeMon(att) && !forced) bump('movesUsed');
   }
   if(!(hasFx(mv,'prot') || fxList(mv).some(x=>x.startsWith('prot:')) || hasFx(mv,'endure'))) att._protN = 0;
@@ -408,7 +424,8 @@ function useMove(att, def, mv, opt){
   }
   // 忍耐
   if(hasFx(mv,'bide')) return doBide(att, def, mv);
-  if(!opt.called){ att._last = mv.name; att._lastMv = mv; }
+  if(!opt.called){ att._last = (mv._base || mv).name; att._lastMv = mv._base || mv; }
+  if(hasFx(mv,'boom') && fieldHasAb('damp')){ print(`${who(att)} 使用了 ${esc(mv.name)}！`); return moveFail('因為濕氣，爆炸不起來！'); }
   b._lastMove = mv;
   // 叫出別的招式
   const call = callMove(att, def, mv);
@@ -418,8 +435,10 @@ function useMove(att, def, mv, opt){
     print(`<span class="sys">→ 變成了 ${esc(call.name)}！</span>`);
     return useMove(att, def, call, {called:true});
   }
+  delete mv._ate;
   const type = moveTypeNow(att, mv);
-  const m = (type === mv.type) ? mv : Object.assign({}, mv, {type});
+  let m = (type === mv.type) ? mv : Object.assign({}, mv, {type});
+  if(mv.id === TERA_BLAST && att._tera && (att.atk*(att.atkMul||1)) > (att.spa*(att.spaMul||1))) m = Object.assign({}, m, {cls:0});
   att._lastType = type;
   // 粉塵：用火招就爆炸
   if(att._powder && m.type === '火' && m.cls !== 2){
@@ -436,8 +455,10 @@ function clearForce(m){ delete m._force; }
 function protectedFrom(att, def, mv){
   if(mv.self || !def._prot || att === def) return false;
   const v = def._prot;
+  if(hasAb(att,'unseenfist') && isContact(att, mv) && v !== 'cft' && v !== 'qck') return false;   // 無形拳
+  if((mv._z || mv._max) && mv.cls !== 2 && v !== 'cft' && v !== 'qck'){ print(`<span class="sys">${who(def)} 沒能完全守住！</span>`); mv._zprot = true; return false; }
   if(v === 'cft' && mv.cls !== 2) return false;
-  if(v === 'qck' && !(mv.pri > 0)) return false;
+  if(v === 'qck' && !((mv._pri ?? mv.pri) > 0)) return false;
   if(v === 'mat' && mv.cls === 2) return false;
   print(`<span class="sys">${who(def)} 守住了攻擊！</span>`);
   if(mv.cls === 0 && att.hp > 0){
@@ -455,7 +476,9 @@ function protectChance(att){ return Math.pow(1/3, att._protN || 0); }
 function useStatusMove(att, def, mv){
   print(`${who(att)} 使用了 ${esc(mv.name)}！`);
   // 魔法反射：把對方的變化招彈回去
-  if(!mv.self && def._mcoat && att !== def){ print(`<span class="sys">${who(def)} 把招式反彈回去了！</span>`); const t = att; att = def; def = t; }
+  const abm = abStatusMoveImmune(att, def, mv);
+  if((!mv.self && def._mcoat && att !== def) || abm === 'bounce'){ print(`<span class="sys">${abm === 'bounce' ? abTag(def) : ''}${who(def)} 把招式反彈回去了！</span>`); const t = att; att = def; def = t; def._bounced = true; }
+  else if(abm) return moveFail(abm);
   // 搶奪：搶走對自己有利的變化招
   else if(mv.self && def._snatch && att !== def && def.hp > 0){ delete def._snatch; print(`<span class="sys">${who(def)} 搶走了效果！</span>`); att = def; def = activeFoeOf(def); }
   if(protectedFrom(att, def, mv)) return;
@@ -464,11 +487,13 @@ function useStatusMove(att, def, mv){
     if([147,79,78,77].includes(mv.id) && typesOf(def).includes('草')) return moveFail(`對 ${who(def)} 沒有效果……`);   // 粉末類
     if(terrain() === 'p' && mv.pri > 0 && grounded(def)) return moveFail(`${who(def)} 受到精神場地的保護！`);
     if(def.hp <= 0) return moveFail();
+    const im = abImmune(att, def, mv); if(im){ delete def._bounced; return print(im); }
     if(!hitCheck(att, def, mv)) return moveFail(`${who(def)} 躲開了！`);
     const blockSub = def._sub > 0 && !fxList(mv).some(c=>['roar','perish','haze','psychup','transform','imprison','foresight','mcoat','snatch','court','tr:e','tr:g','tr:m','tr:p','grav','troom','mroom','wroom'].includes(c) || c.startsWith('hz:') || c.startsWith('wx:'));
-    if(blockSub) return moveFail(`被 ${who(def)} 的替身擋下了！`);
+    if(blockSub && !hasAb(att,'infiltrator') && !mvFlag(mv,'sound')) return moveFail(`被 ${who(def)} 的替身擋下了！`);
   }
   const ok = runFx(att, def, mv, fxList(mv), {status:true});
+  delete att._bounced; delete def._bounced;
   if(ok === false) moveFail();
 }
 
@@ -483,6 +508,7 @@ function useDamageMove(att, def, mv, opt){
   if(L.includes('dreameat') && def.status !== 'sleep'){ print(said()); return moveFail(`${who(def)} 沒有睡著……`); }
   if(L.includes('spit') && !att._stock){ print(said()); return moveFail(); }
   if(L.includes('endeavor') && def.hp <= att.hp){ print(said()); return moveFail(); }
+  if(def._dmax && (L.includes('wt') || L.includes('wtr') || L.includes('ohko'))){ print(said()); return moveFail(`${who(def)} 極巨化中，沒有效果……`); }
   if(def.hp <= 0){ print(said()); return moveFail(); }
   if(protectedFrom(att, def, mv)){ return; }
   if(L.includes('future')){
@@ -501,22 +527,25 @@ function useDamageMove(att, def, mv, opt){
   // 連續攻擊次數
   let hits = 1;
   const hm = L.find(x=>/^h\d+-\d+$/.test(x));
-  if(hm){ const [lo, hi] = hm.slice(1).split('-').map(Number); hits = lo === hi ? lo : (lo === 2 && hi === 5 ? [2,2,2,3,3,3,4,5][Math.floor(Math.random()*8)] : lo + Math.floor(Math.random()*(hi-lo+1))); }
+  if(hm){ const [lo, hi] = hm.slice(1).split('-').map(Number); hits = (lo === hi || hasAb(att,'skilllink')) ? hi : (lo === 2 && hi === 5 ? [2,2,2,3,3,3,4,5][Math.floor(Math.random()*8)] : lo + Math.floor(Math.random()*(hi-lo+1))); }
+  let pbond = hits === 1 && hasAb(att,'parentalbond') && !mv._z && !mv._max && !L.some(c=>/^fix:|^lvl$|^half$|^ohko$|^endeavor$|^gambit$|^psywave$/.test(c));   // 親子愛：打兩下，第二下 1/4
+  if(pbond) hits = 2;
   if(L.includes('beatup')) hits = Math.max(1, (isFoeMon(att) ? [att, ...(b.foes||[])] : state.party).filter(x=>x.hp>0 && !x.status).length);
   fxNotes = [];
   let total = 0, n = 0, subHit = false, endureMsg = '';
   for(let i=0; i<hits && def.hp > 0 && att.hp > 0; i++){
     let d = fixedDamage(att, def, mv);
     const fixed = d !== null;
-    if(!fixed) d = calcHit(att, def, mv, dmgPower(att, def, mv), false);
+    if(!fixed) d = calcHit(att, def, mv, Math.max(1, Math.floor(dmgPower(att, def, mv) * (pbond && i === 1 ? 0.25 : 1))), false);
     if(L.includes('present') && d < 0){ const h = Math.min(def.maxhp - def.hp, -d); def.hp += h; print(`${said()}<span class="sys">${who(def)} 回復了 ${h} 點 HP！</span>`); return; }
-    if(def._sub > 0 && !mv.sound){
+    if(def._sub > 0 && !mvFlag(mv,'sound') && !hasAb(att,'infiltrator')){
       const s = Math.min(def._sub, d); def._sub -= s; total += s; n++; subHit = true;
       if(def._sub <= 0){ delete def._sub; fxNotes.push(`<span class="sys">${who(def)} 的替身消失了！</span>`); }
       continue;
     }
     if(L.includes('fswipe')) d = Math.min(d, def.hp - 1);
     let msg = '';
+    { const r = abDisguise(att, def, mv, d); if(r[1]){ d = r[0]; fxNotes.push(r[1]); } }   // 畫皮、結凍頭
     [d, msg] = endureCheck(def, d);   // 氣勢披帶／結實／氣勢頭帶／挺住／親密度
     if(msg) endureMsg = msg;
     def.hp = Math.max(0, def.hp - d); total += d; n++;
@@ -535,7 +564,9 @@ function useDamageMove(att, def, mv, opt){
     print(`<span class="bad">${who(att)} 因反作用力受到了 ${r} 點傷害！</span>`);
   }
   const dr = L.find(x=>/^dr\d+$/.test(x));
-  if(dr && total > 0 && att.hp > 0 && att.hp < att.maxhp && !att._hblk){
+  if(dr && total > 0 && att.hp > 0 && !subHit && dAb(att, def,'liquidooze')){
+    const l = Math.max(1, Math.floor(total*(+dr.slice(2))/100)); att.hp = Math.max(0, att.hp - l); print(`${abTag(def)}<span class="bad">${who(att)} 吸到了污泥漿，受到 ${l} 點傷害！</span>`);
+  } else if(dr && total > 0 && att.hp > 0 && att.hp < att.maxhp && !att._hblk){
     const h = Math.max(1, Math.floor(total*(+dr.slice(2))/100*(holds(att,'bigroot') ? 1.3 : 1)));
     att.hp = Math.min(att.maxhp, att.hp + h); print(`<span class="good">${who(att)} 吸取了 ${h} 點 HP！</span>`);
   }
@@ -544,7 +575,7 @@ function useDamageMove(att, def, mv, opt){
   if(L.includes('rch')) att._rch = true;
   if(L.includes('losetype')){ att._types = typesOf(att).filter(t=>t !== '電'); if(!att._types.length) att._types = ['一般']; print(`<span class="sys">${who(att)} 的電力用光了！</span>`); }
   if(L.includes('spit')) { unstock(att); }
-  if(L.includes('knock') && def.held && !def._knock && total > 0 && !subHit){ def._knock = true; print(`<span class="sys">${who(def)} 的${esc(heldName(def))}被打落了！</span>`); }
+  if(L.includes('knock') && def.held && !def._knock && total > 0 && !subHit && !dAb(att, def,'stickyhold')){ def._knock = true; print(`<span class="sys">${who(def)} 的${esc(heldName(def))}被打落了！</span>`); }
   // 附加效果（打到替身不算）
   if(!subHit) runFx(att, def, mv, L, {damage:true, dealt:total});
   else runFx(att, def, mv, L.filter(x=>x.startsWith('su') || x === 'pivot' || x === 'spin' || x.startsWith('hz:')), {damage:true, dealt:total});
@@ -584,7 +615,7 @@ function fixedDamage(att, def, mv){
 // 變動威力
 function dmgPower(att, def, mv){
   const L = fxList(mv); let p = mv.power || 0;
-  const w = m => (typeof DEX_WEIGHT !== 'undefined' && DEX_WEIGHT[m.dex]) || 100;
+  const w = m => ((typeof DEX_WEIGHT !== 'undefined' && DEX_WEIGHT[m.dex]) || 100) * (hasAb(m,'heavymetal') ? 2 : hasAb(m,'lightmetal') ? 0.5 : 1);
   const spd = m => effSpd(m);
   for(const c of L){
     switch(c){
@@ -620,6 +651,7 @@ function dmgPower(att, def, mv){
     }
   }
   if(L.includes('solar') && ['rain','sand','snow'].includes(battleWeather())) p = Math.floor(p/2);
+  if(att._tera && mv.type === att._tera && p < 60 && !L.some(c=>/^h\d/.test(c)) && !(mv.pri > 0)) p = 60;   // 太晶：同屬性的弱招至少 60
   if(mv.type === '電' && bf().sport && bf().sport['電']) p = Math.floor(p/3);
   if(mv.type === '火' && bf().sport && bf().sport['火']) p = Math.floor(p/3);
   return Math.max(1, p);
@@ -628,7 +660,7 @@ function dmgPower(att, def, mv){
 function calcHit(att, def, mv, power, noFx){
   const m = Object.assign({}, mv, {power});
   const L = fxList(mv);
-  m._crit = (L.includes('cr') ? 1 : 0) + (att._focus ? 2 : 0) + (holds(att,'scopelens') ? 1 : 0) + ((att.friend||0) >= 200 && !isFoeMon(att) ? 1 : 0);
+  m._crit = (L.includes('cr') ? 1 : 0) + (att._focus ? 2 : 0) + (holds(att,'scopelens') ? 1 : 0) + ((att.friend||0) >= 200 && !isFoeMon(att) ? 1 : 0) + abCritStage(att, def, mv);
   if(L.includes('cr2') || att._lfocus) m._crit = 3;
   if(sideOf(def).luck) m._crit = -1;
   if(att._lfocus && !noFx) delete att._lfocus;
@@ -638,7 +670,8 @@ function calcHit(att, def, mv, power, noFx){
 // 傷害額外倍率：光牆反射壁、場地（dmg 最後乘上）
 function fieldDmgMul(att, def, mv){
   let k = 1; const t = terrain(), s = sideOf(def);
-  if(!mv._didCrit && !hasFx(mv,'brkscr')){
+  if(mv._zprot) k *= 0.25;
+  if(!mv._didCrit && !hasFx(mv,'brkscr') && !hasAb(att,'infiltrator')){
     if(s.scrA || (mv.cls === 0 && s.scrP) || (mv.cls === 1 && s.scrS)) k *= 0.5;
   }
   if(t && grounded(att)){
@@ -658,7 +691,7 @@ function runFx(att, def, mv, L, o){
   const sec = dmgMove && !hasAb(def,'shielddust') && !(hasAb(att,'sheerforce'));
   let did = !dmgMove ? false : true;
   const say = t => { if(t){ print(t); did = true; } };
-  const roll = c => Math.random()*100 < c;
+  const roll = c => Math.random()*100 < c * (hasAb(att,'serenegrace') ? 2 : 1);
   for(const c of L){
     let m;
     // 異常狀態
@@ -673,14 +706,13 @@ function runFx(att, def, mv, L, o){
       if(dmgMove){ if(r){ print(r); lumCheck(def); } } else did = true;
       continue;
     }
-    if((m = c.match(/^fl(\d+)$/))){ if(sec && foeAlive && !def._moved && roll(+m[1])) def._flinch = true; continue; }
+    if((m = c.match(/^fl(\d+)$/))){ if(sec && foeAlive && !def._moved && !def._dmax && roll(+m[1])) def._flinch = true; continue; }
     if((m = c.match(/^s([uf])([adcesvh])(-?\d+)_(\d+)$/))){
       const tgt = m[1] === 'u' ? att : def, n = +m[3], ch = +m[4];
       if(m[1] === 'f' && dmgMove && (!sec || !foeAlive)) continue;
       if(m[1] === 'u' && dmgMove && hasAb(att,'sheerforce') && ch < 100) continue;
       if(ch < 100 && !roll(ch)) continue;
-      if(m[1] === 'f' && !dmgMove && hasAb(def,'clearbody')) continue;
-      say(statChange(tgt, m[2], n, m[1] === 'f'));
+      say(statChange(tgt, m[2], n, m[1] === 'f', att));
       if(m[1] === 'f' && n < 0) herbCheck(tgt);
       continue;
     }
@@ -970,6 +1002,8 @@ function batonCopy(from, to, kind){
 }
 function forceOut(att, def, c){
   const b = state.battle;
+  if(def._dmax) return c === 'roar' ? false : undefined;
+  if(dAb(att, def,'suctioncups') || dAb(att, def,'guarddog')) return c === 'roar' ? false : undefined;
   if(b.mode === 'wild' || b.mode === 'mega'){
     if(b.mode === 'legendary') return false;
     return endEarly(isFoeMon(def) ? `${who(def)} 被吹走了！` : `${who(def)} 被吹走了，戰鬥結束了！`);
@@ -1049,7 +1083,9 @@ function moveEndTurn(m){
   if(m._ingrain) gain(1/16, `${who(m)} 從根部吸收了養分。`);
   if(m._aring) gain(1/16, `${who(m)} 被水流環治癒了。`);
   if(terrain() === 'g' && grounded(m)) gain(1/16, `${who(m)} 被青草場地治癒了。`);
-  if(m._seed && foe && foe.hp > 0){ const l = Math.max(1, Math.floor(m.maxhp/8)), x = Math.min(m.hp, l); m.hp -= x; print(`<span class="bad">寄生種子吸取了 ${who(m)} 的 HP！（-${x}）</span>`); if(!foe._hblk && foe.hp < foe.maxhp) foe.hp = Math.min(foe.maxhp, foe.hp + x); }
+  if(m._seed && foe && foe.hp > 0){ const l = Math.max(1, Math.floor(m.maxhp/8)), x = Math.min(m.hp, l); m.hp -= x; print(`<span class="bad">寄生種子吸取了 ${who(m)} 的 HP！（-${x}）</span>`);
+    if(hasAb(m,'liquidooze')){ foe.hp = Math.max(0, foe.hp - x); print(`${abTag(m)}<span class="bad">${who(foe)} 吸到了污泥漿！（-${x}）</span>`); }
+    else if(!foe._hblk && foe.hp < foe.maxhp) foe.hp = Math.min(foe.maxhp, foe.hp + x); }
   if(m._nmare){ if(m.status === 'sleep') lose(1/4, `${who(m)} 正在做惡夢……`); else delete m._nmare; }
   if(m._curse) lose(1/4, `${who(m)} 受到詛咒！`);
   if(m._salt) lose((typesOf(m).includes('水') || typesOf(m).includes('鋼')) ? 1/4 : 1/8, `${who(m)} 被鹽醃著！`);
@@ -1087,7 +1123,7 @@ function fieldEndTurn(){
 /* ---------- 換下場：清掉只在場上有效的狀態 ---------- */
 const VOLATILE = ['_cnf','_seed','_curse','_perish','_taunt','_enc','_dis','_torment','_sub','_bind','_yawn','_nmare','_attr','_ingrain','_aring','_force','_rch','_bide','_stock',
   '_foresight','_mrise','_tkin','_hblk','_emb','_impr','_lockon','_focus','_lfocus','_dbond','_grudge','_last','_lastMv','_lastType','_trap','_octo','_trapSelf','_salt','_turnsIn','_protN','_prot','_endure',
-  '_types','_noab','_choice','_moved','_rfistX'];
+  '_types','_noab','_choice','_moved','_rfistX','_protean','_truant','_charge','_bounced','_ate'];
 function clearVolatile(m){
   if(!m) return;
   VOLATILE.forEach(k=>{ delete m[k]; });

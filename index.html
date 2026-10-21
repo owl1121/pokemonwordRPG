@@ -313,6 +313,9 @@ button,input,textarea,select{font-family:inherit;}
 .koCrack{position:absolute;z-index:4;pointer-events:none;overflow:hidden;border-radius:12px;}
 .koCrack path{fill:none;stroke:#3a3f55;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 2px rgba(255,255,255,.9));}
 .koShard{position:absolute;z-index:4;pointer-events:none;box-sizing:border-box;}
+.gd{font-weight:bold;margin-left:2px;}.gm{color:#4a90e2;}.gf{color:#e2547a;}
+.card.dmax{box-shadow:0 0 0 3px #ff3b3b,0 0 18px 6px rgba(255,40,40,.65);}
+.card.tera{box-shadow:0 0 0 2px #bfefff,0 0 14px 4px rgba(120,220,255,.7);}
 .shinyStar{position:fixed;z-index:30;pointer-events:none;font-size:28px;line-height:1;color:#ffe14d;text-shadow:0 0 2px #8a5a00,0 0 3px #8a5a00,0 0 10px #fff3a0,0 0 18px #ffd23a;}
 .koFlash{position:absolute;z-index:5;pointer-events:none;border-radius:16px;background:radial-gradient(closest-side,#fff,rgba(255,255,255,.75) 60%,rgba(255,255,255,0));}
 .koGlint{position:absolute;z-index:6;width:5px;height:5px;margin:-2px 0 0 -2px;background:#f4fbff;box-shadow:0 0 5px #bfe8ff;pointer-events:none;}
@@ -457,12 +460,16 @@ button,input,textarea,select{font-family:inherit;}
 
 <script src="data.js"></script>
 <script src="moves-data.js"></script>
+<script src="poke-data.js"></script>
 <script src="mon-art.js"></script>
 <script src="mon-colors.js"></script>
 <script src="sounds/list.js" onerror="this.remove()"></script>
 <script src="battle.js"></script>
 <script src="features.js"></script>
 <script src="moves.js"></script>
+<script src="abilities.js"></script>
+<script src="gimmicks.js"></script>
+<script src="growth.js"></script>
 <script>
 /* =====================================================
    events.js — 節日活動系統
@@ -813,15 +820,13 @@ function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
 function monName(m){ return (m.shiny ? '✨' : '') + m.name; }
 function nm(m){ return m.shiny ? `<span class="shiny">${esc(monName(m))}</span>` : esc(m.name); }
 
-function statsFor(entry, level){
-  const tier = entry[3];
-  const base = 28 + tier*11;
-  const hp = Math.floor(base*1.7 + level*4.4);
-  const atk = Math.floor(base*0.9 + level*1.7);
-  const def = Math.floor(base*0.8 + level*1.5);
-  const spd = Math.floor(base*0.75 + level*1.3);
-  return {hp,atk,def,spd,spa:atk,sdf:def};   // 特攻／特防的基礎值跟攻擊／防禦一樣，差在能力點
+// 能力值：本傳公式（種族值 BASE_STATS 在 poke-data.js；個體值、努力值的部分由下面的「能力點」代替）
+function statsFor(base, level){
+  const f = b => Math.floor(2*b*level/100);
+  return {hp: base[0] === 1 ? 1 : f(base[0]) + level + 10, atk:f(base[1])+5, def:f(base[2])+5, spa:f(base[3])+5, sdf:f(base[4])+5, spd:f(base[5])+5};
 }
+function baseStatsOf(dex, megaId){ return (megaId && MEGA_STATS[megaId]) || BASE_STATS[dex] || [70,70,70,70,70,70]; }
+const STAT_VER = 2;   // 能力值公式版本：舊存檔讀進來時重算
 /* ---------- 能力點（參考寶可夢冠軍：每一點直接加固定數值，不是百分比）----------
    六項各 20~60 點，遇到時隨機決定。抓到後可以重新分配，但六項總和不能超過抓到時的總和（ivCap）。
    加成：每點 +等級/100（HP 加倍，因為 HP 的數值本來就比較大）。Lv.50 時 60 點 ≈ +30。 */
@@ -837,11 +842,11 @@ function ensureIv(m){
   if(!(m.ivCap >= ivSum(m.iv))) m.ivCap = ivSum(m.iv);
   return m.iv;
 }
-function statsWithIv(entry, level, iv){
-  const st = statsFor(entry, level), b = k => Math.floor((iv[k]||0) * level / 100);
-  return {hp:st.hp + 2*b('hp'), atk:st.atk + b('atk'), def:st.def + b('def'), spa:st.spa + b('spa'), sdf:st.sdf + b('sdf'), spd:st.spd + b('spd')};
+function statsWithIv(base, level, iv){
+  const st = statsFor(base, level), b = k => Math.floor((iv[k]||0) * level / 100);
+  return {hp:st.hp === 1 ? 1 : st.hp + 2*b('hp'), atk:st.atk + b('atk'), def:st.def + b('def'), spa:st.spa + b('spa'), sdf:st.sdf + b('sdf'), spd:st.spd + b('spd')};
 }
-function monStats(m){ ensureIv(m); return natureStats(statsWithIv(DEX[m.dex], m.level, m.iv), ensureNature(m)); }
+function monStats(m){ ensureIv(m); return natureStats(statsWithIv(baseStatsOf(m.dex, m._mega && m._mega.id), m.level, m.iv), ensureNature(m)); }
 function setNonHpStats(m, st){ m.atk = st.atk; m.def = st.def; m.spa = st.spa; m.sdf = st.sdf; m.spd = st.spd; }
 let gotSeq = 0;   // 獲得序號：每隻寶可夢誕生時蓋一個，倉庫「獲得順序」排序用（舊存檔在 loadGame 補）
 function makeMon(dexIndex, level, opts){
@@ -850,12 +855,14 @@ function makeMon(dexIndex, level, opts){
   const e = DEX[dexIndex];
   const iv = opts.iv ? Object.assign({}, opts.iv) : rollIv();
   const nature = (opts.nature >= 0) ? opts.nature : rollNature();
-  const st = natureStats(statsWithIv(e, level, iv), nature);
+  const st = natureStats(statsWithIv(baseStatsOf(dexIndex), level, iv), nature);
+  const abSlot = (opts.abSlot >= 0) ? opts.abSlot : rollAbilitySlot(dexIndex);
   const shiny = (opts.shiny !== undefined) ? opts.shiny : (Math.random() < shinyRate());
   return {
     dex: dexIndex, name:e[0], t1:e[1], t2:e[2], tier:e[3],
     level, hp:st.hp, maxhp:st.hp, atk:st.atk, def:st.def, spa:st.spa, sdf:st.sdf, spd:st.spd,
-    iv, ivCap: opts.ivCap || ivSum(iv), nature, ab: (opts.ab && ABILITIES[opts.ab]) ? opts.ab : rollAbility(e),
+    iv, ivCap: opts.ivCap || ivSum(iv), nature, ab: (opts.ab && ABILITIES[opts.ab]) ? opts.ab : abilityAt(dexIndex, abSlot), abSlot, sv:STAT_VER,
+    gender: opts.gender !== undefined ? opts.gender : rollGender(dexIndex), tera:e[1],
     exp:0, expNext: 18 + level*9, moves: defaultMoves(dexIndex, level), xm:[], friend:70,
     status:null, atkMul:1, defMul:1, shiny, got:++gotSeq
   };
@@ -885,9 +892,9 @@ function unboostMon(m){            // 抓到之後還原成一般數值
 }
 const STRUGGLE = {name:'掙扎', type:'一般', cls:0, power:50, acc:0, pri:0, fx:'', recoil:0.25, struggle:true};
 function restorePP(m){ (m.moves||[]).forEach(mv=>{ if(mv.maxpp) mv.pp = mv.maxpp; }); }
-function typesOf(m){ return m._types || [m.t1, m.t2]; }   // _types：對戰中被浸水、變身等改掉的屬性
+function typesOf(m){ return m._tera ? [m._tera] : (m._types || [m.t1, m.t2]); }   // _types：對戰中被浸水、變身等改掉的屬性
 function typeStr(m){ return m.t2 ? m.t1+"／"+m.t2 : m.t1; }
-function isFinalForm(dexIdx){ return !EVO[dexIdx] && !STONE_EVO[dexIdx] && !TIME_EVO[dexIdx]; }
+function isFinalForm(dexIdx){ return !EVO[dexIdx] && !(STONE_EVO[dexIdx] && Object.keys(STONE_EVO[dexIdx]).length) && !TIME_EVO[dexIdx] && !EVO_COND[dexIdx] && FAIRY_EVO[dexIdx] === undefined; }
 
 /* ---------- TOWER MODE ---------- */
 const LEGENDARIES = [143,144,145,149,150, 242,243,244,248,249,250, 376,377,378,379,380,381,382,383,384,385,
@@ -1024,7 +1031,7 @@ function renderBar(){
   const lead = state.party[0];
   const money = `<span>💰 ${state.money}</span><span>🪙 ${state.tower.coins}</span>`;
   barEl.innerHTML = lead
-    ? `<span>📍 ${zoneName(state.zone)} ${WEATHER[fieldWeather()].icon}</span><span>隊長: ${esc(monName(lead))} Lv.${lead.level} HP ${lead.hp}/${lead.maxhp}</span><span>圖鑑 ${state.caught.size}/${DEX.length}</span><span>球 x${totalBalls()}</span>${money}`
+    ? `<span>📍 ${zoneName(state.zone)} ${WEATHER[fieldWeather()].icon} ${isNight() ? '🌙' : '☀️'}</span><span>隊長: ${esc(monName(lead))} Lv.${lead.level} HP ${lead.hp}/${lead.maxhp}</span><span>圖鑑 ${state.caught.size}/${DEX.length}</span><span>球 x${totalBalls()}</span>${money}`
     : `<span>圖鑑 ${state.caught.size}/${DEX.length}</span>`;
 }
 function setOptions(list, phase){
@@ -1071,7 +1078,9 @@ function fixMon(m){
   if(needNature) fixed.nature = rollNature();
   ensureAbility(fixed);
   if(fixed.held && !HELD[fixed.held]) delete fixed.held;
-  if(needNature || !fixed.iv || fixed.spa === undefined || fixed.sdf === undefined){   // 舊存檔：補上隨機能力點並重算數值（HP 比例不變）
+  ensureGender(fixed); teraOf(fixed);
+  if(needNature || !fixed.iv || fixed.spa === undefined || fixed.sdf === undefined || fixed.sv !== STAT_VER){   // 舊存檔：補上隨機能力點、改用種族值重算數值（HP 比例不變）
+    fixed.sv = STAT_VER;
     delete fixed.boost;
     const ratio = fixed.maxhp ? fixed.hp/fixed.maxhp : 1, st = monStats(fixed);
     fixed.maxhp = st.hp; fixed.hp = fixed.hp > 0 ? Math.max(1, Math.round(st.hp*ratio)) : 0; setNonHpStats(fixed, st);
@@ -1511,7 +1520,9 @@ const EVO_FROM = {};
 (function(){
   const link = (a,b)=>{ EVO_FROM[b] = a; };
   for(const k in EVO){ const t = EVO[k][0]; (Array.isArray(t)?t:[t]).forEach(b=>link(+k,b)); }
-  for(const k in STONE_EVO) Object.values(STONE_EVO[k]).forEach(b=>link(+k,b));
+  for(const k in STONE_EVO) Object.values(STONE_EVO[k]).forEach(b=>[].concat(b).forEach(x=>link(+k,x)));
+  for(const k in EVO_COND) EVO_COND[k].forEach(c=>link(+k,c.to));
+  for(const k in FAIRY_EVO) link(+k, FAIRY_EVO[k]);
   for(const k in TIME_EVO){ link(+k,TIME_EVO[k].day); link(+k,TIME_EVO[k].night); }
 })();
 function evoStage(i){
@@ -1594,7 +1605,8 @@ function screenShop(msg){
   print(`<span class="em">— 友好商店 —</span>　💰 ${state.money}${daily('sale') ? '　<span class="good">🏷 8 折</span>' : ''}`);
   if(msg) print(msg);
   print('<span class="sys">點道具看說明。</span>');
-  const opts = Object.keys(ITEMS).filter(k=>ITEMS[k].price>0).map(k=>({label:`${ITEMS[k].label} $${priceOf(k)}`, half:true, action:()=>screenShopItem(k)}));
+  const opts = Object.keys(ITEMS).filter(k=>ITEMS[k].price>0 && !ITEMS[k].stone).map(k=>({label:`${ITEMS[k].label} $${priceOf(k)}`, half:true, action:()=>screenShopItem(k)}));
+  opts.push({label:"💎 進化道具", half:true, action:()=>screenStoneShop()});
   opts.push({label:"🧷 攜帶道具", half:true, action:()=>screenHeldShop(null, null)});
   opts.push({label:"💿 招式學習器", half:true, action:()=>{ tmShopPage = 0; screenTmShop(); }});
   opts.push({label:"💎 Mega 商店", half:true, action:()=>screenMegaShop(screenShop)});
@@ -1609,7 +1621,15 @@ function screenShopItem(k, msg){
   if(msg) print(msg);
   print('<span class="sys">選要買幾個，下一步再確認。</span>');
   setOptions([1,5,10].map(n=>({label:`買 ${n} 個`, half:n!==10, action:()=>{ shopQty = n; screenShopConfirm(k); }}))
-    .concat([{label:'← 返回', action:()=>screenShop()}]));
+    .concat([{label:'← 返回', action:()=>it.stone ? screenStoneShop() : screenShop()}]));
+}
+function screenStoneShop(){
+  clearLog(); renderBar();
+  print(`<span class="em">— 💎 進化道具 —</span>　💰 ${state.money}`);
+  print('<span class="sys">石頭類和本傳要通訊交換才進化的（用聯繫繩）。點道具看說明。</span>');
+  const opts = STONE_KEYS.filter(k=>ITEMS[k] && ITEMS[k].price > 0).map(k=>({label:`${ITEMS[k].label} $${priceOf(k)}`, half:true, action:()=>screenShopItem(k)}));
+  opts.push({label:'← 返回商店', action:()=>screenShop()});
+  setOptions(opts);
 }
 // 確認頁：按「確認購買」才會扣錢
 function screenShopConfirm(k){
@@ -1659,19 +1679,23 @@ function makeMegaFoe(m, lvl){
   const f = makeMon(m.base, lvl, {shiny:false});
   f.name = m.name; f.t1 = m.t1; f.t2 = m.t2; f.megaId = m.id;
   f.maxhp = Math.round(f.maxhp*MEGA_FOE_MUL.hp); f.hp = f.maxhp;
-  scaleAD(f, MEGA_FOE_MUL.atk, MEGA_FOE_MUL.def); f.spd = Math.round(f.spd*MEGA_FOE_MUL.spd);
+  f._mega = {id:m.id}; setNonHpStats(f, monStats(f)); delete f._mega;   // 用 Mega 的種族值
+  if(MEGA_ABIL[m.id]) f.ab = MEGA_ABIL[m.id];
   return f;
 }
 function megaFormsFor(p){ const st = megaState().stones; return MEGAS.filter(m=>m.base===p.dex && st[m.id]); }
 function megaEvolve(p, m){
-  p._mega = {id:m.id};   // 招式不變（跟本傳一樣）
+  p._mega = {id:m.id, ab:p.ab};   // 招式不變（跟本傳一樣）；能力值改用 Mega 的種族值、特性換成 Mega 的
   p.name = m.name; p.t1 = m.t1; p.t2 = m.t2;
-  scaleAD(p, MEGA_ME_MUL.atk, MEGA_ME_MUL.def); p.spd = Math.round(p.spd*MEGA_ME_MUL.spd);
+  setNonHpStats(p, monStats(p));
+  if(MEGA_ABIL[m.id]){ p.ab = MEGA_ABIL[m.id]; }
 }
 function megaRevert(p){
   if(!p || !p._mega) return;
-  const e = DEX[p.dex], st = monStats(p);
+  const e = DEX[p.dex], ab = p._mega.ab;
+  delete p._mega.id; const st = natureStats(statsWithIv(baseStatsOf(p.dex), p.level, p.iv), ensureNature(p));
   p.name = e[0]; p.t1 = e[1]; p.t2 = e[2]; setNonHpStats(p, st);
+  if(ab) p.ab = ab;
   delete p._mega;
 }
 function megaRevertAll(){ (state.party||[]).forEach(megaRevert); (state.box||[]).forEach(megaRevert); }
@@ -1960,7 +1984,7 @@ function screenParty(back, msg){
   if(typeof msg === 'string') print(msg);
   print('<span class="sys">點隊員可以設為隊長或送去倉庫。隊長（★）會先上場。</span>');
   const opts = state.party.map((m,i)=>({
-    label:`${i===0?'★ ':''}${monName(m)}　Lv.${m.level}　HP ${m.hp}/${m.maxhp}`,
+    label:`${i===0?'★ ':''}${monName(m)}${genderSign(m)}　Lv.${m.level}　HP ${m.hp}/${m.maxhp}`,
     action:()=>screenMember(i, back)
   }));
   opts.push({label:'📦 倉庫', half:true, action:()=>{ boxPage = 0; screenBox(back); }});
@@ -1973,7 +1997,7 @@ function screenMember(i, back){
   ensureIv(m);
   clearLog();
   const expTxt = m.level>=MAX_LEVEL ? 'EXP MAX' : `EXP ${m.exp}/${m.expNext}`;
-  print(`<span class="em">${nm(m)}</span>${i===0 ? ' <span class="em">★隊長</span>' : ''}`);
+  print(`<span class="em">${nm(m)}</span>${genderHtml(m)}${i===0 ? ' <span class="em">★隊長</span>' : ''}`);
   print(`Lv.${m.level}　HP ${m.hp}/${m.maxhp}${statusTag(m)}`);
   print(`屬性：${typeStr(m)}　${expTxt}`);
   print(statLine(m));
@@ -1981,10 +2005,12 @@ function screenMember(i, back){
   print(`特性：${esc(abName(m))}<span class="sys">　${esc(ABILITIES[ensureAbility(m)].desc)}</span>`);
   print(`攜帶：${esc(heldName(m))}${m.held && HELD[m.held] ? `<span class="sys">　${esc(HELD[m.held].desc)}</span>` : ''}`);
   print(`親密度：${friendText(m)}`);
+  print(`太晶屬性：💎 ${teraOf(m)}`);
   print(`招式：${m.moves.map(mv=>esc(mv.name)).join('、')}`);
   stageDetail = hexPanel(m.iv, null, m.ivCap, null);
   const opts = [];
-  opts.push({label:'⚔️ 招式', action:()=>screenMoves(i, back)});
+  opts.push({label:'⚔️ 招式', half:true, action:()=>screenMoves(i, back)});
+  opts.push({label:'💎 太晶屬性', half:true, action:()=>screenTeraPick(i, back)});
   opts.push({label:"📊 調整能力點", half:true, action:()=>screenIvEdit(i, back)});
   opts.push({label:'🧷 攜帶道具', half:true, action:()=>screenHeld(i, back)});
   if(i>0) opts.push({label:"★ 設為隊長", action:()=>setLeader(i, back)});
@@ -2178,8 +2204,11 @@ function screenBag(){
   hr();
   Object.keys(ITEMS).forEach(k=>{
     const it = ITEMS[k];
+    if(it.stone && !(state.bag[k] > 0) && !STONE_KEYS.slice(0,6).includes(k)) return;   // 沒有的進化道具不列
     print(`${it.label} x${state.bag[k]||0}　${it.desc}`);
   });
+  const tmN = Object.values(state.tms||{}).reduce((a,b)=>a+b, 0);
+  if(tmN) print(`💿 招式學習器 x${tmN}　<span class="sys">到隊伍 → 寶可夢 → ⚔️ 招式 使用</span>`);
   const heldOwned = HELD_KEYS.filter(k=>state.bag[k] > 0);
   if(heldOwned.length){ hr(); print('<span class="em">🧷 攜帶道具</span>'); heldOwned.forEach(k=>print(`${HELD[k].label} x${state.bag[k]}　${HELD[k].desc}`)); }
   hr();
@@ -2187,6 +2216,7 @@ function screenBag(){
   const opts = [];
   if(healItemKeys().some(k=>state.bag[k]>0)) opts.push({label:"💊 使用藥品", action:()=>screenHealItems()});
   STONE_KEYS.filter(k=>state.bag[k]>0).forEach(k=>opts.push({label:`💎 ${ITEMS[k].label}`, half:true, action:()=>screenStoneUse(k)}));
+  ['rarecandy','ppup','ppmax'].filter(k=>state.bag[k]>0).forEach(k=>opts.push({label:`${k==='rarecandy'?'🍬':'⬆'} ${ITEMS[k].label}`, half:true, action:()=>{ growPage = 0; screenGrowItem(k); }}));
   opts.push({label:"去商店", half:true, action:()=>{ shopQty=1; screenShop(); }});
   opts.push({label:"返回", half:true, action:toField});
   setOptions(opts);
@@ -2255,25 +2285,23 @@ function screenStoneUse(k, msg){
   print(`<span class="em">— 使用${esc(it.label)} —</span>`);
   if(msg) print(msg);
   const opts = [];
-  const cand = [...state.party.map((m,i)=>({m,i,box:false})), ...state.box.map((m,i)=>({m,i,box:true}))].filter(({m})=>{
-    const to = STONE_EVO[m.dex] && STONE_EVO[m.dex][k];
-    return to !== undefined;
-  });
+  const cand = [...state.party.map((m,i)=>({m,i,box:false})), ...state.box.map((m,i)=>({m,i,box:true}))].filter(({m})=>stoneTargets(m, k).length);
   viewMons(cand).forEach(({m,i,box})=>{
-    const to = STONE_EVO[m.dex][k];
-    opts.push({label:`${box?'📦 ':''}${monName(m)} Lv.${m.level} → ${DEX[to][0]}`, action:()=>useStone(k, box, i)});
+    stoneTargets(m, k).forEach(({to, why})=>{
+      opts.push({label:`${box?'📦 ':''}${monName(m)}${genderSign(m)} Lv.${m.level} → ${DEX[to][0]}${why ? `（${why}）` : ''}`, cls:why ? 'off' : '', action:()=>{ if(!why) useStone(k, box, i, to); }});
+    });
   });
-  if(!cand.length) print('<span class="sys">隊伍和倉庫裡沒有能用這顆石頭進化的寶可夢。</span>');
+  if(!cand.length) print('<span class="sys">隊伍和倉庫裡沒有能用這個道具進化的寶可夢。</span>');
   else if(!opts.length) print('<span class="sys">沒有符合篩選條件的寶可夢。</span>');
   else print(`要讓哪一隻進化？（📦 = 在倉庫）${mviewNote()}`);
   if(cand.length) opts.push(...mviewControls(()=>screenStoneUse(k), ()=>{}));
   opts.push({label:'← 返回背包', action:screenBag});
   setOptions(opts);
 }
-function useStone(k, box, i){
+function useStone(k, box, i, to){
   const m = (box ? state.box : state.party)[i];
-  const to = m && STONE_EVO[m.dex] && STONE_EVO[m.dex][k];
-  if(to===undefined || !(state.bag[k]>0)) return screenBag();
+  const t = m && stoneTargets(m, k).find(x=>x.to === to);
+  if(!t || t.why || !(state.bag[k]>0)) return screenBag();
   state.bag[k]--;
   clearLog();
   print(`你對 ${nm(m)} 使用了${ITEMS[k].label}……`);

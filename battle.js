@@ -244,6 +244,7 @@ function eff(atkType, defTypes){
 /* ---------- 狀態效果：每回合的中毒／劇毒／灼傷傷害（招式的附加效果在 moves.js） ---------- */
 function tickStatus(mon){
   if(!mon.status || mon.hp<=0 || hasAb(mon,'magicguard')) return '';
+  const ph = abPoisonHeal(mon); if(ph) return ph.trim();   // 毒療
   if(mon.status==='poison'){ const d=Math.max(1,Math.floor(mon.maxhp/8)); mon.hp=Math.max(0,mon.hp-d); return `<span class="bad">${nm(mon)} 因中毒損失了 ${d} 點HP。</span>`; }
   if(mon.status==='toxic'){ const n = Math.min(15, mon._tox||1), d=Math.max(1,Math.floor(mon.maxhp*n/16)); mon._tox = n+1; mon.hp=Math.max(0,mon.hp-d); return `<span class="bad">${nm(mon)} 因劇毒損失了 ${d} 點HP。</span>`; }
   if(mon.status==='burn'){ const d=Math.max(1,Math.floor(mon.maxhp/16)); mon.hp=Math.max(0,mon.hp-d); return `<span class="bad">${nm(mon)} 因灼傷損失了 ${d} 點HP。</span>`; }
@@ -557,7 +558,7 @@ function frameStyle(m){
 function monBgAttr(m, side, extra){
   const u = (typeof monBgSrc==='function') ? monBgSrc(m) : '';
   const st = (extra||'') + (u ? `--mzimg:url(${u});` : '');
-  return ` class="card ${side}${u?' mz':''}` + (side==='me' ? ' '+frameClass(m) : '') + `"` + (st ? ` style="${st}"` : '');
+  return ` class="card ${side}${u?' mz':''}${m._dmax?' dmax':''}${m._tera?' tera':''}` + (side==='me' ? ' '+frameClass(m) : '') + `"` + (st ? ` style="${st}"` : '');
 }
 
 
@@ -569,11 +570,11 @@ function teamDots(b, w){
 }
 function renderStage(at, hit, power){   // hit：'foe' 或 'me'，該張卡片會左右晃一下；power：'strong'／'weak'
   const b=state.battle, p=state.party[b.playerIdx], w=b.wild;
-  const nmx = m => (m.shiny?'✨':'')+esc(m.name);
+  const nmx = m => (m.shiny?'✨':'')+esc(m.name)+genderHtml(m)+(m._dmax?' 🔴':'')+(m._tera?' 💎':'');
   const xp = p.level>=MAX_LEVEL ? 100 : Math.min(100, Math.round(100*p.exp/p.expNext));
   const html =
-    `<div${monBgAttr(w,'foe')}><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${dexNo(w.dex)} · ${esc(typesOf(w).filter(Boolean).join('／'))}${b.mode==='wild' ? (state.caught.has(w.dex) ? ' · ✔已抓過' : ' · ★未抓過') : ''}${stChip(w)}${teamDots(b,w)}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
-    `<div${monBgAttr(p,'me',frameStyle(p))}><div class="r1"><span>${nmx(p)}</span><span>Lv.${p.level}</span></div><div class="r2">${esc(typesOf(p).filter(Boolean).join('／'))} · 速度 ${p.spd}${stChip(p)}</div><div class="bar${pctHp(p)<30?' low':''}"><i style="width:${pctHp(p)}%"></i></div><div class="hpt">HP: ${p.hp}/${p.maxhp}</div><div class="xp"><i style="width:${xp}%"></i></div></div>`;
+    `<div${monBgAttr(w,'foe')}><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${dexNo(w.dex)} · ${w._tera?'💎':''}${esc(typesOf(w).filter(Boolean).join('／'))}${b.mode==='wild' ? (state.caught.has(w.dex) ? ' · ✔已抓過' : ' · ★未抓過') : ''}${stChip(w)}${teamDots(b,w)}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
+    `<div${monBgAttr(p,'me',frameStyle(p))}><div class="r1"><span>${nmx(p)}</span><span>Lv.${p.level}</span></div><div class="r2">${p._tera?'💎':''}${esc(typesOf(p).filter(Boolean).join('／'))}${p._dmax?` · 極巨化剩 ${p._dmax} 回合`:''} · 速度 ${p.spd}${stChip(p)}</div><div class="bar${pctHp(p)<30?' low':''}"><i style="width:${pctHp(p)}%"></i></div><div class="hpt">HP: ${p.hp}/${p.maxhp}</div><div class="xp"><i style="width:${xp}%"></i></div></div>`;
   const turnHtml = `<div>回合<br><b>${b.turn||1}</b></div><div>狀態<br><b>${b.phase||'選擇行動'}</b></div>${weatherChip() ? `<div>天氣<br><b>${weatherChip()}</b></div>` : ''}${fieldChip() ? `<div>場地<br><b>${fieldChip()}</b></div>` : ''}`;
   const apply = ()=>{
     stageEl.innerHTML = html; turnEl.innerHTML = turnHtml;
@@ -624,10 +625,11 @@ function screenBattle(){
     print(`<span class="sys">${nm(p)} ${esc(t)}……</span>`);
     return setOptions([{label:`▶ 繼續（${t}）`, action:()=>playerMove(-2)}], '繼續');
   }
-  const mk = (mv,i)=>{
-    const why = mv.struggle ? '' : moveBlockReason(p, mv), off = !!why;
-    const ppTxt = mv.struggle ? 'PP ∞' : `PP ${mv.pp}/${mv.maxpp}`;
-    const ppCls = mv.struggle ? '' : (mv.pp<=0 ? ' zero' : mv.pp <= Math.ceil(mv.maxpp/4) ? ' low' : '');
+  const mk = (mv0,i)=>{
+    const mv = mv0.struggle ? mv0 : shownMove(p, mv0);   // 極巨化中顯示極巨招式
+    const why = mv0.struggle ? '' : moveBlockReason(p, mv0), off = !!why;
+    const ppTxt = mv.struggle ? 'PP ∞' : `PP ${mv0.pp}/${mv0.maxpp}`;
+    const ppCls = mv.struggle ? '' : (mv0.pp<=0 ? ' zero' : mv0.pp <= Math.ceil(mv0.maxpp/4) ? ' low' : '');
     const sub = (why && why !== 'PP 用完了') ? `🚫${why}` : moveShort(mv);
     return { label:`${mv.name}（${mv.type}／${mv.cls===2?'變化':'威力'+mv.power}／${ppTxt}）`, half:!mv.struggle, cls:'mv'+(off?' off':''),
       html:`<span class="mvn">${esc(mv.name)}</span><span class="mvt" style="background:${TYPE_COLOR[mv.type]||'#2b3a8c'}">${mv.type}</span><span class="mvpp${ppCls}">${ppTxt}</span><span class="mvp">${esc(sub)}</span>`,
@@ -639,7 +641,10 @@ function screenBattle(){
   else { print('<span class="bad">沒有能用的招式了！只能使用「掙扎」。</span>'); opts = [mk(STRUGGLE,-1)]; }
   if(b.mode !== 'run') opts.push({label:'🎒 道具', cls:'q', action:screenItemSelect});   // 連戰試煉不能用道具
   if(state.party.filter(m=>m.hp>0).length>1) opts.push({label:'🔄 換上場', cls:'q', action:screenSwitch});
-  if(b.mode !== 'run' && !b.megaUsed && !p._mega && megaFormsFor(p).length) opts.push({label:'✨ Mega 進化', cls:'q', action:screenMegaEvolve});
+  if(gimmickFree() && !p._mega && !p._dmax && megaFormsFor(p).length) opts.push({label:'✨ Mega 進化', cls:'q', action:screenMegaEvolve});
+  if(canZ(p)) opts.push({label:'⚡ Z 招式', cls:'q', action:screenZ});
+  if(canTera(p)) opts.push({label:`💎 太晶化（${teraOf(p)}）`, cls:'q', action:doTera});
+  if(canDmax(p)) opts.push({label:'🔴 極巨化', cls:'q', action:doDmax});
   if(b.mode==='wild'){
     opts.push({label:'🎯 捕捉', cls:'q', action:screenBallSelect});
     opts.push({label:'🏃 逃跑', cls:'q', action:tryFlee});
@@ -666,12 +671,12 @@ function screenMegaEvolve(){
 }
 function doMegaEvolve(id){
   const b = state.battle, p = state.party[b.playerIdx], m = MEGA_BY_ID[id];
-  if(!b || !p || !m || b.megaUsed || p._mega) return screenBattle();
+  if(!b || !p || !m || !gimmickFree() || p._mega) return screenBattle();
   const before = p.name;
   megaEvolve(p, m); b.megaUsed = true;
   clearLog();
   print(`<span class="boss">✨ ${esc(before)} 的 Mega 進化石發出了光芒！</span>`);
-  print(`<span class="boss">${esc(before)} Mega 進化成了 ${esc(p.name)}！（${esc(typeStr(p))}　攻擊／防禦／速度大幅提升）</span>`);
+  print(`<span class="boss">${esc(before)} Mega 進化成了 ${esc(p.name)}！（${esc(typeStr(p))}　特性：${esc(abName(p))}）</span>`);
   stageKey = null;
   screenBattle();
   flushStage(); renderStage(0);   // 卡片馬上換成 Mega 的名字和屬性
@@ -705,26 +710,28 @@ function effText(mult){
   return '';
 }
 function dmg(atkMon, defMon, move){
-  const stab = typesOf(atkMon).includes(move.type) ? (hasAb(atkMon,'adaptability') ? 1.6 : 1.3) : 1.0;
+  const stab = move.struggle ? 1 : stabMul(atkMon, move);   // 本系加成（太晶化見 gimmicks.js）
   const e = moveEff(move, defMon);
   if(e === 0) return 0;
   const variance = 0.85 + Math.random()*0.3;
   const phys = isPhys(move);   // 物理招式吃攻擊／防禦，特殊招式吃特攻／特防
   const L = fxList(move), wr = bf().wroom;   // 奇妙空間：防禦、特防對調
   const src = L.includes('foul') ? defMon : atkMon;
-  const atkStat = L.includes('bpress') ? atkMon.def*(atkMon.defMul||1)
-    : phys ? src.atk*(src.atkMul||1) : (atkMon.spa ?? atkMon.atk)*(atkMon.spaMul||1);
+  const ua = dAb(atkMon, defMon,'unaware'), ud = hasAb(atkMon,'unaware');   // 純樸：無視對方的能力變化
+  const st = (m, k, mul, ign) => (m[k] ?? m.atk) * (ign ? 1 : (m[mul]||1)) * abStatMul(m, k);
+  const atkStat = L.includes('bpress') ? st(atkMon, 'def', 'defMul', ua)
+    : phys ? st(src, 'atk', 'atkMul', ua) : st(atkMon, 'spa', 'spaMul', ua);
   const useDef = phys || L.includes('psyshock');
   const dRaw = (useDef !== !!wr) ? defMon.def : (defMon.sdf ?? defMon.def);
-  const dMul = useDef ? (defMon.defMul||1) : (defMon.sdfMul||1);
-  const defStat = Math.max(1, dRaw * dMul * fxDefStat(defMon, useDef));
+  const dMul = ud ? 1 : useDef ? (defMon.defMul||1) : (defMon.sdfMul||1);
+  const defStat = Math.max(1, dRaw * dMul * fxDefStat(defMon, useDef) * abStatMul(defMon, (useDef !== !!wr) ? 'def' : 'sdf'));
   const raw = ((2*atkMon.level/5+2)*move.power*(atkStat/defStat)/50 + 2);
   return Math.max(1, Math.floor(raw*stab*e*variance*fxDmgMul(atkMon, defMon, move, e)*fieldDmgMul(atkMon, defMon, move)));   // 天氣、特性、攜帶道具、場地
 }
 function moveEff(move, defMon){
   if(move.struggle) return 1;
   let t = typesOf(defMon).filter(Boolean);
-  if((move.type === '一般' || move.type === '格鬥') && defMon._foresight) t = t.filter(x=>x !== '幽靈');
+  if((move.type === '一般' || move.type === '格鬥') && (defMon._foresight || (state.battle && hasAb(activeFoeOf(defMon),'scrappy')))) t = t.filter(x=>x !== '幽靈');
   if(move.type === '地面' && state.battle){
     if(bf().grav) t = t.filter(x=>x !== '飛行');
     else if(defMon._mrise || defMon._tkin) return 0;
@@ -776,6 +783,7 @@ function endOfTurn(){
   if(b._ended) return finishEarly();
   if(w.hp<=0){ koFx(); if(p.hp<=0) print(`<span class="bad">${nm(p)} 也倒下了！</span>`); return winBattle(); }
   if(afterFaintCheck(p)) return;
+  dmaxTick(p);
   if(b._foePivot) doFoePivot();
   if(b._pivot) return screenPivot();
   b.turn = (b.turn||1) + 1;
@@ -783,19 +791,25 @@ function endOfTurn(){
 }
 // 出招順序：先比先制度，再比速度（戲法空間反過來）
 function turnOrder(p, pm, w, wm){
-  const pp = pm.pri||0, wp = wm.pri||0;
+  const pr = (m, mv, o) => (mv.pri||0) + abPriority(m, mv, o);
+  const pp = pr(p, pm, w), wp = pr(w, wm, p);
+  pm._pri = pp; wm._pri = wp;
   let first;
   if(pp !== wp) first = pp > wp;
   else {
-    const ps = effSpd(p), ws = effSpd(w);
-    first = ps === ws ? Math.random() < 0.5 : (bf().troom ? ps < ws : ps > ws);
-    if(!first && holds(p,'quickclaw') && Math.random() < 0.2){ first = true; print(`<span class="good">〔先制之爪〕${nm(p)} 搶先行動了！</span>`); }
+    const bp = abOrderBias(p, pm), bw = abOrderBias(w, wm);
+    if(bp !== bw) first = bp > bw;
+    else {
+      const ps = effSpd(p), ws = effSpd(w);
+      first = ps === ws ? Math.random() < 0.5 : (bf().troom ? ps < ws : ps > ws);
+      if(!first && holds(p,'quickclaw') && Math.random() < 0.2){ first = true; print(`<span class="good">〔先制之爪〕${nm(p)} 搶先行動了！</span>`); }
+    }
   }
   return first ? [[p,pm],[w,wm]] : [[w,wm],[p,pm]];
 }
-function playerMove(moveIdx){
+function playerMove(moveIdx, opt){
   const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
-  clearLog();
+  if(!(opt && opt.z)) clearLog();
   let pm;
   if(p._force) pm = p._force.mv;
   else if(p._rch) pm = p.moves[0] || STRUGGLE;
@@ -803,9 +817,11 @@ function playerMove(moveIdx){
     if(moveIdx >= 0 && moveBlockReason(p, p.moves[moveIdx])) return screenMoveSelect();
     if(moveIdx < 0 && usableMoves(p).length) return screenMoveSelect();
     pm = moveIdx < 0 ? STRUGGLE : p.moves[moveIdx];
+    if(opt && opt.z && !pm.struggle) pm = zMoveOf(pm);          // Z 招式
+    else if(p._dmax && !pm.struggle) pm = maxMoveOf(pm);       // 極巨招式
   }
   const wm = chooseFoeMove(w);
-  if(holds(p,'choicescarf') && !pm.struggle && !p._lock) p._lock = pm.name;
+  if((holds(p,'choicescarf') || hasAb(p,'gorillatactics')) && !pm.struggle && !p._lock && !p._dmax) p._lock = (pm._base || pm).name;
   p._choice = pm; w._choice = wm;
   for(const [a, m] of turnOrder(p, pm, w, wm)){
     const active = a === b.wild || a === state.party[b.playerIdx];   // 被吹走換下場的就不能出招了
@@ -891,8 +907,8 @@ function useItem(kind){
 function tryFlee(){
   clearLog();
   const fp = state.party[state.battle.playerIdx];
-  if(!canEscape(fp)){ print(`<span class="bad">${nm(fp)} 被困住了，逃不掉！</span>`); return screenBattle(); }
-  if(Math.random()<0.75){
+  if(!canEscape(fp) || abTrapped(fp)){ print(`<span class="bad">${nm(fp)} 被困住了，逃不掉！${abTrapped(fp) ? `（${abTrapped(fp)}）` : ''}</span>`); return screenBattle(); }
+  if(hasAb(fp,'runaway') || Math.random()<0.75){
     print('你成功逃跑了。');
     bump('flees');
     state.battle=null; megaRevertAll(); state.party.forEach(resetBattleFlags);
@@ -906,7 +922,7 @@ function screenSwitch(){
   const b = state.battle;
   clearLog();
   const cur = state.party[b.playerIdx];
-  if(!canEscape(cur)){ print(`<span class="bad">${nm(cur)} 被困住了，不能換下場！</span>`); return screenBattle(); }
+  if(!canEscape(cur) || abTrapped(cur)){ print(`<span class="bad">${nm(cur)} 被困住了，不能換下場！</span>`); return screenBattle(); }
   print('<span class="em">選擇要換上場的寶可夢：</span>');
   const opts = state.party.map((m,i)=>{
     const tag = i===b.playerIdx ? '（目前上場）' : (m.hp<=0 ? '（已無法戰鬥）' : `HP ${m.hp}/${m.maxhp}`);
@@ -972,6 +988,7 @@ function sendNextFoe(nx, keepLog){
 const evoSkip = new WeakMap();   // 玩家選了「不進化」：同一等級不再詢問（重新整理頁面後會再問一次）
 let evoQueue = [];
 function evoTarget(p){           // 回傳進化後的圖鑑索引；現在還不能進化則回傳 null
+  const ce = condEvoTarget(p); if(ce !== null) return ce;   // 時段、性別、會的招式、攻防比較、仙子伊布（growth.js）
   const te = TIME_EVO[p.dex];
   if(FRIEND_EVO.has(p.dex) && friendOf(p) >= FRIEND_EVO_MIN){   // 親密度夠高：不用等到等級
     if(te){ const h = nowFn().getHours(); return (h>=6 && h<18) ? te.day : te.night; }

@@ -28,73 +28,9 @@ function natureText(m){
 }
 
 /* ========== 5. 特性：依屬性隨機分配，遇到時決定，敵我都有 ========== */
-const ABILITIES = {
-  blaze:       {name:'猛火',     desc:'HP 剩 1/3 以下時，火屬性招式威力 ×1.5'},
-  torrent:     {name:'激流',     desc:'HP 剩 1/3 以下時，水屬性招式威力 ×1.5'},
-  overgrow:    {name:'茂盛',     desc:'HP 剩 1/3 以下時，草屬性招式威力 ×1.5'},
-  swarm:       {name:'蟲之預感', desc:'HP 剩 1/3 以下時，蟲屬性招式威力 ×1.5'},
-  intimidate:  {name:'威嚇',     desc:'出場時讓對手的攻擊下降'},
-  drought:     {name:'乾旱',     desc:'出場時天氣變成大晴天'},
-  drizzle:     {name:'降雨',     desc:'出場時天氣變成下雨'},
-  sandstream:  {name:'揚沙',     desc:'出場時天氣變成沙暴'},
-  snowwarning: {name:'降雪',     desc:'出場時天氣變成下雪'},
-  static:      {name:'靜電',     desc:'被攻擊時，30% 讓對手麻痺'},
-  flamebody:   {name:'火焰之軀', desc:'被攻擊時，30% 讓對手灼傷'},
-  poisonpoint: {name:'毒刺',     desc:'被攻擊時，30% 讓對手中毒'},
-  levitate:    {name:'飄浮',     desc:'地面屬性招式無效'},
-  thickfat:    {name:'厚脂肪',   desc:'受到火、冰屬性招式的傷害減半'},
-  speedboost:  {name:'加速',     desc:'每回合結束時速度提升'},
-  sturdy:      {name:'結實',     desc:'HP 全滿時，不會被一擊打倒（每場一次）'},
-  regenerator: {name:'再生力',   desc:'換下場時回復 1/3 HP'},
-  technician:  {name:'技術高手', desc:'威力 60 以下的招式威力 ×1.5'},
-  adaptability:{name:'適應力',   desc:'本系招式加成從 ×1.3 變成 ×1.6'},
-  moxie:       {name:'自信過度', desc:'打倒對手時攻擊提升'},
-  rockhead:    {name:'堅硬腦袋', desc:'不會受到反作用力傷害'},
-  guts:        {name:'毅力',     desc:'陷入異常狀態時，招式威力 ×1.5'},
-  magicguard:  {name:'魔法防守', desc:'只會受到招式的直接傷害（中毒、灼傷、天氣、反作用力都無效）'},
-  chlorophyll: {name:'葉綠素',   desc:'大晴天時速度 ×2'},
-  swiftswim:   {name:'悠游自如', desc:'下雨時速度 ×2'},
-  sandrush:    {name:'撥沙',     desc:'沙暴時速度 ×2'},
-  slushrush:   {name:'撥雪',     desc:'下雪時速度 ×2'},
-  immunity:    {name:'免疫',     desc:'不會中毒'},
-  limber:      {name:'柔軟',     desc:'不會麻痺'},
-  waterveil:   {name:'水幕',     desc:'不會灼傷'},
-  shielddust:  {name:'鱗粉',     desc:'不會受到對手招式的附加效果'},
-  multiscale:  {name:'多重鱗片', desc:'HP 全滿時，受到的傷害減半'},
-  voltabsorb:  {name:'蓄電',     desc:'電屬性招式無效，並回復 1/4 HP'},
-  waterabsorb: {name:'儲水',     desc:'水屬性招式無效，並回復 1/4 HP'},
-  sapsipper:   {name:'食草',     desc:'草屬性招式無效，並回復 1/4 HP'},
-  flashfire:   {name:'引火',     desc:'火屬性招式無效，之後自己的火屬性招式威力 ×1.5'},
-  insomnia:    {name:'不眠',     desc:'不會睡著（煩惱種子給的）'},
-  simple:      {name:'單純',     desc:'能力變化加倍（單純光束給的）'},
-  sheerforce:  {name:'強行',     desc:'有附加效果的招式威力 ×1.3，但不會觸發附加效果'}
-};
-const AB_POOL = {
-  一般:['intimidate','technician','immunity','thickfat','guts','adaptability'],
-  火:['blaze','flamebody','flashfire','drought'],
-  水:['torrent','swiftswim','waterabsorb','drizzle','waterveil','regenerator'],
-  電:['static','voltabsorb','limber'],
-  草:['overgrow','chlorophyll','sapsipper','regenerator'],
-  冰:['thickfat','slushrush','snowwarning'],
-  格鬥:['guts','technician','sheerforce'],
-  毒:['poisonpoint','levitate','immunity'],
-  地面:['sandrush','sandstream','sheerforce'],
-  飛行:['speedboost','moxie','technician'],
-  超能力:['magicguard','levitate','regenerator'],
-  蟲:['swarm','shielddust','speedboost','poisonpoint'],
-  岩石:['sturdy','rockhead','sandstream'],
-  幽靈:['levitate','moxie'],
-  龍:['multiscale','moxie','intimidate'],
-  惡:['intimidate','moxie'],
-  鋼:['sturdy','technician'],
-  妖精:['magicguard','limber']
-};
+// 特性的資料和大部分效果在 abilities.js（ABILITIES、rollAbility、ensureAbility、abName…）
 const PINCH_AB = {blaze:'火', torrent:'水', overgrow:'草', swarm:'蟲'};
-function abPoolFor(t1, t2){ return [...new Set([...(AB_POOL[t1]||[]), ...(AB_POOL[t2]||[])])]; }
-function rollAbility(entry){ const pool = abPoolFor(entry[1], entry[2]); return pool.length ? pool[Math.floor(Math.random()*pool.length)] : 'technician'; }
-function ensureAbility(m){ if(!m.ab || !ABILITIES[m.ab]) m.ab = rollAbility(DEX[m.dex] || ['', '一般', null, 1]); return m.ab; }
-function abName(m){ return m && ABILITIES[m.ab] ? ABILITIES[m.ab].name : '—'; }
-function hasAb(m, k){ return !!m && !m._noab && m.ab === k; }   // _noab：被胃液封住
+function hasAb(m, k){ return !!m && !m._noab && m.ab === k && !abSuppressed(m); }   // _noab：被胃液封住；化學變化氣體也會讓特性失效
 function abTag(m){ return `<span class="ab">〔${esc(abName(m))}〕</span>`; }
 
 /* ========== 3. 攜帶道具：一隻帶一個，從背包裝上／卸下（道具名稱、效果參考寶可夢冠軍） ==========
@@ -155,7 +91,7 @@ const HELD = {
  ['babiriberry','霹霹果','鋼'],['roseliberry','洛玫果','妖精'],['chilanberry','燈漿果','一般']]
  .forEach(([k,label,t])=>{ HELD[k] = {cat:'resist', label, price:1000, resist:t, desc: t==='一般' ? '受到一般屬性招式時，傷害減半（每場一次）' : `受到效果絕佳的${t}屬性招式時，傷害減半（每場一次）`}; });
 const HELD_KEYS = Object.keys(HELD);
-function heldOn(m){ return !!m && !m._knock && !m._emb && !(state.battle && state.battle.field && state.battle.field.mroom); }   // 被打落、查封、魔法空間時道具沒效果
+function heldOn(m){ return !!m && !m._knock && !m._emb && !(state.battle && state.battle.field && state.battle.field.mroom) && !(m.ab === 'klutz' && !m._noab); }   // 被打落、查封、魔法空間時道具沒效果
 function holds(m, k){ return heldOn(m) && m.held === k; }
 function heldName(m){ return m && HELD[m.held] ? HELD[m.held].label : '無'; }
 function heldIt(m){ return heldOn(m) && HELD[m.held]; }
@@ -205,7 +141,7 @@ function fieldWeather(zone){
   const h = hashStr(`wx${todayKey()}-${slot}-${zone}`) % 100;
   return h < 50 ? 'none' : h < 65 ? 'sun' : h < 80 ? 'rain' : h < 90 ? 'sand' : 'snow';
 }
-function battleWeather(){ return (state.battle && state.battle.weather) || 'none'; }
+function battleWeather(){ const b = state.battle; if(!b) return 'none'; if(b.weather && b.weather !== 'none' && (fieldHasAb('airlock') || fieldHasAb('cloudnine'))) return 'none'; return b.weather || 'none'; }   // 氣閘、無關天氣
 function weatherChip(){ const w = battleWeather(); return w === 'none' ? '' : `${WEATHER[w].icon}${WEATHER[w].name}`; }
 // 遭遇偏向：天氣相關屬性 30%、大量出現的屬性 30%
 function biasPool(pool){
@@ -213,7 +149,7 @@ function biasPool(pool){
   const wx = WEATHER[fieldWeather()];
   if(wx.types && Math.random() < 0.3) types = wx.types;
   else { const de = dailyEvent(); if(de.id === 'outbreak' && Math.random() < 0.3) types = [de.type]; }
-  if(!types) return pool;
+  if(!types) return timePool(pool);   // 白天／夜晚（growth.js）
   const f = pool.filter(i=>types.includes(DEX[i][1]) || types.includes(DEX[i][2]));
   return f.length ? f : pool;
 }
@@ -223,6 +159,8 @@ function resetBattleFlags(m){
   if(!m) return;
   ['_bSash','_bSturdy','_bBerry','_bFF','_bGem','_bBalloon','_bHerb','_lock','_metro','_flinch','_rfist'].forEach(k=>{ delete m[k]; });
   if(typeof clearVolatile === 'function') clearVolatile(m); else m.spdMul = 1;   // 招式造成的暫時狀態、能力變化（moves.js）
+  if(typeof clearGimmick === 'function') clearGimmick(m);   // 太晶化、極巨化（gimmicks.js）
+  ['_bDisguise','_bIce','_bSword','_bShield','_bSyrup','_cud'].forEach(k=>{ delete m[k]; });
 }
 let fxNotes = [];   // 傷害計算中產生的訊息（會心一擊、抗性樹果……），印在攻擊訊息後面
 function flushFxNotes(){ fxNotes.forEach(t=>print(t)); fxNotes = []; }
@@ -255,16 +193,17 @@ function onEntry(m, foe){
   const b = state.battle;
   if(holds(m,'airballoon') && !m._bBalloon) print(`<span class="sys">${who(m)} 靠著氣球浮在空中。</span>`);
   if(hasAb(m,'intimidate') && foe && foe.hp > 0){
-    foe.atkMul = Math.max(0.4, (foe.atkMul||1)*0.75);
-    print(`${abTag(m)}${who(m)} 威嚇了對方，<span class="bad">${who(foe)} 的攻擊下降了！</span>`);
-    herbCheck(foe);
+    const blocked = intimidateBlocked(foe);
+    if(blocked) print(`${abTag(m)}${who(m)} 威嚇了對方！` + '<br>' + blocked);
+    else { print(`${abTag(m)}${who(m)} 威嚇了對方！`); print(statChange(foe, 'a', -1, true, m)); herbCheck(foe); }
   }
-  const setW = {drought:'sun', drizzle:'rain', sandstream:'sand', snowwarning:'snow'}[m.ab];
+  const setW = !m._noab && !abSuppressed(m) && {drought:'sun', drizzle:'rain', sandstream:'sand', snowwarning:'snow', megasol:'sun'}[m.ab];
   if(setW && b.weather !== setW){
     const rock = heldIt(m) && heldIt(m).wx === setW;
     b.weather = setW; b.weatherTurns = rock ? WX_TURNS_ROCK : WX_TURNS;
     print(`${abTag(m)}<span class="em">${WEATHER[setW].icon} 天氣變成了${WEATHER[setW].name}！</span>`);
   }
+  abOnEntry(m, foe);   // 其他出場特性（abilities.js）
 }
 // 每回合結束一次：特性造成的天氣倒數，結束後回到原本的天氣
 function weatherTick(){
@@ -276,7 +215,7 @@ function weatherTick(){
 }
 const SPD_AB_WEATHER = {chlorophyll:'sun', swiftswim:'rain', sandrush:'sand', slushrush:'snow'};
 function fxSpd(m){
-  return (m.spdMul||1) * (SPD_AB_WEATHER[m.ab] && SPD_AB_WEATHER[m.ab] === battleWeather() ? 2 : 1) * (holds(m,'choicescarf') ? 1.5 : 1);
+  return (m.spdMul||1) * (SPD_AB_WEATHER[m.ab] && hasAb(m, m.ab) && SPD_AB_WEATHER[m.ab] === battleWeather() ? 2 : 1) * (holds(m,'choicescarf') ? 1.5 : 1) * abSpdMul(m);
 }
 // 防禦方的能力倍率（phys＝物理招式）
 function fxDefStat(def, phys){
@@ -298,8 +237,8 @@ function fxDmgMul(att, def, move, e){
   if(hasAb(att,'guts') && att.status) k *= 1.5;
   if(hasAb(att,'sheerforce') && hasSecondary(move)) k *= 1.3;
   if(att._bFF && t === '火') k *= 1.5;
-  if(hasAb(def,'thickfat') && (t === '火' || t === '冰')) k *= 0.5;
-  if(hasAb(def,'multiscale') && def.hp >= def.maxhp) k *= 0.5;
+  if(dAb(att, def,'thickfat') && (t === '火' || t === '冰')) k *= 0.5;
+  if(dAb(att, def,'multiscale') && def.hp >= def.maxhp) k *= 0.5;
   // 攻擊方道具
   const it = heldIt(att);
   if(it){
@@ -313,11 +252,12 @@ function fxDmgMul(att, def, move, e){
     if(att.held === 'normalgem' && t === '一般' && !att._bGem && !move.struggle){ att._bGem = true; k *= 1.3; fxNotes.push(`<span class="good">〔一般寶石〕${who(att)} 的招式威力提升了！</span>`); }
   }
   // 會心一擊：等級 0 1/24、1 1/8、2 1/2、3 必定（招式、聚氣、焦點鏡、親密度；幸運咒語擋下）；calcHit 會先算好 move._crit
-  const cs = move._crit === undefined ? (holds(att,'scopelens') ? 1 : 0) : move._crit;
+  const cs = abCritBlocked(att, def) ? -1 : move._crit === undefined ? (holds(att,'scopelens') ? 1 : 0) : move._crit;
   if(cs >= 0 && Math.random() < [1/24, 1/8, 1/2, 1][Math.min(3, cs)]){
     k *= 1.5; move._didCrit = true; fxNotes.push('<span class="em">會心一擊！</span>');
     if(state.battle && att !== state.battle.wild) bump('crits');
   }
+  k *= abPowerMul(att, def, move, e);   // 特性（abilities.js）
   // 防禦方抗性樹果
   const di = heldIt(def);
   if(di && di.resist === t && !def._bBerry && !move.struggle && (t === '一般' || e >= 2)){
@@ -329,7 +269,13 @@ function fxDmgMul(att, def, move, e){
 function hasSecondary(move){ return !move.struggle && move.cls !== 2 && fxList(move).some(c=>/^a[a-z]{3}\d|^fl\d|^sf/.test(c) || (/^su/.test(c) && !/_100$/.test(c))); }   // 強行會吃掉的附加效果
 // 出招前：畏縮、節拍器計數
 function beforeMoveFx(att, move){
-  if(att._flinch){ att._flinch = false; print(`<span class="bad">${who(att)} 畏縮了，無法行動！</span>`); return false; }
+  if(att._flinch){
+    att._flinch = false;
+    if(hasAb(att,'innerfocus') || att._dmax) return true;
+    print(`<span class="bad">${who(att)} 畏縮了，無法行動！</span>`);
+    if(hasAb(att,'steadfast')) print(abTag(att) + statChange(att, 's', 1));
+    return false;
+  }
   if(holds(att,'metronome')){
     att._metro = (att._metro && att._metro.name === move.name) ? {name:move.name, n:att._metro.n+1} : {name:move.name, n:0};
   }
@@ -338,17 +284,8 @@ function beforeMoveFx(att, move){
 // 吸收型特性、氣球：招式無效（回傳訊息，沒觸發回傳空字串）
 function absorbCheck(att, def, move){
   if(move.struggle) return '';
-  const t = move.type;
-  if(hasAb(def,'levitate') && t === '地面') return `${abTag(def)}${who(def)} 浮在空中，地面屬性招式沒有效果！`;
-  if(t === '地面' && holds(def,'airballoon') && !def._bBalloon) return `〔氣球〕${who(def)} 浮在空中，地面屬性招式沒有效果！`;
-  const heal = {voltabsorb:'電', waterabsorb:'水', sapsipper:'草'}[def.ab];
-  if(heal && heal === t){
-    const h = Math.max(1, Math.floor(def.maxhp/4)), before = def.hp;
-    def.hp = Math.min(def.maxhp, def.hp + h);
-    return `${abTag(def)}${who(def)} 吸收了招式${def.hp > before ? `，回復了 ${def.hp-before} 點 HP` : ''}！`;
-  }
-  if(hasAb(def,'flashfire') && t === '火'){ def._bFF = true; return `${abTag(def)}${who(def)} 吸收了火焰，火屬性招式的威力提升了！`; }
-  return '';
+  if(move.type === '地面' && holds(def,'airballoon') && !def._bBalloon && !bf().grav) return `〔氣球〕${who(def)} 浮在空中，地面屬性招式沒有效果！`;
+  return abImmune(att, def, move);   // 吸收型特性、飄浮、隔音、防彈……（abilities.js）
 }
 // 氣勢披帶／結實／氣勢頭帶：撐住一擊。回傳 [調整後的傷害, 要在攻擊訊息後面印的字]
 function endureCheck(def, d){
@@ -361,13 +298,11 @@ function endureCheck(def, d){
   if(state.battle && def !== state.battle.wild && (def.friend||0) >= 200 && Math.random() < 0.1) return [def.hp - 1, `<span class="good">${who(def)} 為了不讓你難過，撐住了這一擊！</span>`];   // 親密度
   return [d, ''];
 }
-function statusImmune(m, kind){
-  return (kind === 'poison' && hasAb(m,'immunity')) || (kind === 'paralyze' && hasAb(m,'limber')) || (kind === 'burn' && hasAb(m,'waterveil'));
-}
+function statusImmune(m, kind, src){ return abStatusBlock(m, kind, src); }   // 免疫、柔軟、水幕、不眠……（abilities.js）
 // 狀態樹果：木子果治全部、櫻子果／桃桃果／莓莓果治對應狀態
 function lumCheck(m){
   const it = heldIt(m);
-  if(!m.status || !it || m._bBerry || !(m.held === 'lumberry' || statusMatch(m.status, it.cure))) return;
+  if(!m.status || !it || m._bBerry || berryBlocked(m) || !(m.held === 'lumberry' || statusMatch(m.status, it.cure))) return;
   m._bBerry = true; m.status = null;
   print(`<span class="good">〔${it.label}〕${who(m)} 的異常狀態治好了！</span>`);
 }
@@ -382,12 +317,12 @@ function herbCheck(m){
 const PINCH_NAME = {atk:'攻擊', def:'防禦', spd:'速度'};
 function hpBerryCheck(m){
   const it = heldIt(m);
-  if(!it || m._bBerry || m.hp <= 0) return;
+  if(!it || m._bBerry || m.hp <= 0 || berryBlocked(m)) return;
   if((m.held === 'sitrusberry' || m.held === 'oranberry') && m.hp*2 <= m.maxhp){
-    const h = Math.max(1, Math.floor(m.maxhp / (m.held === 'sitrusberry' ? 4 : 10)));
+    const h = Math.max(1, Math.floor(m.maxhp / (m.held === 'sitrusberry' ? 4 : 10)) * (hasAb(m,'ripen') ? 2 : 1) + (hasAb(m,'cheekpouch') ? Math.floor(m.maxhp/3) : 0));
     m._bBerry = true; m.hp = Math.min(m.maxhp, m.hp + h);
     print(`<span class="good">〔${it.label}〕${who(m)} 回復了 ${h} 點 HP！</span>`);
-  } else if(it.pinch && m.hp*4 <= m.maxhp){
+  } else if(it.pinch && m.hp*(hasAb(m,'gluttony') ? 2 : 4) <= m.maxhp){
     m._bBerry = true;
     if(it.pinch === 'atk') m.atkMul = Math.min(2.5, (m.atkMul||1)*1.5);
     if(it.pinch === 'def') m.defMul = Math.min(2.5, (m.defMul||1)*1.5);
@@ -415,12 +350,12 @@ function afterHitFx(att, def, move, d){
     const l = Math.max(1, Math.floor(att.maxhp/10)); att.hp = Math.max(0, att.hp - l);
     print(`<span class="bad">〔生命寶珠〕${who(att)} 損失了 ${l} 點 HP。</span>`);
   }
-  if(holds(def,'rockyhelmet') && isPhys(move) && att.hp > 0 && !hasAb(att,'magicguard')){
+  if(holds(def,'rockyhelmet') && isContact(att, move) && att.hp > 0 && !hasAb(att,'magicguard')){
     const l = Math.max(1, Math.floor(att.maxhp/6)); att.hp = Math.max(0, att.hp - l);
     print(`<span class="bad">〔凸凸頭盔〕${who(att)} 受到了 ${l} 點傷害！</span>`);
   }
-  const contact = {static:'paralyze', flamebody:'burn', poisonpoint:'poison'}[def.ab];
-  if(contact && isPhys(move) && att.hp > 0 && !att.status && !statusImmune(att, contact) && Math.random() < 0.3){
+  const contact = hasAb(def, def.ab) && {static:'paralyze', flamebody:'burn', poisonpoint:'poison'}[def.ab];
+  if(contact && isContact(att, move) && att.hp > 0 && !att.status && !statusImmune(att, contact) && Math.random() < 0.3){
     att.status = contact;
     print(`${abTag(def)}<span class="bad">${who(att)} ${STATUS_WORD[contact]}！</span>`);
     lumCheck(att);
@@ -429,6 +364,8 @@ function afterHitFx(att, def, move, d){
     att.atkMul = Math.min(2.5, (att.atkMul||1)*1.25);
     print(`${abTag(att)}<span class="good">${who(att)} 的攻擊提升了！</span>`);
   }
+  abAfterHit(att, def, move, d, !!move._didCrit);   // 被打到的特性反應、接觸類特性（abilities.js）
+  if(def.hp <= 0) abOnKo(att, def);
   hpBerryCheck(def); hpBerryCheck(att);
 }
 // 回合結束：沙暴、吃剩的東西、加速、畏縮解除（直接印出）
@@ -437,7 +374,7 @@ function endTurnFx(m){
   m._flinch = false;
   if(m.hp <= 0) return;
   const w = battleWeather(), t = typesOf(m);
-  if(w === 'sand' && !t.some(x=>x==='岩石'||x==='地面'||x==='鋼') && !hasAb(m,'magicguard')){
+  if(w === 'sand' && !t.some(x=>x==='岩石'||x==='地面'||x==='鋼') && !['magicguard','sandveil','sandrush','sandforce','overcoat'].some(k=>hasAb(m,k)) && !m._dmax){
     const l = Math.max(1, Math.floor(m.maxhp/16)); m.hp = Math.max(0, m.hp - l);
     print(`<span class="bad">🌪 沙暴襲擊了 ${who(m)}，損失 ${l} 點 HP。</span>`);
     if(m.hp <= 0) return;
@@ -450,11 +387,14 @@ function endTurnFx(m){
     m.spdMul = Math.min(4, (m.spdMul||1)*1.5);
     print(`${abTag(m)}<span class="good">${who(m)} 的速度提升了！</span>`);
   }
+  abEndTurn(m);   // 雨盤、蛻皮、心情不定……（abilities.js）
   hpBerryCheck(m);
 }
 function switchOutFx(m){
   if(!m) return;
   delete m._lock; delete m._metro;   // 講究圍巾、節拍器：換下場就重新計算
+  abSwitchOut(m);                    // 自然回復（abilities.js）
+  endDmax(m);                        // 換下場就解除極巨化
   clearVolatile(m);                  // 能力變化、混亂、寄生種子等只在場上有效的狀態（moves.js）
   if(m.hp > 0 && hasAb(m,'regenerator') && m.hp < m.maxhp){
     const h = Math.max(1, Math.floor(m.maxhp/3)); m.hp = Math.min(m.maxhp, m.hp + h);
