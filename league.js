@@ -329,7 +329,7 @@ function renderDexDetail(i){
     const w = (typeof DEX_WEIGHT !== 'undefined' ? DEX_WEIGHT[i] : 0);
     const g = GENDER_RATE[i];
     print(`身高 ${(t[2]/10).toFixed(1)} m　體重 ${(w/10).toFixed(1)} kg　性別 ${g < 0 ? '無性別' : g === 0 ? '♂ 100%' : g === 8 ? '♀ 100%' : `♂ ${100 - g*12.5}%／♀ ${g*12.5}%`}`);
-    print(t[1] ? esc(t[1]) : '<span class="sys">（PokeAPI 沒有這隻的中文說明）</span>');
+    print(t[1] ? esc(t[1]) + (t[3] ? '<span class="sys">　（由遊戲官方簡體說明轉成繁體）</span>' : '') : '<span class="sys">（找不到這隻的中文說明）</span>');
     const b = BASE_STATS[i], tot = b.reduce((a,x)=>a+x, 0);
     print('<span class="em">種族值</span>　' + `<span class="sys">合計 ${tot}</span>`);
     print(b.map((v,k)=>`<div class="bsrow"><span>${STAT_LABELS[k]}</span><b>${v}</b><i style="width:${Math.min(100, v/2)}%"></i></div>`).join(''));
