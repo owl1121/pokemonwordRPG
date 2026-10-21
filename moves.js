@@ -317,15 +317,54 @@ function moveUseless(a, d, mv){
   }
   return false;
 }
+// 對手的選招：估算每一招的價值，依「聰明程度」挑最好的那招，不然就從有用的招裡隨機（難度設定見 gimmicks.js 的 aiSmart）
+function estDamage(a, d, mv){
+  if(mv.cls === 2 || moveEff(mv, d) === 0) return 0;
+  const L = fxList(mv);
+  let pw = mv.power > 1 ? mv.power : 60;
+  if(L.some(c=>/^fix:|^lvl$/.test(c))) return a.level;
+  if(L.includes('half')) return Math.floor(d.hp/2);
+  if(L.includes('ohko')) return d.level > a.level ? 0 : d.hp*0.3;
+  const hm = L.find(x=>/^h\d+-\d+$/.test(x)); if(hm){ const [lo, hi] = hm.slice(1).split('-').map(Number); pw *= lo === hi ? lo : 3; }
+  const phys = isPhys(mv), A = phys ? a.atk*(a.atkMul||1) : (a.spa??a.atk)*(a.spaMul||1), D = Math.max(1, phys ? d.def*(d.defMul||1) : (d.sdf??d.def)*(d.sdfMul||1));
+  let x = ((2*a.level/5+2)*pw*A/D/50 + 2) * moveEff(mv, d) * stabMul(a, mv) * ((mv.acc||100)/100);
+  if(L.includes('chg') && !(L.includes('solar') && battleWeather() === 'sun')) x *= 0.5;
+  if(L.includes('rch')) x *= 0.7;
+  if(abImmuneQuiet(a, d, mv)) x = 0;
+  return x;
+}
+function abImmuneQuiet(a, d, mv){   // 不觸發效果的「會不會被特性吸收」判斷
+  const t = mv.type;
+  return (t === '電' && ['voltabsorb','lightningrod','motordrive'].some(k=>dAb(a, d, k))) || (t === '水' && ['waterabsorb','stormdrain','dryskin'].some(k=>dAb(a, d, k)))
+    || (t === '草' && dAb(a, d,'sapsipper')) || (t === '火' && (dAb(a, d,'flashfire') || dAb(a, d,'wellbakedbody'))) || (t === '地面' && (dAb(a, d,'levitate') || dAb(a, d,'eartheater') || (holds(d,'airballoon') && !d._bBalloon)))
+    || (dAb(a, d,'wonderguard') && moveEff(mv, d) < 2) || (dAb(a, d,'soundproof') && mvFlag(mv,'sound')) || (dAb(a, d,'bulletproof') && mvFlag(mv,'ball'));
+}
+function moveScore(w, p, mv, best){
+  if(mv.cls !== 2){
+    let x = estDamage(w, p, mv);
+    if(x >= p.hp) x = p.hp * 1.5 + (mv.pri > 0 ? 50 : 0);   // 打得倒：優先，先制招更好
+    return x;
+  }
+  if(moveUseless(w, p, mv)) return 0;
+  const L = fxList(mv), hpR = w.hp/w.maxhp, foeR = p.hp/p.maxhp;
+  if(L.some(c=>/^hl\d/.test(c)) || L.includes('ssap') || L.includes('wish')) return hpR < 0.45 ? best*1.3 + 1 : 0;
+  if(L.some(c=>/^su/.test(c)) || ['bdrum','fillet','focus','stock','sub'].some(c=>L.includes(c))) return hpR > 0.6 && foeR > 0.3 ? best*0.8 : best*0.15;
+  if(L.some(c=>/^a(par|slp|brn|tox|psn|frz)100$/.test(c))) return !p.status && foeR > 0.4 ? best*0.85 : 0;
+  if(L.some(c=>/^(prot|endure)/.test(c))) return best*0.1;
+  if(L.some(c=>c.startsWith('hz:') || c.startsWith('scr:') || c.startsWith('wx:') || c.startsWith('tr:'))) return hpR > 0.5 ? best*0.6 : best*0.1;
+  return best*0.35;
+}
 function chooseFoeMove(w){
   if(w._force) return w._force.mv;
   const p = state.party[state.battle.playerIdx];
   let ok = usableMoves(w);
   if(!ok.length) return STRUGGLE;
-  if(w.legend && p && Math.random() < 0.55){   // 傳說寶可夢：55% 挑「威力 × 屬性相剋 × 本系加成」最高的招
-    let best = null, bs = -1;
-    ok.forEach(m=>{ const s = (m.cls === 2 ? 0 : (m.power||0)) * moveEff(m, p) * ((m.type===w.t1 || m.type===w.t2) ? 1.2 : 1); if(s > bs){ bs = s; best = m; } });
-    if(best && bs > 0) return best;
+  const smart = aiSmart(w);
+  if(p && Math.random() < smart){
+    const best = Math.max(1, ...ok.map(m=>m.cls !== 2 ? estDamage(w, p, m) : 0));
+    let pick = null, bs = -1;
+    ok.forEach(m=>{ const s = moveScore(w, p, m, best) * (0.9 + Math.random()*0.2); if(s > bs){ bs = s; pick = m; } });
+    if(pick && bs > 0) return pick;
   }
   const useful = ok.filter(m=>!moveUseless(w, p, m));
   if(useful.length) ok = useful;

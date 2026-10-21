@@ -181,6 +181,7 @@ function entryCheck(){
     onEntry(w, p);
     entryHazards(w);
     if(w.shiny) shinyFx('foe');   // 色違出場特效
+    foeAceEntry(w);   // 館主王牌、小魔王太晶化（gimmicks.js）
   }
   if(p && p.hp > 0 && b._meIn !== p){
     b._meIn = p; ensureAbility(p); onEntry(p, w);

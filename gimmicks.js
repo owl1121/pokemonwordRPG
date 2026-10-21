@@ -101,3 +101,29 @@ function screenTeraPick(i, back){
   opts.push({label:'← 返回', action:()=>screenMember(i, back)});
   setOptions(opts);
 }
+
+/* ---------- 難度：對手的聰明程度、訓練家／館主／小魔王的強化 ---------- */
+// 對手挑「估算最好的招」的機率（其餘從有用的招裡隨機）
+function aiSmart(w){
+  const b = state.battle; if(!b) return 0.4;
+  if(w.legend) return 0.9;
+  return {wild:0.4, trainer:0.7, gym:Math.min(0.9, 0.55 + (b.gymIdx||0)*0.02), tower:b.boss ? 0.95 : 0.85, mega:0.85, run:0.85, legendary:0.9}[b.mode] ?? 0.6;
+}
+const FOE_HELD = ['leftovers','lifeorb','focussash','choicescarf','expertbelt','muscleband','wiseglasses','sitrusberry','lumberry','assaultvest','rockyhelmet','scopelens','shellbell','whiteherb'];
+// 訓練家：能力點至少 lo；館主、小魔王再加攜帶道具
+function hardenFoe(m, lo, held){
+  ensureIv(m);
+  IV_KEYS.forEach(k=>{ m.iv[k] = Math.max(m.iv[k], lo + Math.floor(Math.random()*(IV_MAX - lo + 1))); });
+  m.ivCap = ivSum(m.iv);
+  const ratio = m.hp/m.maxhp, st = monStats(m);
+  m.maxhp = st.hp; m.hp = Math.max(1, Math.round(st.hp*ratio)); setNonHpStats(m, st);
+  if(held){ const pool = FOE_HELD.filter(k=>HELD[k]); if(pool.length) m.held = pool[Math.floor(Math.random()*pool.length)]; }
+  return m;
+}
+// 館主的王牌、小魔王：出場時太晶化（太晶屬性＝第一屬性，本系加成變強）
+function foeAceEntry(w){
+  const b = state.battle;
+  if(!b || !w._ace || w._tera || b.foeGimmick) return;
+  b.foeGimmick = true; w._tera = teraOf(w);
+  print(`<span class="boss">💎 ${who(w)} 太晶化成了${w._tera}屬性！</span>`);
+}
