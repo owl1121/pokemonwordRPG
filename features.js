@@ -242,9 +242,11 @@ function entryCheck(){
     print(`<span class="sys">${who(w)} 的特性：${esc(abName(w))}</span>`);
     onEntry(w, p);
     entryHazards(w);
+    if(w.shiny) shinyFx('foe');   // 色違出場特效
   }
   if(p && p.hp > 0 && b._meIn !== p){
     b._meIn = p; ensureAbility(p); onEntry(p, w);
+    if(p.shiny) shinyFx('me');
     const pu = state.stats.pu && typeof state.stats.pu === 'object' ? state.stats.pu : (state.stats.pu = {}); pu[p.dex] = (pu[p.dex]||0) + 1;   // 統計：上場次數
     entryHazards(p);
   }

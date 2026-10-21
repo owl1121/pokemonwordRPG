@@ -75,6 +75,7 @@ const SFX = (function(){
     lose:   t=>jingle([[64,0,0.2],[62,0.2,0.2],[60,0.4,0.2],[57,0.6,0.7]],'p25',0.14,t,0.08),
     levelup:t=>jingle([[72,0,0.12],[76,0.12,0.12],[79,0.24,0.12],[84,0.36,0.6]],'p25',0.14,t,0.08),
     evolve: t=>{ osc('p25',262,t,1.4,0.16,1047,null,0.05); jingle([[72,1.4,1],[76,1.4,1],[79,1.4,1]],'p25',0.1,t,0.08); },
+    shiny:  t=>{ [[96,0],[103,0.07],[108,0.14],[103,0.32],[108,0.39],[112,0.46]].forEach(([m,o])=>osc('p125', hz(m), t+o, 0.06, 0.09)); },   // 色違出場：兩串叮叮叮
     mega:   t=>{ osc('p25',196,t,1.5,0.16,1568,null,0.05); osc('triangle',98,t,1.5,0.2,392,null,0.05); jingle([[67,1.5,1.1],[71,1.5,1.1],[74,1.5,1.1],[79,1.5,1.1]],'p25',0.09,t,0.08); },
     throw:  t=>osc('triangle', 392, t, 0.25, 0.14, 784),
     catchok:t=>jingle([[72,0,0.12],[79,0.12,0.12],[84,0.24,0.7]],'p25',0.14,t,0.08),
@@ -264,6 +265,35 @@ function stageHeldMs(){ return Math.max(0, stageHoldTill - performance.now()); }
 function holdStage(ms){ stageHoldTill = Math.max(stageHoldTill, performance.now() + ms); }
 function releaseStage(){ stageHoldTill = 0; fxGen++; clearTimeout(stageHoldTimer); if(!state.battle && appEl.classList.contains('battle')) syncBattleUI(); }
 function fxReduced(){ try{ return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+/* ---------- 色違出場：卡片閃一下＋星星往外散開兩次（像本傳） ---------- */
+function shinyFx(side){
+  const b0 = state.battle;
+  const go = ()=>{
+    if(!state.battle || state.battle !== b0) return;
+    if((typeof introEl !== 'undefined' && introEl) || stageHeldMs() > 0) return setTimeout(go, 120);   // 等開場動畫、擊倒動畫播完
+    const c = stageEl.querySelector('.card.'+side); if(!c) return;
+    if(typeof SFX !== 'undefined') SFX.play('shiny');
+    if(fxReduced() || !c.animate) return;
+    c.animate([{filter:'brightness(1)'}, {filter:'brightness(1.9) saturate(1.4)', offset:.25}, {filter:'brightness(1)', offset:.5}, {filter:'brightness(1.6)', offset:.7}, {filter:'brightness(1)'}], {duration:900, easing:'ease-out'});
+    const r = c.getBoundingClientRect(), cx = r.left + r.width/2, cy = r.top + r.height/2;
+    [0, 320].forEach((delay, wave)=>{
+      for(let i=0;i<8;i++){
+        const s = document.createElement('div'); s.className = 'shinyStar'; s.textContent = i%2 ? '✦' : '✧';
+        s.style.left = cx+'px'; s.style.top = cy+'px';
+        document.body.appendChild(s);
+        const a = (i/8 + wave/16)*Math.PI*2, k = wave ? .75 : 1, dx = Math.cos(a)*r.width*.62*k, dy = Math.sin(a)*r.height*1.0*k;
+        const an = s.animate([
+          {transform:'translate(-50%,-50%) scale(.2) rotate(0deg)', opacity:0},
+          {transform:`translate(calc(-50% + ${dx*.55}px), calc(-50% + ${dy*.55}px)) scale(1.25) rotate(90deg)`, opacity:1, offset:.45},
+          {transform:`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.3) rotate(180deg)`, opacity:0}
+        ], {duration:650, delay, easing:'ease-out', fill:'forwards'});
+        an.onfinish = ()=>s.remove();
+        setTimeout(()=>s.remove(), delay + 1200);
+      }
+    });
+  };
+  setTimeout(go, Math.max(150, curDelay() + 80));
+}
 const KO_MS = 2400;
 // 對手被打倒：像玻璃一樣碎掉——震動 → 裂痕 → 閃光一聲碎開，碎片往外噴、往下掉
 // 每次隨機挑一種碎法（蛛網／三角格／亂刀／蛛網＋亂刀），形狀、數量都不一樣
