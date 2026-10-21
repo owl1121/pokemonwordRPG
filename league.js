@@ -79,16 +79,20 @@ function useModItem(k, box, i){
 
 /* ---------- 寶可夢聯盟：每個地區的道館都打完就能挑戰四天王＋冠軍，五場連戰中間不能回補給站 ---------- */
 const LEAGUE_REGIONS = ['關都','城都','豐緣','神奧','合眾','卡洛斯','阿羅拉','伽勒爾','帕底亞'];
-// 各地區四天王的屬性（伽勒爾沒有四天王，改成冠軍盃：混合隊伍）
+// 各地區四天王的屬性與名字（官方繁中譯名，對照神奇寶貝百科）；伽勒爾沒有四天王，用冠軍盃的對手（瑪俐、赫普、彼特、奇巴納），赫普是混合隊伍
 const LEAGUE_E4 = [['冰','格鬥','幽靈','龍'], ['超能力','毒','格鬥','惡'], ['惡','幽靈','冰','龍'], ['蟲','地面','火','超能力'], ['幽靈','惡','超能力','格鬥'],
-  ['火','水','鋼','龍'], ['格鬥','岩石','幽靈','飛行'], ['', '', '', ''], ['地面','鋼','飛行','龍']];
+  ['火','水','鋼','龍'], ['格鬥','岩石','幽靈','飛行'], ['惡','','妖精','龍'], ['地面','鋼','飛行','龍']];
+const LEAGUE_NAMES = [['科拿','希巴','菊子','阿渡'], ['一樹','阿桔','希巴','梨花'], ['花月','芙蓉','波妮','源治'], ['阿柳','菊野','大葉','悟松'], ['婉龍','越橘','嘉德麗雅','連武'],
+  ['帕琦拉','志米','雁鎧','朵拉塞娜'], ['哈拉','麗姿','阿塞蘿拉','卡希麗'], ['瑪俐','赫普','彼特','奇巴納'], ['辛俐','波琵','青木','八朔']];
+const LEAGUE_CHAMP = ['青綠','阿渡','大吾','竹蘭','阿戴克','卡露乃','庫庫伊博士','丹帝','也慈'];
 let leagueRun = null;   // {r, k}：正在挑戰第 r 個地區、第 k 戰（0~3 四天王、4 冠軍）
 function leagueMeta(){ const m = state.meta; if(!m.champ || typeof m.champ !== 'object') m.champ = {}; if(!Array.isArray(m.hof)) m.hof = []; return m; }
 function leagueOpen(r){ return state.meta.badges >= (r+1)*8; }
 function leagueBaseLv(r){ return 10 + (r*8+7)*4 + 2; }
 function leagueName(r, k){
-  if(r === 7) return k < 4 ? `冠軍盃 第 ${k+1} 戰` : '伽勒爾冠軍';
-  return k < 4 ? `${LEAGUE_REGIONS[r]}四天王（${LEAGUE_E4[r][k]}）` : `${LEAGUE_REGIONS[r]}冠軍`;
+  const t = LEAGUE_E4[r][k];
+  if(r === 7) return k < 4 ? `冠軍盃 ${LEAGUE_NAMES[r][k]}${t ? `（${t}）` : ''}` : `伽勒爾冠軍 ${LEAGUE_CHAMP[r]}`;
+  return k < 4 ? `${LEAGUE_REGIONS[r]}四天王 ${LEAGUE_NAMES[r][k]}（${t}）` : `${LEAGUE_REGIONS[r]}冠軍 ${LEAGUE_CHAMP[r]}`;
 }
 let _strongPool = null;
 function strongPool(){
@@ -144,7 +148,7 @@ function leagueNext(){
   const first = startMultiBattle('league', foes, title, {reward:(k === 4 ? 8000 : 3000) + r*1500});
   introLead = introLeadFor('big');
   clearLog();
-  print(`<span class="boss">${k === 4 ? '👑' : '🏆'} ${esc(title)}向你挑戰！（共 ${foes.length + 1} 隻）</span>`);
+  print(`<span class="boss">${k === 4 ? '👑' : '🏆'} ${esc(title)} 向你挑戰！（共 ${foes.length + 1} 隻）</span>`);
   print(`${esc(title)} 派出了 ${nm(first)}（Lv.${first.level}）！`);
   screenBattle(); battleIntro('big');
 }
