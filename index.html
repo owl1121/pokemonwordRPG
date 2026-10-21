@@ -313,6 +313,8 @@ button,input,textarea,select{font-family:inherit;}
 .koCrack{position:absolute;z-index:4;pointer-events:none;overflow:hidden;border-radius:12px;}
 .koCrack path{fill:none;stroke:#3a3f55;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 2px rgba(255,255,255,.9));}
 .koShard{position:absolute;z-index:4;pointer-events:none;box-sizing:border-box;}
+.dexclick{cursor:pointer;}.dexclick:active{opacity:.6;}
+.bsrow{display:flex;align-items:center;gap:8px;margin:2px 0;}.bsrow span{width:3em;opacity:.8;}.bsrow b{width:2.4em;text-align:right;}.bsrow i{display:block;height:8px;border-radius:4px;background:var(--accent2,#3fae7a);}
 .gd{font-weight:bold;margin-left:2px;}.gm{color:#4a90e2;}.gf{color:#e2547a;}
 .card.dmax{box-shadow:0 0 0 3px #ff3b3b,0 0 18px 6px rgba(255,40,40,.65);}
 .card.tera{box-shadow:0 0 0 2px #bfefff,0 0 14px 4px rgba(120,220,255,.7);}
@@ -470,6 +472,7 @@ button,input,textarea,select{font-family:inherit;}
 <script src="abilities.js"></script>
 <script src="gimmicks.js"></script>
 <script src="growth.js"></script>
+<script src="league.js"></script>
 <script>
 /* =====================================================
    events.js — 節日活動系統
@@ -1058,7 +1061,7 @@ const OLD_SAVE_KEY = 'pkmn_tower_save_v1';
 function saveGame(){
   try{
     const data = {
-      v:2, party:(typeof svRun!=='undefined' && svRun) ? svRun.backup : state.party, box:state.box,   // 連戰試煉中存檔，存的是原本的隊伍
+      v:2, party:(typeof svRun!=='undefined' && svRun) ? svRun.backup : (typeof fac!=='undefined' && fac && fac.backup) ? fac.backup : state.party, box:state.box,   // 連戰試煉中存檔，存的是原本的隊伍
       seen:Array.from(state.seen), caught:Array.from(state.caught), shinyCaught:Array.from(state.shinyCaught), mega:state.mega,
       bag:state.bag, money:state.money, zone:state.zone, maxZone:state.maxZone, tower:state.tower,
       stats:state.stats, quest:state.quest, ach:state.ach, meta:state.meta, checkin:state.checkin, profile:state.profile, fest:state.fest, mail:state.mail, tms:state.tms
@@ -1434,11 +1437,15 @@ function screenBattleMenu(){
   print(`🗼 寶可塔　無限之塔，打倒樓層賺硬幣、挑戰神獸`);
   print(`🔥 連戰試煉　${state.stats.runBest ? `最高紀錄 第 ${state.stats.runBest} 關` : '還沒挑戰過'}`);
   print(`💎 Mega 對戰　碎片 ${megaTotalShards()} 片`);
+  print(`🏆 寶可夢聯盟　已制霸 ${Object.keys(leagueMeta().champ).length} / ${LEAGUE_REGIONS.length} 個地區`);
+  print(`🏭 對戰工廠　租借寶可夢連戰，最高 ${facMeta().facBest} 連勝　BP ${facMeta().bp}`);
   setOptions([
     {label:'🏛 道館', half:true, action:screenGym},
     {label:'🗼 寶可塔', half:true, action:enterTower},
     {label:'🔥 連戰試煉', half:true, action:screenSurvival},
     {label:'💎 Mega 對戰', half:true, action:()=>screenMegaBattle()},
+    {label:'🏆 寶可夢聯盟', half:true, action:()=>screenLeague()},
+    {label:'🏭 對戰工廠', half:true, action:()=>screenFactory()},
     {label:"返回", action:toField}
   ]);
 }
@@ -1477,6 +1484,7 @@ const HEAL_CD = 5;
 function fullHeal(){ state.party.forEach(m=>{ m.hp=m.maxhp; m.status=null; m.atkMul=1; m.defMul=1; resetBattleFlags(m); restorePP(m); }); }
 function healAll(returnTo){
   const mt = state.meta;
+  if(typeof leagueRun !== 'undefined' && leagueRun){ leagueRun = null; notify('🏳 去了補給站，聯盟挑戰算放棄'); }
   if(mt.cd > 0 && !noAlive() && !daily('nurse')){
     clearLog(); print(`<span class="bad">補給站還在整備中……要再打完 ${mt.cd} 場戰鬥才能使用。</span>`);
     return (returnTo||screenField)();
@@ -1917,7 +1925,7 @@ function startTowerFloor(){
   }
   const t = state.tower;
   const f = currentTowerFoe();
-  const wild = makeMon(f.dexIdx, f.lvl);
+  const wild = makeMon(f.dexIdx, diffLv(f.lvl));
   hardenFoe(wild, f.boss ? 50 : 35, !!f.boss); if(f.boss) wild._ace = true;   // 難度：塔的對手能力點較高，小魔王帶道具、會太晶化
   if(f.endless){
     const mul = endlessMul();
@@ -2217,6 +2225,7 @@ function screenBag(){
   const opts = [];
   if(healItemKeys().some(k=>state.bag[k]>0)) opts.push({label:"💊 使用藥品", action:()=>screenHealItems()});
   STONE_KEYS.filter(k=>state.bag[k]>0).forEach(k=>opts.push({label:`💎 ${ITEMS[k].label}`, half:true, action:()=>screenStoneUse(k)}));
+  ['mint','abcapsule','abpatch'].filter(k=>state.bag[k]>0).forEach(k=>opts.push({label:`🌿 ${ITEMS[k].label}`, half:true, action:()=>{ modPage = 0; screenModItem(k); }}));
   ['rarecandy','ppup','ppmax'].filter(k=>state.bag[k]>0).forEach(k=>opts.push({label:`${k==='rarecandy'?'🍬':'⬆'} ${ITEMS[k].label}`, half:true, action:()=>{ growPage = 0; screenGrowItem(k); }}));
   opts.push({label:"去商店", half:true, action:()=>{ shopQty=1; screenShop(); }});
   opts.push({label:"返回", half:true, action:toField});
@@ -2363,8 +2372,8 @@ function screenDexRegion(){   // 單一地區：直向卷軸
   const rows = view.map(i=>{
     const e = DEX[i], no = dexNo(i);
     const shinyMark = state.shinyCaught.has(i) ? ' <span class="shiny">✨</span>' : '';
-    if(state.caught.has(i)) return `<div class="dexrow"><span class="dexno">#${no}</span><span class="good">${esc(e[0])}</span><span class="sys">${e[2]?e[1]+'／'+e[2]:e[1]}</span>${shinyMark}</div>`;
-    if(state.seen.has(i)) return `<div class="dexrow"><span class="dexno">#${no}</span><span class="sys">${esc(e[0])}（已見過）</span></div>`;
+    if(state.caught.has(i)) return `<div class="dexrow dexclick" onclick="dexDetail(${i})"><span class="dexno">#${no}</span><span class="good">${esc(e[0])}</span><span class="sys">${e[2]?e[1]+'／'+e[2]:e[1]}</span>${shinyMark}</div>`;
+    if(state.seen.has(i)) return `<div class="dexrow dexclick" onclick="dexDetail(${i})"><span class="dexno">#${no}</span><span class="sys">${esc(e[0])}（已見過）</span></div>`;
     return `<div class="dexrow"><span class="dexno">#${no}</span><span class="sys">？？？</span></div>`;
   }).join('');
   // 標題與清單包在同一個區塊，標題才能在捲動時固定在上方；清單直接用 #log 本身的直向捲軸
@@ -2426,7 +2435,7 @@ function startMultiBattle(mode, foes, title, extra){
 }
 function startTrainer(){
   const z = state.zone, n = 1 + (z>=3?1:0) + (Math.random()<0.35?1:0), foes = [];
-  for(let i=0;i<n;i++) foes.push(boostMon(hardenFoe(makeMon(pickWildIndex(z), Math.max(2, Math.min(MAX_LEVEL, z*4 + Math.floor(Math.random()*5))), {shiny:false}), 35, false), zoneBoost(z)));   // 難度：比野生高 1 級、能力點至少 35
+  for(let i=0;i<n;i++) foes.push(boostMon(hardenFoe(makeMon(pickWildIndex(z), diffLv(z*4 + Math.floor(Math.random()*5)), {shiny:false}), 35, diffKey() === 'hard' && Math.random() < 0.4), zoneBoost(z)));   // 難度：比野生高 1 級、能力點至少 35
   const title = TRAINERS[Math.floor(Math.random()*TRAINERS.length)];
   const first = startMultiBattle('trainer', foes, title, {reward: foes.reduce((a,f)=>a+f.level*25,0)});
   introLead = introLeadFor('trainer');
@@ -2441,9 +2450,9 @@ function startGym(){
   if(!g || state.caught.size < (i+1)*10) return screenGym();
   if(noAlive()){ clearLog(); print('<span class="bad">你的隊伍已經沒有能戰鬥的寶可夢了，先去補給站治療吧。</span>'); return screenField(); }
   // 難度隨道館數增加：第 8 間起 +2 級、能力點下限 30→55、第 4 間起帶道具、第 7 間起王牌會太晶化
-  const cnt = gymFoeCount(i), lv = 10 + i*4 + (i >= 7 ? 2 : 0), foes = [];
-  for(let k=0;k<cnt;k++) foes.push(boostMon(hardenFoe(makeMon(g[3][Math.floor(Math.random()*g[3].length)]-1, Math.min(MAX_LEVEL, lv + (k===cnt-1?3:0)), {shiny:false}), 30 + Math.min(25, Math.floor(i*1.5)), i >= 3), gymBoost(i)));
-  if(i >= 6) foes[cnt-1]._ace = true;
+  const cnt = gymFoeCount(i), lv = diffLv(10 + i*4 + (i >= 7 ? 2 : 0)), foes = [];
+  for(let k=0;k<cnt;k++) foes.push(boostMon(hardenFoe(makeMon(g[3][Math.floor(Math.random()*g[3].length)]-1, Math.min(MAX_LEVEL, lv + (k===cnt-1?3:0)), {shiny:false}), 30 + Math.min(25, Math.floor(i*1.5)), diffKey() === 'easy' ? i >= 8 : diffKey() === 'hard' ? true : i >= 3), gymBoost(i)));
+  if(i >= (diffKey() === 'hard' ? 2 : 6)) foes[cnt-1]._ace = true;
   const first = startMultiBattle('gym', foes, `${g[0]}館主 ${g[1]}`, {reward:1200 + i*400, gymIdx:i});
   introLead = introLeadFor('big');
   clearLog();
@@ -2789,6 +2798,7 @@ function profileHtml(){
     + cell('成就點數', achPoints())
     + '</div>';
   h += `<button class="bigclaim" onclick="openDexFromProfile()">📖 開啟圖鑑（${state.caught.size} / ${DEX.length}）</button>`;
+  h += diffHtml();   // 難度（league.js）
   h += '<div class="mh">🎴 對戰邊框（顯示在我方寶可夢的卡片上）</div><div class="frgrid">';
   [['auto','依捕捉的球'],['none','無框'],['poke','精靈球'],['great','超級球'],['ultra','高級球'],['master','大師球']].forEach(([k,n])=>{
     const open = k==='auto' || frameUnlocked(k), on = (p.frame||'auto')===k;

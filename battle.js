@@ -639,7 +639,7 @@ function screenBattle(){
   let opts;
   if(usableMoves(p).length){ opts = p.moves.map(mk); if(lock) print(`<span class="sys">〔講究圍巾〕只能使用 ${esc(lock)}。</span>`); if(p._enc) print(`<span class="sys">被再來一次，只能使用 ${esc(p._enc.name)}。</span>`); }
   else { print('<span class="bad">沒有能用的招式了！只能使用「掙扎」。</span>'); opts = [mk(STRUGGLE,-1)]; }
-  if(b.mode !== 'run') opts.push({label:'🎒 道具', cls:'q', action:screenItemSelect});   // 連戰試煉不能用道具
+  if(b.mode !== 'run' && b.mode !== 'factory') opts.push({label:'🎒 道具', cls:'q', action:screenItemSelect});   // 連戰試煉、對戰工廠不能用道具   // 連戰試煉不能用道具
   if(state.party.filter(m=>m.hp>0).length>1) opts.push({label:'🔄 換上場', cls:'q', action:screenSwitch});
   if(gimmickFree() && !p._mega && !p._dmax && megaFormsFor(p).length) opts.push({label:'✨ Mega 進化', cls:'q', action:screenMegaEvolve});
   if(canZ(p)) opts.push({label:'⚡ Z 招式', cls:'q', action:screenZ});
@@ -1093,6 +1093,7 @@ function winBattle(){
   if(state.battle && state.battle.mode === 'run') return svWin();   // 連戰試煉有自己的結算
   const b = state.battle; const p = state.party[b.playerIdx]; const w = b.wild;
   const mode = b.mode;
+  if(mode === 'factory'){ print(`<span class="good">擊敗了 ${nm(w)}！</span>`); return facKo(b); }   // 對戰工廠：租借的寶可夢不拿經驗（league.js）
   bump('wins'); if(mode==='tower'){ bump('floors'); if(b.boss) bump('bosses'); }
   { const act = state.party[b.playerIdx]; state.party.forEach(m=>{ if(m.hp > 0) addFriend(m, m === act ? 2 : 1); }); }   // 親密度：上場的 +2、其他 +1
   if(mode==='wild'){ pityResolve(w, false); addZoneWin(); }
@@ -1113,6 +1114,7 @@ function winBattle(){
       askShiftBeforeFoe(nx);
     });
   }
+  if(mode==='league') return leagueWin(b);   // 聯盟（league.js）
   state.battle=null;
   battleDone();
 
@@ -1181,6 +1183,8 @@ function winBattle(){
 }
 function loseBattle(){
   if(state.battle && state.battle.mode === 'run') return svEnd();   // 連戰試煉：全隊倒下＝挑戰結束
+  if(state.battle && state.battle.mode === 'factory') return facEnd(true);   // 對戰工廠
+  if(state.battle && state.battle.mode === 'league') leagueLose();
   bump('losses');
   print('<span class="bad">你的隊伍全部失去戰鬥能力了……你被送回了補給站。</span>');
   state.party.forEach(m=>{ m.hp=Math.max(1, Math.floor(m.maxhp*0.5)); m.status=null; restorePP(m); });

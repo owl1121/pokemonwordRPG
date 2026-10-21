@@ -106,13 +106,17 @@ function screenTeraPick(i, back){
 // 對手挑「估算最好的招」的機率（其餘從有用的招裡隨機）
 function aiSmart(w){
   const b = state.battle; if(!b) return 0.4;
-  if(w.legend) return 0.9;
-  return {wild:0.4, trainer:0.7, gym:Math.min(0.9, 0.55 + (b.gymIdx||0)*0.02), tower:b.boss ? 0.95 : 0.85, mega:0.85, run:0.85, legendary:0.9}[b.mode] ?? 0.6;
+  const k = diff().ai, adj = x => k > 1 ? Math.min(0.98, x*k + 0.1) : x*k;   // 難度
+  if(w.legend) return adj(0.9);
+  if(b.mode === 'factory') return adj(Math.min(0.95, 0.6 + (fac ? fac.streak : 0)*0.03));
+  if(b.mode === 'league') return adj(0.92);
+  return adj({wild:0.4, trainer:0.7, gym:Math.min(0.9, 0.55 + (b.gymIdx||0)*0.02), tower:b.boss ? 0.95 : 0.85, mega:0.85, run:0.85, legendary:0.9}[b.mode] ?? 0.6);
 }
 const FOE_HELD = ['leftovers','lifeorb','focussash','choicescarf','expertbelt','muscleband','wiseglasses','sitrusberry','lumberry','assaultvest','rockyhelmet','scopelens','shellbell','whiteherb'];
 // 訓練家：能力點至少 lo；館主、小魔王再加攜帶道具
 function hardenFoe(m, lo, held){
   ensureIv(m);
+  lo = Math.max(IV_MIN, Math.min(IV_MAX, lo + diff().iv));   // 難度
   IV_KEYS.forEach(k=>{ m.iv[k] = Math.max(m.iv[k], lo + Math.floor(Math.random()*(IV_MAX - lo + 1))); });
   m.ivCap = ivSum(m.iv);
   const ratio = m.hp/m.maxhp, st = monStats(m);
