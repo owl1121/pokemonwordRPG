@@ -237,7 +237,7 @@ function setStatus(m, kind, src, quiet){
   const fail = t => quiet ? '' : `<span class="sys">${t}</span>`;
   if(m.status) return fail(`${who(m)} 已經處於異常狀態了。`);
   const t = typesOf(m);
-  if((kind === 'burn' && t.includes('火')) || (kind === 'paralyze' && t.includes('電')) || ((kind === 'poison' || kind === 'toxic') && (t.includes('毒') || t.includes('鋼'))) || (kind === 'freeze' && t.includes('冰')))
+  if((kind === 'burn' && t.includes('火')) || (kind === 'paralyze' && t.includes('電')) || ((kind === 'poison' || kind === 'toxic') && (t.includes('毒') || t.includes('鋼')) && !(src && hasAb(src,'corrosion'))) || (kind === 'freeze' && t.includes('冰')))
     return fail(`對 ${who(m)} 好像沒有效果……`);
   if(statusImmune(m, kind, src)) return fail(`${who(m)} 的特性讓牠不會${STATUS_NAME[kind]}。`);
   if(src && src !== m && sideOf(m).safeg) return fail(`${who(m)} 受到神秘守護的保護！`);
@@ -349,7 +349,7 @@ function preMoveChecks(att, def, mv){
   att._moved = true;
   if(att._rch){ delete att._rch; print(`<span class="bad">${who(att)} 需要休息，無法行動！</span>`); return false; }
   if(att.status === 'sleep'){
-    att._slp = (att._slp || 1) - 1;
+    att._slp = (att._slp || 1) - (hasAb(att,'earlybird') ? 2 : 1);   // 早起：醒得比較快
     if(att._slp <= 0){ att.status = null; delete att._slp; delete att._nmare; print(`<span class="good">${who(att)} 醒過來了！</span>`); }
     else if(!(hasFx(mv,'snore') || hasFx(mv,'stalk'))){ print(`<span class="sys">${who(att)} 正在呼呼大睡。</span>`); return false; }
   }

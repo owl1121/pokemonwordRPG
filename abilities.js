@@ -19,6 +19,7 @@ const AB_IMPL = new Set(('blaze torrent overgrow swarm intimidate drought drizzl
  + 'prankster galewings triage quickdraw stall myceliummight '
  + 'shedskin hydration naturalcure poisonheal raindish icebody heavymetal lightmetal pressure truant unnerve klutz synchronize download intrepidsword dauntlessshield trace imposter screencleaner supersweetsyrup '
  + 'anticipation forewarn frisk moldbreaker teravolt turboblaze neutralizinggas airlock cloudnine electricsurge grassysurge mistysurge psychicsurge moody harvest cudchew ripen cheekpouch gluttony liquidooze '
+ + 'baddreams flowergift corrosion earlybird '
  + 'runaway shadowtag arenatrap magnetpull steadfast aromaveil opportunist libero protean colorchange mimicry emergencyexit wimpout infiltrator longreach unseenfist').split(' '));
 const ABILITIES = {};
 (function(){
