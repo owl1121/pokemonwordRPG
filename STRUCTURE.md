@@ -29,9 +29,9 @@
 ## index.html 內部分段
 
 - 第 18~435 行：CSS（卡片底圖是 `.card.mz`：`--mzimg` 以 cover 鋪滿 padding-box，`.r1>span`/`.r2`/`.hpt` 各自墊 `--half` 60% 底色）
-- 第 430~445 行：HTML 骨架（`#stage` 對戰畫面、`#log` 文字、`#bar` 狀態列、`#opts` 選項按鈕、`#modal` 選單、`#hub` 活動/信箱）
+- 第 430~445 行：HTML 骨架（`#stage` 對戰畫面、`#log` 文字、`#bar` 狀態列（地點＋圖鑑／球／錢／硬幣，`renderBar`）、`#opts` 選項按鈕、`#modal` 選單、`#hub` 活動/信箱）
 - 約 466~846 行：節日活動 `EVENTS`、背景主題、信箱 `mail*`、`openHub`
-- 約 848 行起：主程式。常數、`makeMon`（產生寶可夢）、能力值/個體值計算、塔與傳說挑戰規則、`state`（全部遊戲狀態）、`print`（文字輸出）、`setOptions`（選項按鈕）
+- 約 848 行起：主程式。常數、`makeMon`（產生寶可夢）、能力值/個體值計算、塔與傳說挑戰規則、`state`（全部遊戲狀態）、`print`（文字輸出）、`setOptions`（選項按鈕）、寶可夢小卡 `monCardHtml`/`monCardOpt`（隊伍、倉庫、換人用；`typeChips` 屬性色塊）、野外上方隊伍一覽 `partyStripHtml`（`screenField` 塞進 `stageDetail`）
 - 約 1052~1250 行：存檔 `saveGame`/`loadGame`/匯出入
 - 之後是各個畫面函式，命名都是 `screenXxx`：`screenField`（野外主畫面，約 1366 行）、`encounter`（遇敵）、`screenShop`、`screenTower`（無盡塔）、`screenGym`（道館）、`screenParty`/`screenBox`/`screenBag`、`screenDex`（圖鑑）、Mega 進化相關 `startMegaBattle`/`megaEvolve`
 - 約 2608 行起：成就 `ACH`、稱號、簽到、任務、個人資料；`openMenu`（約 2827 行）為選單入口
@@ -50,6 +50,8 @@
 ## 慣例
 
 - 畫面切換 = 呼叫某個 `screenXxx()`，內部用 `print()` 輸出文字、`setOptions([...])` 放按鈕。
+- `setOptions` 的按鈕欄位：`label`、`action`、`half`（半寬）、`cls`（`primary` 主要按鈕、`off` 變暗、`q` 四分之一寬）、`html`（自訂內容）、`ic`＋`sub`（圖示在上的小方塊）、`row`（同一個值且連在一起的按鈕排成一列平分寬度，超過 5 顆平均分兩列；對戰的強化用 `gim`、行動用 `act`，倉庫篩選 `mview`）。「點一下跳過動畫」提示只在動畫播放中顯示。
+- 對戰畫面上方的回合／天氣／場地是 `renderStage` 裡的 `.binfo`（舊的 `#turnbar` 已拿掉）；招式卡第二行是「威力（命中不到 100 才顯示）＋PP」，第三行效果說明最多兩行。規則提示（不能逃跑等）只在第 1 回合印。
 - 改完要存檔就呼叫 `saveGame()`；新增存檔欄位要在 `loadGame`/`fixMon` 補預設值，避免舊存檔壞掉。
 - 能力值用本傳公式＋種族值（`statsFor(base, level)`、`baseStatsOf(dex, megaId)`），能力點照舊另外加；`m.sv` 是公式版本（`STAT_VER`），舊存檔讀進來會重算。Mega 進化改用 Mega 的種族值和特性（`p._mega.ab` 記原本特性）。
 - 寶可夢身上的招式：`m.moves`（上場 4 招，招式物件含 `id`）、`m.xm`（額外學會的招式 id）、`m.friend`（親密度 0~255，預設 70）。對戰中的暫時狀態都是底線開頭（`_sub`、`_cnf`、`_seed`…），換下場或對戰結束由 `clearVolatile` 清掉。

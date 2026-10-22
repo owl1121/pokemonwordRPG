@@ -575,9 +575,9 @@ function renderStage(at, hit, power){   // hit：'foe' 或 'me'，該張卡片�
   const html =
     `<div${monBgAttr(w,'foe')}><div class="r1"><span>${nmx(w)}</span><span>Lv.${w.level}</span></div><div class="r2">#${dexNo(w.dex)} · ${w._tera?'💎':''}${esc(typesOf(w).filter(Boolean).join('／'))}${b.mode==='wild' ? (state.caught.has(w.dex) ? ' · ✔已抓過' : ' · ★未抓過') : ''}${stChip(w)}${teamDots(b,w)}</div><div class="bar${pctHp(w)<30?' low':''}"><i style="width:${pctHp(w)}%"></i></div></div>`+
     `<div${monBgAttr(p,'me',frameStyle(p))}><div class="r1"><span>${nmx(p)}</span><span>Lv.${p.level}</span></div><div class="r2">${p._tera?'💎':''}${esc(typesOf(p).filter(Boolean).join('／'))}${p._dmax?` · 極巨化剩 ${p._dmax} 回合`:''} · 速度 ${p.spd}${stChip(p)}</div><div class="bar${pctHp(p)<30?' low':''}"><i style="width:${pctHp(p)}%"></i></div><div class="hpt">HP: ${p.hp}/${p.maxhp}</div><div class="xp"><i style="width:${xp}%"></i></div></div>`;
-  const turnHtml = `<div>回合<br><b>${b.turn||1}</b></div><div>狀態<br><b>${b.phase||'選擇行動'}</b></div>${weatherChip() ? `<div>天氣<br><b>${weatherChip()}</b></div>` : ''}${fieldChip() ? `<div>場地<br><b>${fieldChip()}</b></div>` : ''}`;
+  const info = `<div class="binfo"><span>第 <b>${b.turn||1}</b> 回合</span>${weatherChip() ? `<span>${weatherChip()}</span>` : ''}${fieldChip() ? `<span>${fieldChip()}</span>` : ''}</div>`;
   const apply = ()=>{
-    stageEl.innerHTML = html; turnEl.innerHTML = turnHtml;
+    stageEl.innerHTML = info + html;
     if(hit){ const c = stageEl.querySelector('.card.'+hit); if(c){ c.classList.add('hit'); if(power) c.classList.add(power); } }
     if(stageLatest===apply) stageLatest=null;
   };
@@ -630,27 +630,29 @@ function screenBattle(){
     const why = mv0.struggle ? '' : moveBlockReason(p, mv0), off = !!why;
     const ppTxt = mv.struggle ? 'PP ∞' : `PP ${mv0.pp}/${mv0.maxpp}`;
     const ppCls = mv.struggle ? '' : (mv0.pp<=0 ? ' zero' : mv0.pp <= Math.ceil(mv0.maxpp/4) ? ' low' : '');
-    const sub = (why && why !== 'PP 用完了') ? `🚫${why}` : moveShort(mv);
+    const pw = mv.cls === 2 ? '變化' : (mv.power > 1 ? `威力 ${mv.power}` : '威力 —');
+    const stat = `${pw}${mv.acc && mv.acc < 100 ? ` 命中 ${mv.acc}` : ''}`;   // 命中 100／必中就不顯示，省空間
+    const fx = fxList(mv).map(fxDesc).filter(Boolean)[0];
+    const sub = (why && why !== 'PP 用完了') ? `🚫${why}` : ((fx ? '✦' + fx : '') + (mv.recoil ? `${fx ? ' · ' : ''}⚠反作用力` : ''));
     return { label:`${mv.name}（${mv.type}／${mv.cls===2?'變化':'威力'+mv.power}／${ppTxt}）`, half:!mv.struggle, cls:'mv'+(off?' off':''),
-      html:`<span class="mvn">${esc(mv.name)}</span><span class="mvt" style="background:${TYPE_COLOR[mv.type]||'#2b3a8c'}">${mv.type}</span><span class="mvpp${ppCls}">${ppTxt}</span><span class="mvp">${esc(sub)}</span>`,
+      html:`<span class="mvn">${esc(mv.name)}</span><span class="mvt" style="background:${TYPE_COLOR[mv.type]||'#2b3a8c'}">${mv.type}</span><i class="mvbr"></i><span class="mvs">${stat}</span><span class="mvpp${ppCls}">${ppTxt}</span>${sub ? `<span class="mvp">${esc(sub)}</span>` : ''}`,
       action: off ? ()=>screenBattle() : ()=>playerMove(i) };
   };
   const lock = holds(p,'choicescarf') && p._lock;   // 講究圍巾：只能用第一個選的招式
   let opts;
   if(usableMoves(p).length){ opts = p.moves.map(mk); if(lock) print(`<span class="sys">〔講究圍巾〕只能使用 ${esc(lock)}。</span>`); if(p._enc) print(`<span class="sys">被再來一次，只能使用 ${esc(p._enc.name)}。</span>`); }
   else { print('<span class="bad">沒有能用的招式了！只能使用「掙扎」。</span>'); opts = [mk(STRUGGLE,-1)]; }
-  if(b.mode !== 'run' && b.mode !== 'factory') opts.push({label:'🎒 道具', cls:'q', action:screenItemSelect});   // 連戰試煉、對戰工廠不能用道具   // 連戰試煉不能用道具
-  if(state.party.filter(m=>m.hp>0).length>1) opts.push({label:'🔄 換上場', cls:'q', action:screenSwitch});
-  if(gimmickFree() && !p._mega && !p._dmax && megaFormsFor(p).length) opts.push({label:'✨ Mega 進化', cls:'q', action:screenMegaEvolve});
-  if(canZ(p)) opts.push({label:'⚡ Z 招式', cls:'q', action:screenZ});
-  if(canTera(p)) opts.push({label:`💎 太晶化（${teraOf(p)}）`, cls:'q', action:doTera});
-  if(canDmax(p)) opts.push({label:'🔴 極巨化', cls:'q', action:doDmax});
-  if(b.mode==='wild'){
-    opts.push({label:'🎯 捕捉', cls:'q', action:screenBallSelect});
-    opts.push({label:'🏃 逃跑', cls:'q', action:tryFlee});
-  }
-  if(b.mode==='mega') opts.push({label:'🏃 逃跑', cls:'q', action:tryFlee});
-  if(b.mode==='mega') print('<span class="sys">（Mega 對戰：不能捕捉，打贏就能拿到 Mega 碎片）</span>');
+  // 強化（一場一次）放一列、一般行動放一列
+  if(gimmickFree() && !p._mega && !p._dmax && megaFormsFor(p).length) opts.push({ic:'✨', label:'Mega 進化', row:'gim', cls:'gim', action:screenMegaEvolve});
+  if(canZ(p)) opts.push({ic:'⚡', label:'Z 招式', row:'gim', cls:'gim', action:screenZ});
+  if(canTera(p)) opts.push({ic:'💎', label:'太晶化', sub:teraOf(p), row:'gim', cls:'gim', action:doTera});
+  if(canDmax(p)) opts.push({ic:'🔴', label:'極巨化', row:'gim', cls:'gim', action:doDmax});
+  if(b.mode==='wild') opts.push({ic:'🎯', label:'捕捉', row:'act', action:screenBallSelect});
+  if(b.mode !== 'run' && b.mode !== 'factory') opts.push({ic:'🎒', label:'道具', row:'act', action:screenItemSelect});   // 連戰試煉、對戰工廠不能用道具
+  if(state.party.filter(m=>m.hp>0).length>1) opts.push({ic:'🔄', label:'換上場', row:'act', action:screenSwitch});
+  if(b.mode==='wild' || b.mode==='mega') opts.push({ic:'🏃', label:'逃跑', row:'act', action:tryFlee});
+  if((b.turn||1) > 1){}   // 下面的規則提示只在第一回合顯示，之後不重複洗版
+  else if(b.mode==='mega') print('<span class="sys">（Mega 對戰：不能捕捉，打贏就能拿到 Mega 碎片）</span>');
   else if(b.mode==='legendary') print('<span class="sys">（神獸戰無法逃跑，也無法用精靈球——擊敗牠就能收服）</span>');
   else if(b.mode==='trainer' || b.mode==='gym') print('<span class="sys">（訓練家對戰不能逃跑，也不能捕捉）</span>');
   else if(b.mode==='tower') print('<span class="sys">（塔內不能捕捉也不能逃跑，輸了會被送出塔外）</span>');
