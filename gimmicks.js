@@ -1,12 +1,27 @@
 /* ========== 對戰中一次性的強化：太晶化、Z 招式、極巨化（和 Mega 進化共用，每場對戰只能用其中一種一次） ========== */
 const TYPE_LIST = ['一般','格鬥','飛行','毒','地面','岩石','蟲','幽靈','鋼','火','水','草','電','超能力','冰','龍','惡','妖精'];
+/* ---------- 關鍵道具：打贏道館拿到（看徽章數，舊存檔自動補發；對手不受限制） ---------- */
+const KEY_ITEMS = [
+  {key:'teraorb', label:'💎 太晶珠', badges:2, desc:'對戰中可以讓寶可夢太晶化（每場一次）'},
+  {key:'dmaxband', label:'🔴 極巨腕帶', badges:4, desc:'對戰中可以讓寶可夢極巨化 3 回合（每場一次）'}
+];
+function hasKeyItem(k){ const it = KEY_ITEMS.find(x=>x.key===k); return !!it && (state.meta.badges||0) >= it.badges; }
+function keyItemAward(){   // 拿到徽章後呼叫：剛好達到門檻就印出獲得訊息
+  KEY_ITEMS.filter(it=>state.meta.badges === it.badges).forEach(it=>{
+    print(`<span class="boss">🎁 館主送了你關鍵道具【${it.label}】！${it.desc}。</span>`);
+    if(typeof notify === 'function') notify(`🎁 獲得 ${it.label}`);
+  });
+}
+function keyItemsHtml(){   // 背包用
+  return KEY_ITEMS.map(it=> hasKeyItem(it.key) ? `${it.label}　${it.desc}` : `<span class="sys">🔒 ${it.label.replace(/^\S+\s/, '')}　拿到第 ${it.badges} 枚徽章後獲得</span>`);
+}
 function gimmickFree(){ const b = state.battle; return !!b && !b.megaUsed && !b.gimmick && b.mode !== 'run'; }
 
 /* ---------- 太晶化 ---------- */
 // 每隻有自己的太晶屬性 m.tera（預設第一屬性，可以在隊伍頁花錢改）
 function teraOf(m){ if(!m.tera || !TYPE_LIST.includes(m.tera)) m.tera = m.t1; return m.tera; }
 function origTypes(m){ return (m._types || [m.t1, m.t2]).filter(Boolean); }
-function canTera(p){ return gimmickFree() && !p._tera && !p._dmax; }
+function canTera(p){ return hasKeyItem('teraorb') && gimmickFree() && !p._tera && !p._dmax; }
 function doTera(){
   const b = state.battle, p = state.party[b.playerIdx];
   if(!canTera(p)) return screenBattle();
@@ -62,7 +77,7 @@ function maxMoveOf(mv){
   if(mv.cls === 2) return Object.assign({}, mv, {name:MAX_MOVE_NAME._guard, type:'一般', fx:'prot', self:true, pri:4, acc:0, power:0, flags:0, _max:true, _base:mv});
   return Object.assign({}, mv, {name:MAX_MOVE_NAME[mv.type] || '極巨招式', power:maxPower(mv), acc:0, pri:0, fx:MAX_FX[mv.type] || '', flags:0, _max:true, _base:mv});
 }
-function canDmax(p){ return gimmickFree() && !p._mega && !p._tera; }
+function canDmax(p){ return hasKeyItem('dmaxband') && gimmickFree() && !p._mega && !p._tera; }
 function doDmax(){
   const b = state.battle, p = state.party[b.playerIdx];
   if(!canDmax(p)) return screenBattle();

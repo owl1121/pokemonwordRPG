@@ -1135,6 +1135,7 @@ function winBattle(){
     giveMoney(b.reward); state.meta.badges++; bump('gyms');
     { const sk = STONE_KEYS[Math.floor(Math.random()*STONE_KEYS.length)]; state.bag[sk] = (state.bag[sk]||0) + 1; print(`<span class="good">館主另外送了你一顆 ${ITEMS[sk].label}！</span>`); }
     print(`<span class="boss">🏅 獲得了【${esc(GYMS[b.gymIdx][1])}】的徽章！（${state.meta.badges}/${GYMS.length}）</span>`);
+    keyItemAward();   // 太晶珠、極巨腕帶
     warnIfWiped(); return runEvolutions(()=>screenGym(true));
   }
   if(mode==='tower'){

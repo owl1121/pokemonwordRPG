@@ -2014,7 +2014,7 @@ function screenMember(i, back){
   print(`特性：${esc(abName(m))}<span class="sys">　${esc(ABILITIES[ensureAbility(m)].desc)}</span>`);
   print(`攜帶：${esc(heldName(m))}${m.held && HELD[m.held] ? `<span class="sys">　${esc(HELD[m.held].desc)}</span>` : ''}`);
   print(`親密度：${friendText(m)}`);
-  print(`太晶屬性：💎 ${teraOf(m)}`);
+  print(`太晶屬性：💎 ${teraOf(m)}${hasKeyItem('teraorb') ? '' : '　<span class="sys">（要有太晶珠才能在對戰中太晶化）</span>'}`);
   print(`招式：${m.moves.map(mv=>esc(mv.name)).join('、')}`);
   stageDetail = hexPanel(m.iv, null, m.ivCap, null);
   const opts = [];
@@ -2219,6 +2219,7 @@ function screenBag(){
   const tmN = Object.values(state.tms||{}).reduce((a,b)=>a+b, 0);
   if(tmN) print(`💿 招式學習器 x${tmN}　<span class="sys">到隊伍 → 寶可夢 → ⚔️ 招式 使用</span>`);
   const heldOwned = HELD_KEYS.filter(k=>state.bag[k] > 0);
+  hr(); print('<span class="em">🔑 關鍵道具</span>'); keyItemsHtml().forEach(t=>print(t));
   if(heldOwned.length){ hr(); print('<span class="em">🧷 攜帶道具</span>'); heldOwned.forEach(k=>print(`${HELD[k].label} x${state.bag[k]}　${HELD[k].desc}`)); }
   hr();
   print('<span class="sys">道具不夠的話到商店購買，打倒寶可夢就能賺錢。</span>');
