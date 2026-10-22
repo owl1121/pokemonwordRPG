@@ -1063,8 +1063,10 @@ function grantExp(p, oppLevel, mult, verb, quiet){
   while(p.level < MAX_LEVEL && p.exp >= p.expNext){
     p.exp -= p.expNext; p.level++; p.expNext = 18 + p.level*9;
     const st = monStats(p);
-    const gainHp = st.hp-p.maxhp;
-    p.maxhp=st.hp; p.hp=Math.min(p.hp+gainHp, p.maxhp); setNonHpStats(p, st);
+    const dmaxed = p._dmaxBase !== undefined;   // 極巨化中升級：最大 HP 要維持 ×1.5，不然 HP 會被扣成負的
+    const newMax = dmaxed ? Math.round(st.hp*DMAX_HP) : st.hp, gainHp = newMax-p.maxhp;
+    if(dmaxed) p._dmaxBase = st.hp;
+    p.maxhp=newMax; p.hp = p.hp > 0 ? Math.max(1, Math.min(p.hp+gainHp, newMax)) : 0; setNonHpStats(p, st);
     print(`<span class="em">${nm(p)} 升到了 Lv.${p.level}！</span>`);
     addFriend(p, 2);
     learnOnLevel(p);

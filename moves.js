@@ -1162,7 +1162,8 @@ function fieldEndTurn(){
 /* ---------- 換下場：清掉只在場上有效的狀態 ---------- */
 const VOLATILE = ['_cnf','_seed','_curse','_perish','_taunt','_enc','_dis','_torment','_sub','_bind','_yawn','_nmare','_attr','_ingrain','_aring','_force','_rch','_bide','_stock',
   '_foresight','_mrise','_tkin','_hblk','_emb','_impr','_lockon','_focus','_lfocus','_dbond','_grudge','_last','_lastMv','_lastType','_trap','_octo','_trapSelf','_salt','_turnsIn','_protN','_prot','_endure',
-  '_types','_noab','_choice','_moved','_rfistX','_protean','_truant','_charge','_bounced','_ate'];
+  '_types','_noab','_choice','_moved','_rfistX','_protean','_truant','_charge','_bounced','_ate',
+  '_lastHit','_hitThisTurn','_mcoat','_snatch','_elec','_powder'];   // _lastHit.by 指向對手，對戰在回合中途結束時沒清掉會讓存檔 JSON 循環參照而存不進去
 function clearVolatile(m){
   if(!m) return;
   VOLATILE.forEach(k=>{ delete m[k]; });
