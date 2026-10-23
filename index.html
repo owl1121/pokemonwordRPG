@@ -1068,21 +1068,25 @@ let lineCount = 0, extraDelay = 0, introLead = 0;   // introLead：對戰轉場�
 function curDelay(){ return lineCount*LINE_DELAY + extraDelay; }
 function gap(ms){ extraDelay += ms; }
 let pendingTimer = null;
+function animText(){ return !!state.battle || appEl.classList.contains('battle'); }   // 只有對戰（含剛結束的結算）文字一行一行跑，其他畫面直接顯示
 function print(html){
   const div = document.createElement('div');
-  div.className = 'line';
-  div.style.animationDelay = curDelay()+'ms';
+  if(animText()){
+    div.className = 'line';
+    div.style.animationDelay = curDelay()+'ms';
+    lineCount++;
+  }
   div.innerHTML = html;
   logEl.appendChild(div);
-  lineCount++;
   logEl.scrollTop = logEl.scrollHeight;
 }
 function clearLog(){ flushStage(); logEl.innerHTML=""; lineCount=0; extraDelay=introLead; introLead=0; }
 function hr(){ print('<div class="hr"></div>'); }
 function holdOptionsUntilRevealed(){
-  optsEl.classList.add('pending');
   if(pendingTimer) clearTimeout(pendingTimer);
   const wait = Math.max(0, curDelay());
+  if(wait <= 0){ optsEl.classList.remove('pending'); return; }   // 沒有動畫：按鈕馬上出現
+  optsEl.classList.add('pending');
   pendingTimer = setTimeout(()=>optsEl.classList.remove('pending'), wait);
 }
 function skipReveal(){   // 跳過文字動畫，立刻顯示全部內容與選項

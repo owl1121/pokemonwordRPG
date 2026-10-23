@@ -51,6 +51,7 @@
 
 - 畫面切換 = 呼叫某個 `screenXxx()`，內部用 `print()` 輸出文字、`setOptions([...])` 放按鈕。
 - `setOptions` 的按鈕欄位：`label`、`action`、`half`（半寬）、`cls`（`primary` 主要按鈕、`off` 變暗、`q` 四分之一寬）、`html`（自訂內容）、`ic`＋`sub`（圖示在上的小方塊）、`row`（同一個值且連在一起的按鈕排成一列平分寬度，超過 5 顆平均分兩列；對戰的強化用 `gim`、行動用 `act`，倉庫篩選 `mview`）。「點一下跳過動畫」提示只在動畫播放中顯示。
+- 文字逐行動畫只在對戰中（`state.battle` 或 `#app.battle`，含剛結束的結算）才有，判斷在 `animText()`；其他畫面 `print` 直接顯示、按鈕不等待。
 - 對戰畫面上方的回合／天氣／場地是 `renderStage` 裡的 `.binfo`（舊的 `#turnbar` 已拿掉）；招式卡第二行是「威力（命中不到 100 才顯示）＋PP」，第三行效果說明最多兩行。規則提示（不能逃跑等）只在第 1 回合印。
 - 改完要存檔就呼叫 `saveGame()`；新增存檔欄位要在 `loadGame`/`fixMon` 補預設值，避免舊存檔壞掉。
 - 能力值用本傳公式＋種族值（`statsFor(base, level)`、`baseStatsOf(dex, megaId)`），能力點照舊另外加；`m.sv` 是公式版本（`STAT_VER`），舊存檔讀進來會重算。Mega 進化改用 Mega 的種族值和特性（`p._mega.ab` 記原本特性）。
