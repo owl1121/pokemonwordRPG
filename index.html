@@ -1170,7 +1170,7 @@ const OLD_SAVE_KEY = 'pkmn_tower_save_v1';
 function saveGame(){
   try{
     const data = {
-      v:2, party:(typeof svRun!=='undefined' && svRun) ? svRun.backup : (typeof fac!=='undefined' && fac && fac.backup) ? fac.backup : state.party, box:state.box,   // 連戰試煉中存檔，存的是原本的隊伍
+      v:2, party:(typeof svRun!=='undefined' && svRun) ? svRun.backup : (typeof fac!=='undefined' && fac && fac.backup) ? fac.backup : (typeof bt!=='undefined' && bt && bt.backup) ? bt.backup : state.party, box:state.box,   // 連戰試煉中存檔，存的是原本的隊伍
       seen:Array.from(state.seen), caught:Array.from(state.caught), shinyCaught:Array.from(state.shinyCaught), mega:state.mega,
       bag:state.bag, money:state.money, zone:state.zone, maxZone:state.maxZone, tower:state.tower,
       stats:state.stats, quest:state.quest, ach:state.ach, meta:state.meta, checkin:state.checkin, profile:state.profile, fest:state.fest, mail:state.mail, tms:state.tms
@@ -1498,6 +1498,7 @@ function screenField(){
     {ic:'🏪', label:'商店', row:'nav', action:()=>{ shopQty=1; screenShop(); }},
     {ic:'💊', label:'補給站', row:'nav', action:()=>healAll(screenField)},
     {ic:'📅', label:'今日', row:'nav', action:screenToday},
+    {ic:'🏕', label:'設施', row:'nav', action:()=>screenFacility()},
     {label:'⚔️ 對戰挑戰', half:true, action:screenBattleMenu},
     {label:'🗺 選擇地區', half:true, action:()=>screenZoneRegions()},
     {label:adv, cls:'adv' + (adv.startsWith('🔒') || state.zone >= MAP_NAMES.length ? ' off' : ''), action:advanceZone}
@@ -1550,6 +1551,8 @@ function screenBattleMenu(){
   print(`💎 Mega 對戰　碎片 ${megaTotalShards()} 片`);
   print(`🏆 寶可夢聯盟　已制霸 ${Object.keys(leagueMeta().champ).length} / ${LEAGUE_REGIONS.length} 個地區`);
   print(`🏭 對戰工廠　租借寶可夢連戰，最高 ${facMeta().facBest} 連勝　BP ${facMeta().bp}`);
+  print(`💠 團體戰　和強化頭目 1 對 1，打倒就能收服`);
+  print(`🏰 對戰塔　用自己的隊伍（統一 Lv.50）單打／雙打連勝`);
   setOptions([
     {label:'🏛 道館', half:true, action:screenGym},
     {label:'🗼 寶可塔', half:true, action:enterTower},
@@ -1557,6 +1560,8 @@ function screenBattleMenu(){
     {label:'💎 Mega 對戰', half:true, action:()=>screenMegaBattle()},
     {label:'🏆 寶可夢聯盟', half:true, action:()=>screenLeague()},
     {label:'🏭 對戰工廠', half:true, action:()=>screenFactory()},
+    {label:'💠 團體戰', half:true, action:()=>screenRaid()},
+    {label:'🏰 對戰塔', half:true, action:()=>screenBTower()},
     {label:"返回", action:toField}
   ]);
 }
@@ -3055,6 +3060,8 @@ if(/[?&]test\b/.test(location.search)){
     .catch(()=> print('<span class="bad">讀不到 test-save.json。</span>'));
 }
 </script>
+<script src="extras.js"></script>
+<script src="doubles.js"></script>
 <script>
 /* 音效掛勾：不改原本流程，只在關鍵函式外面包一層 */
 (function(){

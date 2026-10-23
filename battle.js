@@ -648,7 +648,7 @@ function screenBattle(){
   if(canTera(p)) opts.push({ic:'💎', label:'太晶化', sub:teraOf(p), row:'gim', cls:'gim', action:doTera});
   if(canDmax(p)) opts.push({ic:'🔴', label:'極巨化', row:'gim', cls:'gim', action:doDmax});
   if(b.mode==='wild') opts.push({ic:'🎯', label:'捕捉', row:'act', action:screenBallSelect});
-  if(b.mode !== 'run' && b.mode !== 'factory') opts.push({ic:'🎒', label:'道具', row:'act', action:screenItemSelect});   // 連戰試煉、對戰工廠不能用道具
+  if(b.mode !== 'run' && b.mode !== 'factory' && b.mode !== 'btower') opts.push({ic:'🎒', label:'道具', row:'act', action:screenItemSelect});   // 連戰試煉、對戰工廠不能用道具
   if(state.party.filter(m=>m.hp>0).length>1) opts.push({ic:'🔄', label:'換上場', row:'act', action:screenSwitch});
   if(b.mode==='wild' || b.mode==='mega') opts.push({ic:'🏃', label:'逃跑', row:'act', action:tryFlee});
   if((b.turn||1) > 1){}   // 下面的規則提示只在第一回合顯示，之後不重複洗版
@@ -844,7 +844,7 @@ function tryCatch(ballKey){
   }
   state.bag[ballKey]--;
   const hpRatio = w.hp/w.maxhp;
-  const chance = ball.master ? 1 : Math.min(0.97, (1-hpRatio)*0.75 + 0.15 + ball.ball + (daily('catch') ? 0.1 : 0));
+  const chance = ball.master ? 1 : Math.min(0.97, (1-hpRatio)*0.75 + 0.15 + ball.ball + (typeof catchBonus === 'function' ? catchBonus() : (daily('catch') ? 0.1 : 0)));
   print(`你對 ${nm(w)} 丟出了${ball.label}……`);
   const caught = Math.random() < chance;
   gap(catchFx(ballKey, caught, caught ? 3 : Math.floor(Math.random()*3)));

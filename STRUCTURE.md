@@ -1,6 +1,6 @@
 # 結構說明（給 AI 開新對話時先讀這份）
 
-純前端單頁遊戲，無建置流程。`index.html` 依序載入 `data.js` → `moves-data.js` → `poke-data.js` → `mon-art.js` → `mon-colors.js` → `sounds/list.js`（可缺）→ `battle.js` → `features.js` → `moves.js` → `abilities.js` → `gimmicks.js` → `growth.js` → `league.js`，再跑 index.html 內的主程式。全域變數共用，不是 ES module。
+純前端單頁遊戲，無建置流程。`index.html` 依序載入 `data.js` → `moves-data.js` → `poke-data.js` → `mon-art.js` → `mon-colors.js` → `sounds/list.js`（可缺）→ `battle.js` → `features.js` → `moves.js` → `abilities.js` → `gimmicks.js` → `growth.js` → `league.js`，再跑 index.html 內的主程式，主程式之後才載入 `extras.js` → `doubles.js`（這兩個要包主程式的函式，所以放在後面）。全域變數共用，不是 ES module。
 寶可夢卡片底圖在 `art/`（每張約 13KB，瀏覽器顯示卡片時才下載）。
 存檔在 `localStorage`，key 為 `pkmn_tower_save_v2`（舊版 v1 會自動轉移）。行號會隨修改位移，僅供定位，請用 grep 函式名。
 
@@ -16,6 +16,8 @@
 | `gimmicks.js`（約 150 行） | 難度：`aiSmart(w)`（對手挑最佳招式的機率，野生 0.4、訓練家 0.7、道館 0.55＋每間 0.02、塔 0.85／小魔王 0.95）、`hardenFoe(m, 能力點下限, 帶道具)`（訓練家 35；道館 30＋每間 1.5、第 4 間起帶道具、第 8 間起 +2 級；塔 35／小魔王 50＋道具）、`foeAceEntry`（第 7 間起館主王牌、小魔王出場太晶化）。選招估算在 moves.js 的 `estDamage`/`moveScore`/`chooseFoeMove`。關鍵道具 `KEY_ITEMS`/`hasKeyItem`/`keyItemAward`/`keyItemsHtml`（太晶珠第 2 枚徽章、極巨腕帶第 4 枚徽章；直接看 `state.meta.badges`，不存檔、舊存檔自動有；只限制玩家，對手照樣太晶化）。每場對戰一次的強化（和 Mega 進化共用 `gimmickFree()`，`state.battle.gimmick`）：太晶化 `doTera`（`m.tera` 太晶屬性、`p._tera`、本系加成 `stabMul`、隊伍頁 `screenTeraPick` 花 3000 換屬性）、Z 招式 `screenZ`/`zMoveOf`（要帶 Z 純晶，HELD 的 `z` 類）、極巨化 `doDmax`/`maxMoveOf`/`endDmax`/`dmaxTick`（3 回合、HP ×1.5、極巨招式附帶天氣／場地／能力變化）。 |
 | `growth.js`（約 130 行） | 性別 `rollGender`/`ensureGender`/`genderSign`（`m.gender` 'M'/'F'/''）；白天夜晚 `isNight`/`timePool`（`biasPool` 呼叫）；進化 `EVO_COND`（升級時的條件進化）、`STONE_EVO` 加上道具進化（值可以是陣列）、`EVO_ITEM_COND`、`FAIRY_EVO`、`condEvoTarget`、`stoneTargets`；ITEMS 加進化道具（`stone:true`，含聯繫繩）、ＰＰ提升劑／ＰＰ極限提升劑（`mv.ppUp`）、神奇糖果，使用畫面 `screenGrowItem`/`useCandy`/`screenPpPick`。 |
 | `league.js`（約 350 行） | 難度 `DIFF`/`diff()`/`diffLv(l)`/`setDiff`（`state.profile.diff` easy/normal/hard；影響 `aiSmart`、`hardenFoe` 能力點、訓練家／道館／塔／聯盟／工廠等級、道館帶道具與王牌太晶化；檔案頁 `diffHtml`）。性格薄荷／特性膠囊／特性膏藥（ITEMS 的 `mod`，`screenModItem`/`useModItem`）。寶可夢聯盟 `screenLeague`/`leagueStart`/`leagueNext`/`leagueWin`（每個地區 8 個徽章後開放，四天王 5 隻＋冠軍 6 隻，名字在 `LEAGUE_NAMES`/`LEAGUE_CHAMP`（官方繁中譯名），`leagueRun` 在記憶體、去補給站算放棄，`state.meta.champ`/`hof`；伽勒爾是冠軍盃）。對戰工廠 `screenFactory`/`facStart`/`screenFacPick`/`facNext`/`facKo`/`screenFacSwap`/`facEnd`（模式 'factory'，租借 Lv.50，`fac.backup` 存原隊伍、saveGame 存 backup；`state.meta.bp`/`facBest`；BP 交換所 `screenBpShop`/`BP_SHOP`）。圖鑑詳細頁 `dexDetail`/`renderDexDetail`/`evoLines`（不顯示官方圖鑑說明文字）（第一次打開才載入 dex-text.js）。 |
+| `extras.js`（約 450 行） | 用 `xwrap(函式名, fn)` 包住原本的函式加功能。**大量出現**：`outbreakFor(r)`（每天每個地區挑一區＋一種寶可夢）/`outbreakHere`/`outbreakList`，包 `pickWildIndexPity`（那一區 50% 遇到牠）、`encounter`、`pityResolve`（打倒／捕捉累積連鎖 `state.meta.obc`，`OB_STEPS` 10／30／60 連鎖異色率 ×2／3／4）、`shinyRate`（再乘閃耀護符、閃耀三明治）；原本的每日事件「大量出現」改名「屬性熱潮」。**護符**：`CHARMS`（全國非神獸捕捉 25% 捕獲護符、50% 閃耀護符，`hasCharm`/`charmCheck`，不存檔、直接算）、`catchBonus()`（battle.js 的捕捉率呼叫）。**圖鑑獎勵** `screenDexReward`（各地區 50%／100%，`state.meta.dexrw`）。**交換所** `screenTrade`（`tradeOffers` 每天 3 個、`state.meta.trade`；換來的 `m.ot`＝原訓練家，經驗 ×1.5）、通訊交換進化 `screenTradeEvo`（`TRADE_EVO` 從 EVO_FIX 的聯繫繩條件產生）。**野餐** `screenPicnic`（`PICNIC`，`state.meta.picnic={id,type,left}`，以野外遭遇次數計）。設施選單 `screenFacility`（野外的 🏕）。**團體戰** `screenRaid`/`raidDens`（每天 4 個巢穴，太晶要太晶珠、極巨要極巨腕帶，`state.meta.raid`）/`startRaid`（模式 'raid'，HP ×`RAID_HP`、`RAID_TURNS` 回合限制、半血放衝擊波）/`raidCatchAsk`（贏了必定收服）。 |
+| `doubles.js`（約 430 行） | **雙打引擎**（模式 'doubles'，`state.battle.d={me:[隊伍索引×2], foe:[team索引×2], team, fainted}`，`b.sub` 是 'trainer'／'btower'）：每次出招前 `dSetCtx` 把 `b.wild`／`b.playerIdx` 切成這一招的攻擊方和目標，直接沿用 `doAttack`/`useMove`。`SPREAD`（招式 id → 'foes'／'all'，威力 ×0.75）、`dblScreen`→`dPickFor`→`dPickTarget`→`dRunTurn`→`dEndTurn`→`dRefill`、`dWin`/`dLose`。雙打中 `screenBattle`/`checkBattleEnd`/`winBattle`/`endOfTurn`/`afterFaintCheck`/`renderStage`/`who` 都被改道。不能用道具和強化，換人類招式效果無效。路上訓練家 2 隻以上時 `DBL_TRAINER_RATE` 30% 變雙打（包 `startMultiBattle`）。**對戰塔** `screenBTower`/`btPickStart`/`screenBtPick`/`btNext`/`btWin`/`btEnd`（`bt={backup,fmt,streak}`，隊伍換成 `btClone` 的 Lv.50 複製品，saveGame 存 backup；單打模式 'btower'；`state.meta.btBest`，BP 和工廠共用）。 |
 | `dex-text.js`（自動產生，約 25KB，延遲載入） | `DEX_TEXT[DEX索引]`＝[分類, 身高(0.1m)]。圖鑑說明文字（官方著作）不收錄。 |
 | `mon-art.js` | 卡片底圖：`monBgSrc(m)` 回傳 `art/<key>.webp`（異色 `art/shiny/<key>.webp`；`ART_SHINY_MISSING` 目前是空的。M445Z、M978 沒有官方圖鑑異色圖，異色改用 PokeAPI HOME 異色圖做）、`preloadArtFor(list)`（開機時空閒預載隊伍的圖）。key 是 DEX 索引或超進化 `'M'+MEGAS.id`。 |
 | `art/<key>.webp`、`art/shiny/<key>.webp` | 1175 組（一般＋異色共 2350 張）。來源 PokeAPI official-artwork 官方圖鑑圖 → 256 正方形 → 超強順時針旋渦 → 跟白色 30% 混合調淡 → 裁 256×116 → 霧化（模糊 4px＋蓋 12% 白）→ WebP。key→官方圖編號（地區形態、超進化是 10xxx）與產生腳本見專案文件「外框特徵進度」。舊的外框特徵／旋渦／馬賽克版本都在 git 歷史（原圖 345fea8、旋渦 c24f864、小圖示 e694b91、馬賽克 db4b168）。 |
@@ -34,7 +36,7 @@
 - 約 848 行起：主程式。常數、`makeMon`（產生寶可夢）、能力值/個體值計算、塔與傳說挑戰規則、`state`（全部遊戲狀態）、`print`（文字輸出）、`setOptions`（選項按鈕）、寶可夢小卡 `monCardHtml`/`monCardOpt`（隊伍、倉庫、換人用；`typeChips` 屬性色塊）、野外上方隊伍一覽 `partyStripHtml`（`screenField` 塞進 `stageDetail`）
 - 約 1052~1250 行：存檔 `saveGame`/`loadGame`/匯出入
 - 之後是各個畫面函式，命名都是 `screenXxx`：`screenField`（野外主畫面，約 1366 行）、`encounter`（遇敵）、`screenShop`、`screenTower`（無盡塔）、`screenGym`（道館）、`screenParty`/`screenBox`/`screenBag`、`screenDex`（圖鑑）、Mega 進化相關 `startMegaBattle`/`megaEvolve`
-- 約 2608 行起：成就 `ACH`、稱號、簽到、任務、個人資料；`openMenu`（約 2827 行）為選單入口
+- 約 2608 行起：成就 `ACH`、稱號、簽到、任務、個人資料；`openMenu`（約 2827 行）為選單入口。野外按鈕列多了 🏕 設施（extras.js），對戰選單多了 💠 團體戰、🏰 對戰塔
 - 約 2890 行：BOOT（`loadGame` → `preloadArtFor(state.party)（預載隊伍底圖）` → `screenCover`）
 - 最後兩個 `<script>`：音效掛勾（用 `wrap` 包住 `doAttack` 等函式）、按鈕按下動畫
 
@@ -43,7 +45,7 @@
 `tests/fuzz.js` 用 jsdom 載入整個遊戲（假時鐘，動畫不用真的等），隨機按按鈕，抓例外錯誤、HP／PP／能力值變成 NaN 或超出範圍、畫面出現 `undefined`/`NaN`、對戰卡住、`saveGame()` 存不進去。
 
 - 第一次：`cd tests && npm install`
-- `node tests/fuzz.js`：預設跑隨機對戰 300 場（隨機隊伍 1~6 隻、隨機攜帶道具和太晶屬性；野生／訓練家／道館）＋從 test-save.json 亂按 3000 步
+- `node tests/fuzz.js`：預設跑隨機對戰 300 場（隨機隊伍 1~6 隻、隨機攜帶道具和太晶屬性；野生／訓練家／道館／雙打／團體戰／對戰塔）＋從 test-save.json 亂按 3000 步
 - 參數：`battle`／`monkey` 只跑一種、`-n 數量`、`--seed 數字`（重現用，執行時會印出種子）、`--new`（亂按從新遊戲開始）、`-v`（印出出錯前的操作和畫面文字）
 - 有問題時結束碼 1。改完戰鬥相關的程式建議跑一次。
 
@@ -56,7 +58,8 @@
 - 改完要存檔就呼叫 `saveGame()`；新增存檔欄位要在 `loadGame`/`fixMon` 補預設值，避免舊存檔壞掉。
 - 能力值用本傳公式＋種族值（`statsFor(base, level)`、`baseStatsOf(dex, megaId)`），能力點照舊另外加；`m.sv` 是公式版本（`STAT_VER`），舊存檔讀進來會重算。Mega 進化改用 Mega 的種族值和特性（`p._mega.ab` 記原本特性）。
 - 寶可夢身上的招式：`m.moves`（上場 4 招，招式物件含 `id`）、`m.xm`（額外學會的招式 id）、`m.friend`（親密度 0~255，預設 70）。對戰中的暫時狀態都是底線開頭（`_sub`、`_cnf`、`_seed`…），換下場或對戰結束由 `clearVolatile` 清掉。
-- 統計 `state.stats` 新增：`losses`、`flees`、`faints`、`movesUsed`、`crits`、`maxHit`/`maxHitBy`、`tmUsed`、`pu`（各圖鑑上場次數）。
+- 統計 `state.stats` 新增：`losses`、`flees`、`faints`、`movesUsed`、`crits`、`maxHit`/`maxHitBy`、`tmUsed`、`pu`（各圖鑑上場次數）、`trades`、`picnics`、`raids`、`raidFails`、`dblWins`、`btWins`。
+- 新功能的存檔欄位都放在 `state.meta` 底下，用 `xmeta`/`dayRec`（每天重置的紀錄）在讀取時補預設值，不用改 `loadGame`。
 - 新增寶可夢：底圖要另外產生 `art/<key>.webp` 和 `art/shiny/<key>.webp`（腳本見專案文件），沒有圖的話卡片只會是純色底。
 - 商店買東西一律「選道具 → 選數量 → 確認頁」才扣錢：一般商店 `screenShop` → `screenShopItem` → `screenShopConfirm` → `buyItem`；攜帶道具 `screenHeldShop` → `screenHeldBuy` → `screenHeldConfirm` → `buyHeld`。新增購買入口也要走確認頁。
 - 各檔之間用全域函式互相呼叫，改函式名要全 repo grep。

@@ -144,6 +144,7 @@ function checkState(w) {
   const s = w.state;
   s.party.forEach(m => checkMon(m, '隊伍'));
   if (s.battle && s.battle.wild) checkMon(s.battle.wild, '對手');
+  if (s.battle && s.battle.d) s.battle.d.team.forEach(m => checkMon(m, '雙打對手'));
   if (!isFinite(s.money)) report('數值異常', `money = ${s.money}`);
   if (!s.battle && w.eval('saveGame()') === false) report('存檔失敗', 'saveGame() 回傳 false（通常是 JSON 循環參照）');
   const log = w.document.getElementById('log').textContent;
@@ -161,7 +162,7 @@ async function battleMode(count, seed) {
   const heldKeys = Object.keys(ev('HELD'));
   const nDex = ev('DEX.length'), nZone = ev('MAP_NAMES.length');
   const types = Object.keys(ev('TYPE_COLOR'));
-  let done = 0, stuck = 0, steps = 0, kinds = { wild: 0, trainer: 0, gym: 0, other: 0 };
+  let done = 0, stuck = 0, steps = 0, kinds = { wild: 0, trainer: 0, gym: 0, doubles: 0, raid: 0, btower: 0, other: 0 };
   for (let i = 0; i < count; i++) {
     trail = [`#${i} 開始`];
     try {
@@ -178,11 +179,22 @@ async function battleMode(count, seed) {
       w.state.zone = 1 + Math.floor(random() * nZone);
       w.state.meta.badges = Math.floor(random() * ev('GYMS.length'));
       const r = random();
-      const kind = r < 0.55 ? 'wild' : r < 0.85 ? 'trainer' : 'gym';
+      const kind = r < 0.45 ? 'wild' : r < 0.65 ? 'trainer' : r < 0.75 ? 'gym' : r < 0.85 ? 'doubles' : r < 0.92 ? 'raid' : 'btower';
       trail.push(`${kind} 區域${w.state.zone} 隊伍:${w.state.party.map(m => m.name + m.level + (m.held ? '@' + m.held : '')).join(',')}`);
       if (kind === 'wild') ev('state.meta.since = 0; state.meta.next = 999; encounter()');
       else if (kind === 'trainer') ev('startTrainer()');
-      else { ev('DEX.forEach((_, i) => state.caught.add(i))'); ev('startGym()'); }
+      else if (kind === 'gym') { ev('DEX.forEach((_, i) => state.caught.add(i))'); ev('startGym()'); }
+      else if (kind === 'doubles') {   // 雙打：隊伍至少 2 隻
+        while (w.state.party.length < 2) w.state.party.push(w.makeMon(Math.floor(random() * nDex), 30, {}));
+        const nf = 2 + Math.floor(random() * 3);
+        ev(`(function(){ const f = []; for(let k=0;k<${nf};k++) f.push(makeMon(Math.floor(Math.random()*DEX.length), 10 + Math.floor(Math.random()*80), {shiny:false})); startDoubles(f, {sub:'trainer', title:'測試', reward:100}); screenBattle(); })()`);
+      }
+      else if (kind === 'raid') ev('state.meta.badges = Math.max(4, state.meta.badges); startRaid(raidDens()[Math.floor(Math.random()*4)])');
+      else {   // 對戰塔：單打 3 隻、雙打 4 隻
+        const fmt = random() < 0.5 ? 'single' : 'double', need = fmt === 'single' ? 3 : 4;
+        while (w.state.party.length < need) w.state.party.push(w.makeMon(Math.floor(random() * nDex), 40, {}));
+        ev(`bt = {fmt:'${fmt}', streak:Math.floor(Math.random()*14), pick:[]}; bt.backup = state.party; state.party = state.party.slice(0, ${need}).map(btClone); btNext()`);
+      }
       g.flush();
     } catch (e) { report('例外（開場）', e.message, e.stack); continue; }
     if (!w.state.battle) { kinds.other++; continue; }
@@ -197,11 +209,13 @@ async function battleMode(count, seed) {
     if (w.state.battle && n >= 400) { report('卡住', `對戰超過 400 步還沒結束（${w.state.battle.mode}）`); stuck++; }
     // 對戰後的畫面（進化、學招式等）多按幾下收尾
     for (let k = 0; k < 10 && !w.state.battle; k++) { const bs = buttons(w); if (!bs.length) break; if (bs.some(b => /去野外|返回野外|繼續冒險/.test(b.textContent))) break; press(g, bs[Math.floor(random() * bs.length)]); }
+    if (w.state.battle) { w.eval('state.battle = null'); }
+    if (w.eval('typeof bt !== "undefined" && bt')) w.eval('btEnd(false)');
     steps += n; done++;
     if ((i + 1) % 100 === 0) process.stdout.write(`  對戰 ${i + 1}/${count}\n`);
   }
   g.dom.window.close();
-  return `對戰 ${done} 場（野生 ${kinds.wild}、訓練家 ${kinds.trainer}、道館 ${kinds.gym}），共 ${steps} 步，卡住 ${stuck} 次`;
+  return `對戰 ${done} 場（野生 ${kinds.wild}、訓練家 ${kinds.trainer}、道館 ${kinds.gym}、雙打 ${kinds.doubles}、團體戰 ${kinds.raid}、對戰塔 ${kinds.btower}），共 ${steps} 步，卡住 ${stuck} 次`;
 }
 
 /* ---------- 模式二：整個遊戲亂按 ---------- */
