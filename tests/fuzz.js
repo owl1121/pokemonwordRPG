@@ -243,7 +243,8 @@ async function monkeyMode(count, seed) {
 }
 
 /* ---------- 主程式 ---------- */
-(async () => {
+if (require.main !== module) module.exports = { boot, problems };   // 給其他測試腳本用
+else (async () => {
   const t0 = Date.now(), lines = [];
   console.log(`亂數種子 ${SEED}（用 --seed ${SEED} 可重現）`);
   try {

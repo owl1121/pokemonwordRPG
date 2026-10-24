@@ -15,4 +15,6 @@
 
 存檔在瀏覽器的 localStorage，換手機或換瀏覽器請用選單裡的「備份／搬移存檔」。
 
+可以用瀏覽器的「加到主畫面」當 App 玩，玩過一次之後離線也能開。iPhone 主畫面版的存檔和 Safari 是分開的，要用匯出／匯入搬過去。
+
 程式結構見 [STRUCTURE.md](STRUCTURE.md)；自動測試：`cd tests && npm install && npm test`。

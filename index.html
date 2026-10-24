@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>寶可夢文字冒險</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0d1210">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="文字冒險">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <style>html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;}</style>
 <script>
 // 禁止縮放（iOS Safari 會無視 user-scalable=no，要另外擋）
@@ -500,9 +507,11 @@ i.ld{font-style:normal;color:var(--accent);margin-right:3px;}
 #app.detail .hexsvg{max-width:280px;margin:0 auto;}
 .kv small{display:block;font-size:11px;color:var(--dim);}
 /* ---- 內建瀏覽器提醒 ---- */
-#inappBar{position:fixed;left:8px;right:8px;bottom:10px;z-index:60;background:#24323a;color:#fff;border:2px solid #7fd0ff;border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.55;box-shadow:0 6px 18px rgba(0,0,0,.5);}
-#inappBar .ib{display:flex;gap:8px;margin-top:8px;}
-#inappBar button{flex:1;background:#3b5568;color:#fff;border:1px solid #7fd0ff;border-radius:8px;padding:7px 4px;font-family:inherit;font-size:12.5px;cursor:pointer;}
+#inappBar,.noticeBar{position:fixed;left:8px;right:8px;bottom:10px;z-index:60;background:#24323a;color:#fff;border:2px solid #7fd0ff;border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.55;box-shadow:0 6px 18px rgba(0,0,0,.5);}
+#inappBar .ib,.noticeBar .ib{display:flex;gap:8px;margin-top:8px;}
+#saveFailBar{border-color:#ff9a7a;background:#3a2626;z-index:61;}
+#saveFailBar button{border-color:#ff9a7a;background:#5a3636;}
+#inappBar button,.noticeBar button{flex:1;background:#3b5568;color:#fff;border:1px solid #7fd0ff;border-radius:8px;padding:7px 4px;font-family:inherit;font-size:12.5px;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -1167,21 +1176,65 @@ function setOptions(list, phase){
 /* ---------- SAVE / LOAD ---------- */
 const SAVE_KEY = 'pkmn_tower_save_v2';
 const OLD_SAVE_KEY = 'pkmn_tower_save_v1';
+// 存檔瘦身：招式只存 id／PP／PP 提升次數（讀檔時 refreshMove 重建），和圖鑑一樣的名字屬性、預設值都不存（fixMon 補回）
+function packMon(m){
+  if(!m || typeof m !== 'object') return m;
+  const o = Object.assign({}, m), e = DEX[m.dex];
+  if(e){
+    if(o.name === e[0]) delete o.name;
+    if(o.t1 === e[1] && (o.t2 || null) === (e[2] || null)){ delete o.t1; delete o.t2; }
+    if(o.tier === e[3]) delete o.tier;
+  }
+  if(o.status === null) delete o.status;
+  if(o.atkMul === 1) delete o.atkMul;
+  if(o.defMul === 1) delete o.defMul;
+  if(o.shiny === false) delete o.shiny;
+  if(Array.isArray(o.xm) && !o.xm.length) delete o.xm;
+  if(Array.isArray(o.moves) && o.moves.every(mv=> mv && mv.id && MOVE_DB[mv.id])){
+    o.moves = o.moves.map(mv=>{ const r = {id:mv.id, pp:mv.pp}; if(mv.ppUp) r.ppUp = mv.ppUp; return r; });
+  }
+  return o;
+}
+const packList = list => Array.isArray(list) ? list.map(packMon) : list;
 function saveGame(){
   try{
     const data = {
-      v:2, party:(typeof svRun!=='undefined' && svRun) ? svRun.backup : (typeof fac!=='undefined' && fac && fac.backup) ? fac.backup : (typeof bt!=='undefined' && bt && bt.backup) ? bt.backup : state.party, box:state.box,   // 連戰試煉中存檔，存的是原本的隊伍
+      v:2, party:packList((typeof svRun!=='undefined' && svRun) ? svRun.backup : (typeof fac!=='undefined' && fac && fac.backup) ? fac.backup : (typeof bt!=='undefined' && bt && bt.backup) ? bt.backup : state.party), box:packList(state.box),   // 連戰試煉中存檔，存的是原本的隊伍
       seen:Array.from(state.seen), caught:Array.from(state.caught), shinyCaught:Array.from(state.shinyCaught), mega:state.mega,
       bag:state.bag, money:state.money, zone:state.zone, maxZone:state.maxZone, tower:state.tower,
       stats:state.stats, quest:state.quest, ach:state.ach, meta:state.meta, checkin:state.checkin, profile:state.profile, fest:state.fest, mail:state.mail, tms:state.tms
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    saveFailNotice(false);
     return true;
-  }catch(e){ return false; }
+  }catch(e){ saveFailNotice(true); return false; }
 }
+// 存檔寫不進去（空間不足、無痕模式、瀏覽器擋 localStorage）時，畫面下方跳提醒；之後存成功就自動收掉
+let saveFailClosed = false;
+function saveFailNotice(fail){
+  const old = document.getElementById('saveFailBar');
+  if(!fail){ if(old) old.remove(); return; }
+  if(old || saveFailClosed || !document.body) return;
+  const d = document.createElement('div'); d.id = 'saveFailBar'; d.className = 'noticeBar warn';
+  d.innerHTML = '<div>⚠️ <b>存檔失敗</b>：瀏覽器不讓遊戲寫入存檔（可能是空間不足或無痕模式）。現在關掉頁面，進度會不見！請先匯出備份。</div>'
+    + '<div class="ib"><button id="saveFailBackup">💾 匯出備份</button><button id="saveFailOk">知道了</button></div>';
+  document.body.appendChild(d);
+  document.getElementById('saveFailOk').onclick = ()=>{ saveFailClosed = true; d.remove(); };
+  document.getElementById('saveFailBackup').onclick = ()=>{ d.remove(); if(!state.battle) screenSaveIO(()=> state.party.length ? screenContinue() : screenCover()); else notify('對戰結束後再到選單匯出存檔'); };
+}
+// 切到背景、關分頁時順手存一次（對戰中不存，避免把打到一半的狀態存進去）
+function saveOnHide(){ try{ if(state.party.length && !state.battle) saveGame(); }catch(e){} }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'hidden') saveOnHide(); });
+window.addEventListener('pagehide', saveOnHide);
 function fixMon(m){
   if(!m) return m;
   const fixed = Object.assign({status:null, atkMul:1, defMul:1, shiny:false}, m);
+  const e = DEX[fixed.dex];   // 瘦身存檔沒存名字、屬性、tier，從圖鑑補回
+  if(e){
+    if(fixed.name === undefined) fixed.name = e[0];
+    if(fixed.t1 === undefined){ fixed.t1 = e[1]; fixed.t2 = e[2]; }
+    if(fixed.tier === undefined) fixed.tier = e[3];
+  }
   if(fixed.level > MAX_LEVEL) fixed.level = MAX_LEVEL;
   if(fixed.level >= MAX_LEVEL) fixed.exp = 0;
   if(fixed._mega) megaRevert(fixed);   // 存檔時剛好在 Mega 進化中：還原成原本的樣子
@@ -3045,6 +3098,18 @@ function showInAppNotice(){
   document.getElementById('inappOk').onclick = ()=>{ try{ localStorage.setItem('inapp_ok','1'); }catch(e){} d.remove(); };
   document.getElementById('inappBackup').onclick = ()=>{ d.remove(); screenSaveIO(()=> state.party.length ? screenContinue() : screenCover()); };
 }
+// iPhone 從主畫面圖示開啟時，存檔和 Safari 是分開的：沒有存檔時提醒可以從 Safari 匯出再匯入
+function showStandaloneNotice(){
+  let standalone = false, dismissed = false;
+  try{ standalone = navigator.standalone === true; dismissed = localStorage.getItem('pwa_ok') === '1'; }catch(e){}
+  if(!standalone || dismissed || state.party.length || document.getElementById('pwaBar')) return;
+  const d = document.createElement('div'); d.id = 'pwaBar'; d.className = 'noticeBar';
+  d.innerHTML = '<div>📱 從主畫面開的遊戲，存檔和 Safari 裡的<b>是分開的</b>。之前在 Safari 玩過的話，先到 Safari 選單「存檔匯出／匯入」複製代碼，再回這裡匯入。</div>'
+    + '<div class="ib"><button id="pwaImport">📥 匯入存檔</button><button id="pwaOk">知道了</button></div>';
+  document.body.appendChild(d);
+  document.getElementById('pwaOk').onclick = ()=>{ try{ localStorage.setItem('pwa_ok','1'); }catch(e){} d.remove(); };
+  document.getElementById('pwaImport').onclick = ()=>{ d.remove(); screenSaveIO(()=> state.party.length ? screenContinue() : screenCover()); };
+}
 try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}   // 請瀏覽器盡量不要自動清掉存檔
 
 /* ---------- BOOT ---------- */
@@ -3053,6 +3118,9 @@ preloadArtFor(state.party);   // 隊伍的外框圖趁空閒先載（其他的�
 applyFestTheme();
 screenCover();
 showInAppNotice();
+showStandaloneNotice();
+// 加到主畫面／離線遊玩（sw.js）；本機 file:// 或 http 測試時不註冊
+try{ if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(()=>{}); }catch(e){}
 // 測試帳號：網址加 ?test 會載入 test-save.json（全圖鑑 Lv.100、能力點全滿、全部 Mega 進化石），覆蓋前會先確認
 if(/[?&]test\b/.test(location.search)){
   fetch('test-save.json', {cache:'no-store'}).then(r=>{ if(!r.ok) throw 0; return r.text(); })

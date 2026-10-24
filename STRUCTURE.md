@@ -1,8 +1,9 @@
 # 結構說明（給 AI 開新對話時先讀這份）
 
-純前端單頁遊戲，無建置流程。`index.html` 依序載入 `data.js` → `moves-data.js` → `poke-data.js` → `mon-art.js` → `mon-colors.js` → `sounds/list.js`（可缺）→ `battle.js` → `features.js` → `moves.js` → `abilities.js` → `gimmicks.js` → `growth.js` → `league.js`，再跑 index.html 內的主程式，主程式之後才載入 `extras.js` → `doubles.js`（這兩個要包主程式的函式，所以放在後面）。全域變數共用，不是 ES module。
+純前端單頁遊戲，無建置流程。`index.html` 依序載入 `data.js` → `moves-data.js` → `poke-data.js` → `mon-art.js` → `mon-colors.js` → `sounds/list.js`（目前不存在，載入失敗會自動略過，放音效清單用）→ `battle.js` → `features.js` → `moves.js` → `abilities.js` → `gimmicks.js` → `growth.js` → `league.js`，再跑 index.html 內的主程式，主程式之後才載入 `extras.js` → `doubles.js`（這兩個要包主程式的函式，所以放在後面）。全域變數共用，不是 ES module。
 寶可夢卡片底圖在 `art/`（每張約 13KB，瀏覽器顯示卡片時才下載）。
-存檔在 `localStorage`，key 為 `pkmn_tower_save_v2`（舊版 v1 會自動轉移）。行號會隨修改位移，僅供定位，請用 grep 函式名。
+存檔在 `localStorage`，key 為 `pkmn_tower_save_v2`（舊版 v1 會自動轉移）。存檔的寶可夢是瘦身過的（`packMon`，見「慣例」）。
+可以加到手機主畫面、離線遊玩：`manifest.webmanifest`＋`sw.js`＋`icon-192.png`/`icon-512.png`/`apple-touch-icon.png`。行號會隨修改位移，僅供定位，請用 grep 函式名。
 
 ## 檔案
 
@@ -24,20 +25,22 @@
 | `mon-colors.js` | 每隻寶可夢的代表色 `MON_COLORS[key] = [一般主色, 一般副色, 異色主色, 異色副色]`（key 是 DEX 索引或 `'M'+id`），從 PokeAPI 像素圖自動抓（略過黑色描邊）。給「無框」邊框用。直接載入（約 58KB）。 |
 | `battle.js`（約 1490 行） | 音效 `SFX`、屬性相剋 `eff`/`moveEff`、傷害 `dmg`（物理特殊看招式 `cls`）/`attackCore`（呼叫 moves.js 的 `useMove`）、回合流程 `playerMove`（`turnOrder`：先比先制度再比速度）/`enemyTurn`/`endOfTurn`、捕捉 `tryCatch`、換人、進化 `evoTarget`/`evolveTo`、經驗 `grantExp`、戰鬥結算 `winBattle`/`loseBattle`、對戰畫面 `renderStage`/`screenBattle`、擊倒與捕捉動畫 `koFx`/`catchFx`、色違出場特效 `shinyFx(side)`（卡片閃兩下＋星星散開＋`SFX` 的 `shiny` 音效，`entryCheck` 遇到色違時呼叫，會等開場動畫播完）、球框 `FRAME_*`（`none` 無框：`frameStyle()` 用 MON_COLORS 做上→下雙色漸層，異色用異色色、超進化中用超進化色；其他球種照原本球的配色）。卡片底圖 `monBgAttr(m, side, extraStyle)`（產生 `.card` 的 class 和 style；玩家和對手卡片都用，`side` 是 `me`/`foe`）：加 class `mz` 和 CSS 變數 `--mzimg:url(art/…)`（超進化中用 `'M'+id` 的圖，異色用 shiny 圖）。`frameStyle(m)` 回傳 CSS 文字（不含 `style=`）。 |
 | `features.js`（約 520 行） | 性格 `NATURES`、特性 `ABILITIES`、攜帶道具 `HELD`（含商店 `screenHeldShop`；`holds`/`heldIt` 在被打落、查封、魔法空間時無效）、每日活動 `DAILY_EVENTS`、天氣 `WEATHER`、戰鬥中各種效果掛勾（`afterHitFx`、`endTurnFx`、`onEntry`、`entryCheck`（會呼叫撒菱類 `entryHazards`）、`fxDmgMul`（會心等級看 `move._crit`）等） |
-| `index.html`（約 3000 行） | 見下 |
+| `index.html`（約 3190 行） | 見下 |
+| `sw.js` | Service worker（只在 https 註冊）：程式檔網路優先、斷線用快取，所以推新版不會卡舊版；`art/` 底圖快取優先（`ART_CACHE`，改圖要把版本號加一）；`test-save.json` 不快取。新增 js 檔要加進 `CORE` 清單才能離線。 |
+| `manifest.webmanifest`、`icon-*.png`、`apple-touch-icon.png` | 加到主畫面用的設定和圖示（深色底對話框圖示，Pillow 畫的） |
 | `test-save.json` | 測試用存檔（約 600KB，不要整個讀進對話）。網址加 `?test` 會載入 |
 | `tests/fuzz.js` | 自動測試（見下面「自動測試」） |
 
 ## index.html 內部分段
 
-- 第 18~435 行：CSS（卡片底圖是 `.card.mz`：`--mzimg` 以 cover 鋪滿 padding-box，`.r1>span`/`.r2`/`.hpt` 各自墊 `--half` 60% 底色）
-- 第 430~445 行：HTML 骨架（`#stage` 對戰畫面、`#log` 文字、`#bar` 狀態列（地點＋圖鑑／球／錢／硬幣，`renderBar`）、`#opts` 選項按鈕、`#modal` 選單、`#hub` 活動/信箱）
-- 約 466~846 行：節日活動 `EVENTS`、背景主題、信箱 `mail*`、`openHub`
-- 約 848 行起：主程式。常數、`makeMon`（產生寶可夢）、能力值/個體值計算、塔與傳說挑戰規則、`state`（全部遊戲狀態）、`print`（文字輸出）、`setOptions`（選項按鈕）、寶可夢小卡 `monCardHtml`/`monCardOpt`（隊伍、倉庫、換人用；`typeChips` 屬性色塊）、野外上方隊伍一覽 `partyStripHtml`（`screenField` 塞進 `stageDetail`）
-- 約 1052~1250 行：存檔 `saveGame`/`loadGame`/匯出入
-- 之後是各個畫面函式，命名都是 `screenXxx`：`screenField`（野外主畫面，約 1366 行）、`encounter`（遇敵）、`screenShop`、`screenTower`（無盡塔）、`screenGym`（道館）、`screenParty`/`screenBox`/`screenBag`、`screenDex`（圖鑑）、Mega 進化相關 `startMegaBattle`/`megaEvolve`
-- 約 2608 行起：成就 `ACH`、稱號、簽到、任務、個人資料；`openMenu`（約 2827 行）為選單入口。野外按鈕列多了 🏕 設施（extras.js），對戰選單多了 💠 團體戰、🏰 對戰塔
-- 約 2890 行：BOOT（`loadGame` → `preloadArtFor(state.party)（預載隊伍底圖）` → `screenCover`）
+- 第 25~515 行：CSS（卡片底圖是 `.card.mz`：`--mzimg` 以 cover 鋪滿 padding-box，`.r1>span`/`.r2`/`.hpt` 各自墊 `--half` 60% 底色）
+- 第 516~535 行：HTML 骨架（`#stage` 對戰畫面、`#log` 文字、`#bar` 狀態列（地點＋圖鑑／球／錢／硬幣，`renderBar`）、`#opts` 選項按鈕、`#modal` 選單、`#hub` 活動/信箱）
+- 約 560~875 行：節日活動 `EVENTS`、背景主題、信箱 `mail*`、`openHub`
+- 約 877 行起：主程式。常數、`makeMon`（產生寶可夢）、能力值/個體值計算、塔與傳說挑戰規則、`state`（全部遊戲狀態）、`print`（文字輸出）、`setOptions`（選項按鈕）、寶可夢小卡 `monCardHtml`/`monCardOpt`（隊伍、倉庫、換人用；`typeChips` 屬性色塊）、野外上方隊伍一覽 `partyStripHtml`（`screenField` 塞進 `stageDetail`）
+- 約 1180~1440 行：存檔 `packMon`/`saveGame`/`saveFailNotice`（寫不進去時畫面下方紅色提醒，存成功自動收掉）/`saveOnHide`（切背景、關分頁時存，對戰中不存）/`fixMon`/`loadGame`/匯出入 `screenSaveIO`
+- 之後是各個畫面函式，命名都是 `screenXxx`：`screenField`（野外主畫面，約 1540 行）、`encounter`（遇敵）、`screenShop`、`screenTower`（無盡塔）、`screenGym`（道館）、`screenParty`/`screenBox`/`screenBag`、`screenDex`（圖鑑）、Mega 進化相關 `startMegaBattle`/`megaEvolve`
+- 約 2817 行起：成就 `ACH`、稱號、簽到、任務、個人資料；`openMenu`（約 3037 行）為選單入口。野外按鈕列多了 🏕 設施（extras.js），對戰選單多了 💠 團體戰、🏰 對戰塔
+- 約 3115 行：BOOT（`loadGame` → `preloadArtFor(state.party)`（預載隊伍底圖）→ `screenCover` → LINE 等內建瀏覽器提醒 `showInAppNotice` → iPhone 主畫面版沒存檔時的提醒 `showStandaloneNotice`（主畫面版存檔和 Safari 分開）→ 註冊 `sw.js`）
 - 最後兩個 `<script>`：音效掛勾（用 `wrap` 包住 `doAttack` 等函式）、按鈕按下動畫
 
 ## 自動測試
@@ -48,6 +51,7 @@
 - `node tests/fuzz.js`：預設跑隨機對戰 300 場（隨機隊伍 1~6 隻、隨機攜帶道具和太晶屬性；野生／訓練家／道館／雙打／團體戰／對戰塔）＋從 test-save.json 亂按 3000 步
 - 參數：`battle`／`monkey` 只跑一種、`-n 數量`、`--seed 數字`（重現用，執行時會印出種子）、`--new`（亂按從新遊戲開始）、`-v`（印出出錯前的操作和畫面文字）
 - 有問題時結束碼 1。改完戰鬥相關的程式建議跑一次。
+- 其他腳本可以 `require('./tests/fuzz.js')` 拿 `{boot, problems}` 自己載入遊戲測（`boot(存檔文字, 種子)` 回傳 `{w, flush}`）。
 
 ## 慣例
 
@@ -56,6 +60,7 @@
 - 文字逐行動畫只在對戰中（`state.battle` 或 `#app.battle`，含剛結束的結算）才有，判斷在 `animText()`；其他畫面 `print` 直接顯示、按鈕不等待。
 - 對戰畫面上方的回合／天氣／場地是 `renderStage` 裡的 `.binfo`（舊的 `#turnbar` 已拿掉）；招式卡第二行是「威力（命中不到 100 才顯示）＋PP」，第三行效果說明最多兩行。規則提示（不能逃跑等）只在第 1 回合印。
 - 改完要存檔就呼叫 `saveGame()`；新增存檔欄位要在 `loadGame`/`fixMon` 補預設值，避免舊存檔壞掉。
+- 存檔瘦身 `packMon`：招式只存 `{id,pp,ppUp}`（讀檔 `migrateMoves`→`refreshMove` 用 MOVE_DB 重建）；`name`/`t1`/`t2`/`tier` 跟 DEX 一樣就不存（`fixMon` 補回，Mega 中的不一樣所以會留著）；`status:null`、`atkMul/defMul:1`、`shiny:false`、空的 `xm` 不存。1076 隻的倉庫約 1MB → 0.44MB。寶可夢新增「可以從別的資料算回來」的欄位時，存檔和讀檔兩邊要一起改。
 - 能力值用本傳公式＋種族值（`statsFor(base, level)`、`baseStatsOf(dex, megaId)`），能力點照舊另外加；`m.sv` 是公式版本（`STAT_VER`），舊存檔讀進來會重算。Mega 進化改用 Mega 的種族值和特性（`p._mega.ab` 記原本特性）。
 - 寶可夢身上的招式：`m.moves`（上場 4 招，招式物件含 `id`）、`m.xm`（額外學會的招式 id）、`m.friend`（親密度 0~255，預設 70）。對戰中的暫時狀態都是底線開頭（`_sub`、`_cnf`、`_seed`…），換下場或對戰結束由 `clearVolatile` 清掉。
 - 統計 `state.stats` 新增：`losses`、`flees`、`faints`、`movesUsed`、`crits`、`maxHit`/`maxHitBy`、`tmUsed`、`pu`（各圖鑑上場次數）、`trades`、`picnics`、`raids`、`raidFails`、`dblWins`、`btWins`。
