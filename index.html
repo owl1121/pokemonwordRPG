@@ -507,6 +507,18 @@ i.ld{font-style:normal;color:var(--accent);margin-right:3px;}
 #app.detail .hexsvg{max-width:280px;margin:0 auto;}
 .kv small{display:block;font-size:11px;color:var(--dim);}
 /* ---- 內建瀏覽器提醒 ---- */
+/* 往草叢前進的動畫：草叢搖晃 → 跳出驚嘆號（圖跟主畫面圖示同一張像素圖） */
+#grassFx{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);animation:gfIn .12s ease-out both;cursor:pointer;}
+#grassFx.out{animation:gfOut .14s ease-in both;}
+#grassFx svg{width:min(52vw,210px);height:auto;margin-top:-12vh;image-rendering:pixelated;filter:drop-shadow(0 6px 14px rgba(0,0,0,.6));}
+#grassFx .tf{transform-box:fill-box;transform-origin:50% 100%;animation:gfRustle .16s ease-in-out 3 alternate both;}
+#grassFx .t2{animation-delay:.06s;} #grassFx .t3{animation-delay:.12s;}
+#grassFx .bub{transform-box:fill-box;transform-origin:50% 100%;opacity:0;}
+#grassFx.pop .bub{animation:gfPop .24s cubic-bezier(.3,1.6,.5,1) both;}
+@keyframes gfIn{from{opacity:0}to{opacity:1}}
+@keyframes gfOut{from{opacity:1}to{opacity:0}}
+@keyframes gfRustle{0%{transform:rotate(0) translateX(0)}50%{transform:rotate(-9deg) translateX(-.5px)}100%{transform:rotate(8deg) translateX(.5px)}}
+@keyframes gfPop{0%{opacity:0;transform:translateY(5px) scale(.2)}60%{opacity:1;transform:translateY(-1px) scale(1.2)}100%{opacity:1;transform:none}}
 #inappBar,.noticeBar{position:fixed;left:8px;right:8px;bottom:10px;z-index:60;background:#24323a;color:#fff;border:2px solid #7fd0ff;border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.55;box-shadow:0 6px 18px rgba(0,0,0,.5);}
 #inappBar .ib,.noticeBar .ib{display:flex;gap:8px;margin-top:8px;}
 #saveFailBar{border-color:#ff9a7a;background:#3a2626;z-index:61;}
@@ -1545,7 +1557,7 @@ function screenField(){
   if(state.party.length) stageDetail = partyStripHtml();
   const adv = advanceLabel();   // 「⏩ 前往 xx」／「🔒 前往 xx」／「⏩ 已到最後一站」
   setOptions([
-    {label:'🌿 往草叢前進', cls:'primary', action:()=>encounter()},
+    {label:'🌿 往草叢前進', cls:'primary', action:()=>grassFx(()=>encounter())},
     {ic:'👥', label:'隊伍', row:'nav', action:screenParty},
     {ic:'🎒', label:'背包', row:'nav', action:screenBag},
     {ic:'🏪', label:'商店', row:'nav', action:()=>{ shopQty=1; screenShop(); }},
@@ -1667,6 +1679,32 @@ function healAll(returnTo){
 function noAlive(){ return state.party.length===0 || !state.party.some(m=>m.hp>0); }
 function announceShiny(w){
   if(w.shiny) print('<span class="shiny">✨ 閃閃發光！是色違的寶可夢！</span>');
+}
+// 往草叢前進：草叢搖三下、跳出驚嘆號，再進入遇敵（點一下可跳過；系統設定減少動態時直接進）
+const GRASS_SVG = '<svg viewBox="0 0 32 32" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'
+  + '<g class="tf t1"><rect x="8" y="17" width="1" height="1" fill="#5eaa6e"/><rect x="8" y="18" width="1" height="1" fill="#3c7850"/><rect x="6" y="19" width="1" height="1" fill="#5eaa6e"/><rect x="8" y="19" width="1" height="1" fill="#3c7850"/><rect x="6" y="20" width="1" height="1" fill="#5eaa6e"/><rect x="8" y="20" width="1" height="1" fill="#3c7850"/><rect x="10" y="20" width="1" height="1" fill="#5eaa6e"/><rect x="5" y="21" width="3" height="1" fill="#5eaa6e"/><rect x="8" y="21" width="1" height="1" fill="#3c7850"/><rect x="9" y="21" width="2" height="1" fill="#5eaa6e"/><rect x="5" y="22" width="3" height="1" fill="#5eaa6e"/><rect x="8" y="22" width="1" height="1" fill="#3c7850"/><rect x="9" y="22" width="3" height="1" fill="#5eaa6e"/><rect x="5" y="23" width="3" height="1" fill="#5eaa6e"/><rect x="8" y="23" width="1" height="1" fill="#3c7850"/><rect x="9" y="23" width="3" height="1" fill="#5eaa6e"/><rect x="5" y="24" width="3" height="1" fill="#5eaa6e"/><rect x="8" y="24" width="1" height="1" fill="#3c7850"/><rect x="9" y="24" width="3" height="1" fill="#5eaa6e"/><rect x="4" y="25" width="4" height="1" fill="#5eaa6e"/><rect x="8" y="25" width="1" height="1" fill="#3c7850"/><rect x="9" y="25" width="3" height="1" fill="#5eaa6e"/></g><g class="tf t2"><rect x="16" y="17" width="1" height="1" fill="#5eaa6e"/><rect x="16" y="18" width="1" height="1" fill="#3c7850"/><rect x="14" y="19" width="1" height="1" fill="#5eaa6e"/><rect x="16" y="19" width="1" height="1" fill="#3c7850"/><rect x="14" y="20" width="1" height="1" fill="#5eaa6e"/><rect x="16" y="20" width="1" height="1" fill="#3c7850"/><rect x="18" y="20" width="1" height="1" fill="#5eaa6e"/><rect x="13" y="21" width="3" height="1" fill="#5eaa6e"/><rect x="16" y="21" width="1" height="1" fill="#3c7850"/><rect x="17" y="21" width="2" height="1" fill="#5eaa6e"/><rect x="13" y="22" width="3" height="1" fill="#5eaa6e"/><rect x="16" y="22" width="1" height="1" fill="#3c7850"/><rect x="17" y="22" width="3" height="1" fill="#5eaa6e"/><rect x="13" y="23" width="3" height="1" fill="#5eaa6e"/><rect x="16" y="23" width="1" height="1" fill="#3c7850"/><rect x="17" y="23" width="3" height="1" fill="#5eaa6e"/><rect x="13" y="24" width="3" height="1" fill="#5eaa6e"/><rect x="16" y="24" width="1" height="1" fill="#3c7850"/><rect x="17" y="24" width="3" height="1" fill="#5eaa6e"/><rect x="12" y="25" width="4" height="1" fill="#5eaa6e"/><rect x="16" y="25" width="1" height="1" fill="#3c7850"/><rect x="17" y="25" width="3" height="1" fill="#5eaa6e"/></g><g class="tf t3"><rect x="24" y="17" width="1" height="1" fill="#5eaa6e"/><rect x="24" y="18" width="1" height="1" fill="#3c7850"/><rect x="22" y="19" width="1" height="1" fill="#5eaa6e"/><rect x="24" y="19" width="1" height="1" fill="#3c7850"/><rect x="22" y="20" width="1" height="1" fill="#5eaa6e"/><rect x="24" y="20" width="1" height="1" fill="#3c7850"/><rect x="26" y="20" width="1" height="1" fill="#5eaa6e"/><rect x="21" y="21" width="3" height="1" fill="#5eaa6e"/><rect x="24" y="21" width="1" height="1" fill="#3c7850"/><rect x="25" y="21" width="2" height="1" fill="#5eaa6e"/><rect x="21" y="22" width="3" height="1" fill="#5eaa6e"/><rect x="24" y="22" width="1" height="1" fill="#3c7850"/><rect x="25" y="22" width="3" height="1" fill="#5eaa6e"/><rect x="21" y="23" width="3" height="1" fill="#5eaa6e"/><rect x="24" y="23" width="1" height="1" fill="#3c7850"/><rect x="25" y="23" width="3" height="1" fill="#5eaa6e"/><rect x="21" y="24" width="3" height="1" fill="#5eaa6e"/><rect x="24" y="24" width="1" height="1" fill="#3c7850"/><rect x="25" y="24" width="3" height="1" fill="#5eaa6e"/><rect x="20" y="25" width="4" height="1" fill="#5eaa6e"/><rect x="24" y="25" width="1" height="1" fill="#3c7850"/><rect x="25" y="25" width="4" height="1" fill="#5eaa6e"/></g><g><rect x="3" y="26" width="26" height="1" fill="#3c7850"/><rect x="3" y="27" width="26" height="1" fill="#3c7850"/><rect x="3" y="28" width="26" height="1" fill="#3c7850"/></g><g class="bub"><rect x="11" y="3" width="10" height="1" fill="#c9f7d8"/><rect x="11" y="4" width="1" height="1" fill="#c9f7d8"/><rect x="12" y="4" width="8" height="1" fill="#111a16"/><rect x="20" y="4" width="1" height="1" fill="#c9f7d8"/><rect x="11" y="5" width="1" height="1" fill="#c9f7d8"/><rect x="12" y="5" width="3" height="1" fill="#111a16"/><rect x="15" y="5" width="2" height="1" fill="#ffcb3c"/><rect x="17" y="5" width="3" height="1" fill="#111a16"/><rect x="20" y="5" width="1" height="1" fill="#c9f7d8"/><rect x="11" y="6" width="1" height="1" fill="#c9f7d8"/><rect x="12" y="6" width="3" height="1" fill="#111a16"/><rect x="15" y="6" width="2" height="1" fill="#ffcb3c"/><rect x="17" y="6" width="3" height="1" fill="#111a16"/><rect x="20" y="6" width="1" height="1" fill="#c9f7d8"/><rect x="11" y="7" width="1" height="1" fill="#c9f7d8"/><rect x="12" y="7" width="3" height="1" fill="#111a16"/><rect x="15" y="7" width="2" height="1" fill="#ffcb3c"/><rect x="17" y="7" width="3" height="1" fill="#111a16"/><rect x="20" y="7" width="1" height="1" fill="#c9f7d8"/><rect x="11" y="8" width="1" height="1" fill="#c9f7d8"/><rect x="12" y="8" width="3" height="1" fill="#111a16"/><rect x="15" y="8" width="2" height="1" fill="#ffcb3c"/><rect x="17" y="8" width="3" height="1" fill="#111a16"/><rect x="20" y="8" width="1" height="1" fill="#c9f7d8"/><rect x="11" y="9" width="1" height="1" fill="#c9f7d8"/><rect x="12" y="9" width="3" height="1" fill="#111a16"/><rect x="15" y="9" width="2" height="1" fill="#ffcb3c"/><rect x="17" y="9" width="3" height="1" fill="#111a16"/><rect x="20" y="9" width="1" height="1" fill="#c9f7d8"/><rect x="11" y="10" width="1" height="1" fill="#c9f7d8"/><rect x="12" y="10" width="8" height="1" fill="#111a16"/><rect x="20" y="10" width="1" height="1" fill="#c9f7d8"/><rect x="11" y="11" width="1" height="1" fill="#c9f7d8"/><rect x="12" y="11" width="3" height="1" fill="#111a16"/><rect x="15" y="11" width="2" height="1" fill="#ffcb3c"/><rect x="17" y="11" width="3" height="1" fill="#111a16"/><rect x="20" y="11" width="1" height="1" fill="#c9f7d8"/><rect x="11" y="12" width="1" height="1" fill="#c9f7d8"/><rect x="12" y="12" width="8" height="1" fill="#111a16"/><rect x="20" y="12" width="1" height="1" fill="#c9f7d8"/><rect x="11" y="13" width="10" height="1" fill="#c9f7d8"/><rect x="15" y="14" width="2" height="1" fill="#c9f7d8"/><rect x="15" y="15" width="1" height="1" fill="#c9f7d8"/></g></svg>';
+const GRASS_RUSTLE = 430, GRASS_POP = 300, GRASS_HOLD = 160;
+let grassBusy = false;
+function grassFx(go){
+  if(grassBusy) return;
+  const reduced = (typeof fxReduced === 'function') && fxReduced();
+  if(reduced || !document.body){ go(); return; }
+  grassBusy = true;
+  const d = document.createElement('div'); d.id = 'grassFx'; d.innerHTML = GRASS_SVG;
+  document.body.appendChild(d);
+  const timers = [];
+  let done = false;
+  const finish = ()=>{
+    if(done) return; done = true;
+    timers.forEach(clearTimeout);
+    d.remove(); grassBusy = false;
+    go();
+  };
+  d.addEventListener('click', finish);
+  try{ SFX.play('rustle'); }catch(e){}
+  timers.push(setTimeout(()=>{ d.classList.add('pop'); try{ SFX.play('alert'); }catch(e){} }, GRASS_RUSTLE));
+  timers.push(setTimeout(()=> d.classList.add('out'), GRASS_RUSTLE + GRASS_POP + GRASS_HOLD));
+  timers.push(setTimeout(finish, GRASS_RUSTLE + GRASS_POP + GRASS_HOLD + 140));
 }
 function encounter(){
   if(noAlive()){

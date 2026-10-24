@@ -38,7 +38,7 @@
 - 約 560~875 行：節日活動 `EVENTS`、背景主題、信箱 `mail*`、`openHub`
 - 約 877 行起：主程式。常數、`makeMon`（產生寶可夢）、能力值/個體值計算、塔與傳說挑戰規則、`state`（全部遊戲狀態）、`print`（文字輸出）、`setOptions`（選項按鈕）、寶可夢小卡 `monCardHtml`/`monCardOpt`（隊伍、倉庫、換人用；`typeChips` 屬性色塊）、野外上方隊伍一覽 `partyStripHtml`（`screenField` 塞進 `stageDetail`）
 - 約 1180~1440 行：存檔 `packMon`/`saveGame`/`saveFailNotice`（寫不進去時畫面下方紅色提醒，存成功自動收掉）/`saveOnHide`（切背景、關分頁時存，對戰中不存）/`fixMon`/`loadGame`/匯出入 `screenSaveIO`
-- 之後是各個畫面函式，命名都是 `screenXxx`：`screenField`（野外主畫面，約 1540 行）、`encounter`（遇敵）、`screenShop`、`screenTower`（無盡塔）、`screenGym`（道館）、`screenParty`/`screenBox`/`screenBag`、`screenDex`（圖鑑）、Mega 進化相關 `startMegaBattle`/`megaEvolve`
+- 之後是各個畫面函式，命名都是 `screenXxx`：`screenField`（野外主畫面，約 1555 行）、`grassFx(go)`（按「往草叢前進」時的動畫：草叢搖三下＋跳出驚嘆號，約 0.9 秒、點一下跳過、減少動態時略過；圖是主畫面圖示 C 的 32×32 像素拆成 `GRASS_SVG` 的草叢三叢／地面／泡泡圖層，CSS 在 `#grassFx`；音效 `rustle`/`alert`）、`encounter`（遇敵）、`screenShop`、`screenTower`（無盡塔）、`screenGym`（道館）、`screenParty`/`screenBox`/`screenBag`、`screenDex`（圖鑑）、Mega 進化相關 `startMegaBattle`/`megaEvolve`
 - 約 2817 行起：成就 `ACH`、稱號、簽到、任務、個人資料；`openMenu`（約 3037 行）為選單入口。野外按鈕列多了 🏕 設施（extras.js），對戰選單多了 💠 團體戰、🏰 對戰塔
 - 約 3115 行：BOOT（`loadGame` → `preloadArtFor(state.party)`（預載隊伍底圖）→ `screenCover` → LINE 等內建瀏覽器提醒 `showInAppNotice` → iPhone 主畫面版沒存檔時的提醒 `showStandaloneNotice`（主畫面版存檔和 Safari 分開）→ 註冊 `sw.js`）
 - 最後兩個 `<script>`：音效掛勾（用 `wrap` 包住 `doAttack` 等函式）、按鈕按下動畫
