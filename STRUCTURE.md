@@ -27,7 +27,7 @@
 | `features.js`（約 520 行） | 性格 `NATURES`、特性 `ABILITIES`、攜帶道具 `HELD`（含商店 `screenHeldShop`；`holds`/`heldIt` 在被打落、查封、魔法空間時無效）、每日活動 `DAILY_EVENTS`、天氣 `WEATHER`、戰鬥中各種效果掛勾（`afterHitFx`、`endTurnFx`、`onEntry`、`entryCheck`（會呼叫撒菱類 `entryHazards`）、`fxDmgMul`（會心等級看 `move._crit`）等） |
 | `index.html`（約 3190 行） | 見下 |
 | `sw.js` | Service worker（只在 https 註冊）：程式檔網路優先、斷線用快取，所以推新版不會卡舊版；`art/` 底圖快取優先（`ART_CACHE`，改圖要把版本號加一）；`test-save.json` 不快取。新增 js 檔要加進 `CORE` 清單才能離線。 |
-| `manifest.webmanifest`、`icon-*.png`、`apple-touch-icon.png` | 加到主畫面用的設定和圖示（深色底對話框圖示，Pillow 畫的） |
+| `manifest.webmanifest`、`icon-*.png`、`apple-touch-icon.png` | 加到主畫面用的設定和圖示（像素風：草叢跳出驚嘆號，32×32 格放大，Pillow 畫的） |
 | `test-save.json` | 測試用存檔（約 600KB，不要整個讀進對話）。網址加 `?test` 會載入 |
 | `tests/fuzz.js` | 自動測試（見下面「自動測試」） |
 
